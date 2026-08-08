@@ -1,0 +1,304 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+const links = [
+  { href: '#properties', label: 'Properties' },
+  { href: '#about', label: 'About' },
+  { href: '#location', label: 'Location' },
+  { href: '/guest/', label: 'Guest Book' },
+];
+---
+<Base
+  title="Lake District Escapes — Holiday House & Cottage in Shap, Cumbria"
+  description="Award-winning self-catering escapes in Shap, Cumbria — the 'Gateway to the Fells & Lakes'. Book The Rockery (sleeps 10) or Primrose Cottage (sleeps 2), or both together for up to 12."
+>
+  <Nav slot="nav" links={links} ctaHref="#enquire" ctaLabel="Enquire" />
+
+  <!-- HERO -->
+  <section class="m-hero">
+    <div class="m-hero-bg" style="background-image:url('/images/fell-views.jpg')"></div>
+    <div class="m-hero-inner">
+      <div class="m-hero-pill">Shap, Cumbria · Gateway to the Fells &amp; Lakes</div>
+      <h1>Lake District<br /><em>Escapes</em></h1>
+      <p>
+        Two beautifully refurbished, award-winning self-catering retreats in the heart of Cumbria.
+        Bring the whole family to The Rockery, or slip away for two at Primrose Cottage — or book
+        both together for groups of up to&nbsp;12.
+      </p>
+      <div class="m-hero-actions">
+        <a href="#properties" class="btn btn-white">Explore the Properties</a>
+        <a href="#enquire" class="btn btn-outline">Check Availability</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- BADGES -->
+  <div class="badges">
+    <div class="badge-item"><span class="badge-dot"></span>All Bills Included</div>
+    <div class="badge-item"><span class="badge-dot"></span>Bed Linen &amp; Towels</div>
+    <div class="badge-item"><span class="badge-dot"></span>Logs for Wood Burner</div>
+    <div class="badge-item"><span class="badge-dot"></span>Welcome Pack</div>
+    <div class="badge-item"><span class="badge-dot"></span>Wi-Fi Included</div>
+    <div class="badge-item"><span class="badge-dot"></span>BBQ &amp; Garden Furniture</div>
+    <div class="badge-item"><span class="badge-dot"></span>Parking On-Site</div>
+    <div class="badge-item"><span class="badge-dot"></span>Customers' Choice 2021–2025</div>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="section about" id="about">
+    <div class="about-inner">
+      <div class="reveal">
+        <p class="eyebrow">Welcome</p>
+        <h2 class="section-h">Your Cumbrian<br />Base for <em>Everything</em></h2>
+        <div class="about-text">
+          <p>
+            Set in the village of Shap — the 'Gateway to the Fells and Lakes' — Lake District Escapes
+            is a small, family-run collection of two characterful holiday lets. Both were lovingly
+            refurbished in 2023 and share the same easy promise: everything included, nothing to think
+            about but where to walk tomorrow.
+          </p>
+          <p>
+            Whether you're a large family or group after a Grade II Listed house with room to spread out,
+            or a couple wanting a cosy cottage bolt-hole, you'll find fell views, wood-burner warmth and a
+            genuine Cumbrian welcome waiting.
+          </p>
+        </div>
+        <div class="about-highlight">
+          <p>Book The Rockery and Primrose Cottage together and sleep up to 12 across one address.</p>
+        </div>
+      </div>
+      <div class="about-images reveal" style="transition-delay:0.15s;">
+        <div class="ai-card span2" style="height:220px;">
+          <img src="/images/rockery-front.jpg" alt="The Rockery, a Grade II Listed house in Shap" loading="lazy" />
+        </div>
+        <div class="ai-card" style="height:180px;">
+          <img src="/images/primrose-main.jpg" alt="Primrose Cottage exterior" loading="lazy" />
+        </div>
+        <div class="ai-card" style="height:180px;">
+          <img src="/images/garden.jpg" alt="Enclosed garden with fell views" loading="lazy" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROPERTIES -->
+  <section class="section properties" id="properties">
+    <div class="properties-header reveal">
+      <p class="eyebrow">The Properties</p>
+      <h2 class="section-h">Two Escapes,<br />One <em>Warm Welcome</em></h2>
+    </div>
+    <div class="prop-grid">
+      <!-- The Rockery -->
+      <article class="prop-card reveal">
+        <div class="prop-card-img">
+          <img src="/images/rockery-hero.jpg" alt="The Rockery holiday house" loading="lazy" />
+          <span class="prop-card-tag">Grade II Listed · Sleeps 10</span>
+        </div>
+        <div class="prop-card-body">
+          <h3>The Rockery</h3>
+          <div class="prop-card-loc">Shap Village, Cumbria</div>
+          <p>
+            A spacious Grade II Listed retreat for large families and groups. Six bedrooms, generous
+            living space, a charming log burner and an enclosed garden with BBQ.
+          </p>
+          <div class="prop-meta">
+            <div><div class="pm-num">6</div><div class="pm-label">Bedrooms</div></div>
+            <div><div class="pm-num">10</div><div class="pm-label">Guests</div></div>
+            <div><div class="pm-num">3</div><div class="pm-label">Car Parking</div></div>
+          </div>
+          <div class="prop-card-actions">
+            <a href="/the-rockery/" class="btn btn-green">View The Rockery</a>
+            <a href="#enquire" class="btn btn-outline" style="border-color:var(--grasmere-slate);color:var(--coniston-blue);">Enquire</a>
+          </div>
+        </div>
+      </article>
+
+      <!-- Primrose Cottage -->
+      <article class="prop-card reveal" style="transition-delay:0.1s;">
+        <div class="prop-card-img">
+          <img src="/images/primrose-main.jpg" alt="Primrose Cottage" loading="lazy" />
+          <span class="prop-card-tag">Cosy for 2 · UK1039</span>
+        </div>
+        <div class="prop-card-body">
+          <h3>Primrose Cottage</h3>
+          <div class="prop-card-loc">Shap Village, Cumbria</div>
+          <p>
+            A charming self-contained cottage for couples, refurbished in 2023. Wooden beams, a cosy
+            lounge, private courtyard with BBQ and a double bedroom with en-suite.
+          </p>
+          <div class="prop-meta">
+            <div><div class="pm-num">1</div><div class="pm-label">Bedroom</div></div>
+            <div><div class="pm-num">2</div><div class="pm-label">Guests</div></div>
+            <div><div class="pm-num">1</div><div class="pm-label">Car Parking</div></div>
+          </div>
+          <div class="prop-card-actions">
+            <a href="/primrose-cottage/" class="btn btn-green">View Primrose Cottage</a>
+            <a href="#enquire" class="btn btn-outline" style="border-color:var(--grasmere-slate);color:var(--coniston-blue);">Enquire</a>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- WHY BOOK / FEATURES -->
+  <section class="section features">
+    <div class="features-header reveal">
+      <div>
+        <p class="eyebrow">Why Book With Us</p>
+        <h2 class="section-h">Everything<br /><em>Included</em></h2>
+      </div>
+      <a href="#enquire" class="btn btn-white" style="color:var(--coniston-blue);align-self:flex-end;">Book Your Stay</a>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12h18M12 3v18" stroke-linecap="round"/></svg>
+        </div>
+        <h3>All Bills Included</h3>
+        <p>Heating, electricity, Wi-Fi, linen, towels and logs for the burner — all in the price.</p>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.07s;">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 20l6-8 4 5 3-4 5 7z" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Fell &amp; Countryside Views</h3>
+        <p>Wake to Cumbrian fells from the windows of both properties.</p>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.14s;">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8l8-4 8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/></svg>
+        </div>
+        <h3>Welcome Pack</h3>
+        <p>A thoughtful welcome pack to settle you in the moment you arrive.</p>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.21s;">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3s5 4 5 9a5 5 0 01-10 0c0-2 1-3 1-3"/></svg>
+        </div>
+        <h3>Log Burner &amp; Wi-Fi</h3>
+        <p>Cosy wood-burner warmth paired with reliable broadband throughout.</p>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.28s;">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M8 8V5h8v3"/></svg>
+        </div>
+        <h3>Gardens &amp; BBQ</h3>
+        <p>Enclosed outdoor space, garden furniture and a BBQ at each property.</p>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.35s;">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="9" cy="8" r="3"/><path d="M15 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><path d="M16 11l2 2 4-4"/></svg>
+        </div>
+        <h3>Sleeps up to 12</h3>
+        <p>Book both properties together for larger family gatherings and celebrations.</p>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.42s;">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.4L12 15.5 7.1 18l.9-5.4-4-3.9 5.5-.8z" stroke-linejoin="round"/></svg>
+        </div>
+        <h3>Award-Winning</h3>
+        <p>Customers' Choice winners 2021–2025 — hospitality you can trust.</p>
+      </div>
+      <div class="feat-card reveal" style="transition-delay:.49s;">
+        <div class="feat-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="8" rx="1"/><path d="M6 11V8a6 6 0 0112 0v3"/></svg>
+        </div>
+        <h3>Parking &amp; Bike Store</h3>
+        <p>On-site parking and secure bike storage at both properties.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- LOCATION -->
+  <section class="section location" id="location">
+    <div class="location-inner">
+      <div class="reveal">
+        <p class="eyebrow">Where to Find Us</p>
+        <h2 class="section-h">Shap Village,<br /><em>Cumbria</em></h2>
+        <p>
+          Perfectly placed on the eastern edge of the Lake District National Park, Shap puts the high
+          fells, Haweswater, Ullswater and the market town of Penrith all within easy reach — with the
+          pub, shop and restaurant just a short stroll from your door.
+        </p>
+        <div class="loc-stats">
+          <div class="loc-stat"><div class="ls-num">200 yds</div><div class="ls-label">Pub, Shop &amp; Restaurant</div></div>
+          <div class="loc-stat"><div class="ls-num">8 mi</div><div class="ls-label">Haweswater &amp; Eagles</div></div>
+          <div class="loc-stat"><div class="ls-num">&lt;15 mi</div><div class="ls-label">Penrith &amp; Ullswater</div></div>
+          <div class="loc-stat"><div class="ls-num">1 hr</div><div class="ls-label">Scotland &amp; Northumberland</div></div>
+        </div>
+      </div>
+      <div class="loc-map reveal" style="transition-delay:.15s;">
+        <div class="loc-map-bg"></div>
+        <div class="loc-pin"></div>
+        <p>Shap, Cumbria</p>
+        <small>CA10 · M6 Junction 39</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENQUIRE -->
+  <section class="section enquire" id="enquire">
+    <div class="enquire-inner">
+      <div class="reveal">
+        <p class="eyebrow">Book Your Stay</p>
+        <h2 class="section-h">Ready for Your<br /><em>Lake District</em><br />Escape?</h2>
+        <p class="enquire-desc">
+          Send us your dates and which property you're interested in, and we'll come back to you with
+          full availability and pricing. Book both together for groups of up to 12.
+        </p>
+        <p class="enquire-desc" style="margin-top:1rem;">
+          Or reach us directly at<br /><strong style="color:#fff;">hello@lakedistrictescapes.uk</strong>
+        </p>
+      </div>
+      <div class="enquire-form-wrap reveal" style="transition-delay:.15s;">
+        <form name="enquiry" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/thank-you/">
+          <input type="hidden" name="form-name" value="enquiry" />
+          <p class="hp-field"><label>Don't fill this in: <input name="bot-field" /></label></p>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="name">Name</label>
+              <input id="name" name="name" type="text" placeholder="Your name" required />
+            </div>
+            <div class="form-field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="you@example.com" required />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="property">Property</label>
+            <select id="property" name="property">
+              <option value="The Rockery">The Rockery (sleeps 10)</option>
+              <option value="Primrose Cottage">Primrose Cottage (sleeps 2)</option>
+              <option value="Both">Both properties (up to 12)</option>
+              <option value="Not sure">Not sure yet</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="arrive">Arrival</label>
+              <input id="arrive" name="arrive" type="date" />
+            </div>
+            <div class="form-field">
+              <label for="depart">Departure</label>
+              <input id="depart" name="depart" type="date" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="guests">Number of Guests</label>
+            <input id="guests" name="guests" type="number" min="1" max="12" placeholder="e.g. 8" />
+          </div>
+          <div class="form-field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Tell us a little about your trip…"></textarea>
+          </div>
+          <button class="form-submit" type="submit">Send Enquiry</button>
+          <p class="form-note">We aim to respond within 4 hours during business hours.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</Base>

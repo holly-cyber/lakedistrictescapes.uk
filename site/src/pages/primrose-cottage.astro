@@ -1,0 +1,250 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+const links = [
+  { href: '#about', label: 'About' },
+  { href: '#features', label: 'Features' },
+  { href: '#gallery', label: 'Gallery' },
+  { href: '#location', label: 'Location' },
+  { href: '/', label: 'All Properties' },
+];
+---
+<Base
+  title="Primrose Cottage — Cosy Couples' Cottage in Shap | Lake District Escapes"
+  description="Primrose Cottage (ref UK1039) is a charming self-contained cottage for two in Shap, Cumbria. Refurbished in 2023 — wooden beams, cosy lounge, private courtyard with BBQ, double bedroom with en-suite."
+  ogImage="/images/primrose-main.jpg"
+>
+  <Nav slot="nav" links={links} logoHref="/" ctaHref="#enquire" ctaLabel="Book Now" />
+
+  <!-- HERO -->
+  <section class="hero page-hero">
+    <div class="hero-left" style="background:var(--gable-green);">
+      <div class="hero-pill">Cosy for Two · Ref UK1039</div>
+      <h1 class="hero-h1">Primrose<br /><em>Cottage</em></h1>
+      <p class="hero-sub">
+        A charming self-contained cottage for couples in the village of Shap. Refurbished in 2023, with
+        wooden beams, a cosy lounge and a private courtyard just for two.
+      </p>
+      <div class="hero-actions">
+        <a href="#enquire" class="btn btn-white" style="color:var(--gable-green);">Check Availability</a>
+        <a href="#about" class="btn btn-outline">Explore</a>
+      </div>
+      <div class="hero-stats">
+        <div><div class="h-stat-num">1</div><div class="h-stat-label">Bedroom</div></div>
+        <div><div class="h-stat-num">2</div><div class="h-stat-label">Guests</div></div>
+        <div><div class="h-stat-num">1</div><div class="h-stat-label">Car Parking</div></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <img src="/images/primrose-main.jpg" alt="Primrose Cottage, Shap" />
+      <div class="hero-overlay-card">
+        <div class="hoc-label" style="color:var(--gable-green);">Perfect for couples</div>
+        <div class="hoc-val">Primrose Cottage</div>
+        <div class="hoc-sub">Shap Village, Cumbria · Refurbished 2023</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- BADGES -->
+  <div class="badges">
+    <div class="badge-item"><span class="badge-dot"></span>All Bills Included</div>
+    <div class="badge-item"><span class="badge-dot"></span>Bed Linen &amp; Towels</div>
+    <div class="badge-item"><span class="badge-dot"></span>Welcome Pack</div>
+    <div class="badge-item"><span class="badge-dot"></span>Wi-Fi Included</div>
+    <div class="badge-item"><span class="badge-dot"></span>Private Courtyard &amp; BBQ</div>
+    <div class="badge-item"><span class="badge-dot"></span>Parking for 1 Car</div>
+    <div class="badge-item"><span class="badge-dot"></span>Bike Store</div>
+    <div class="badge-item"><span class="badge-dot"></span>Customers' Choice 2021–2025</div>
+  </div>
+
+  <!-- ABOUT -->
+  <section class="section about" id="about">
+    <div class="about-inner">
+      <div class="reveal">
+        <p class="eyebrow">The Cottage</p>
+        <h2 class="section-h">Charming,<br /><em>Self-Contained</em><br />&amp; Just for Two</h2>
+        <div class="about-text">
+          <p>
+            Primrose Cottage is a delightful bolt-hole for couples, tucked into the village of Shap and
+            refurbished in 2023. Wooden beams and an electric fire give the lounge a cosy, characterful
+            feel, while the fitted kitchen has everything you need for a relaxed self-catering stay.
+          </p>
+          <p>
+            Upstairs, a comfortable double bedroom with its own en-suite shower room; outside, a private
+            enclosed courtyard with seating, garden furniture and a BBQ for warm evenings.
+          </p>
+        </div>
+        <div class="about-highlight">
+          <p>Travelling as a group? Book Primrose Cottage alongside The Rockery for up to 12 guests.</p>
+        </div>
+        <a href="#enquire" class="btn btn-green" style="margin-top:2rem;">Enquire About the Cottage</a>
+      </div>
+      <div class="about-images reveal" style="transition-delay:0.15s;">
+        <div class="ai-card span2" style="height:220px;">
+          <img src="/images/primrose-int-2.jpg" alt="Primrose Cottage interior" loading="lazy" />
+        </div>
+        <div class="ai-card" style="height:180px;">
+          <img src="/images/primrose-int-1.jpg" alt="Primrose Cottage lounge" loading="lazy" />
+        </div>
+        <div class="ai-card" style="height:180px;">
+          <img src="/images/primrose-int-3.jpg" alt="Primrose Cottage bedroom" loading="lazy" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section features" style="background:var(--gable-green);" id="features">
+    <div class="features-header reveal">
+      <div>
+        <p class="eyebrow" style="color:var(--kendal-mint);">Key Features</p>
+        <h2 class="section-h" style="color:#fff;">Cosy &amp;<br /><em style="color:var(--kendal-mint);">Complete</em></h2>
+      </div>
+      <a href="#enquire" class="btn btn-white" style="color:var(--gable-green);align-self:flex-end;">Book Your Stay</a>
+    </div>
+    <div class="feat-grid" style="background:rgba(255,255,255,0.12);">
+      <div class="feat-card reveal" style="background:var(--gable-green);">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 21h18M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/></svg></div>
+        <h3>Refurbished in 2023</h3>
+        <p>Freshly renovated throughout — perfect for couples.</p>
+      </div>
+      <div class="feat-card reveal" style="background:var(--gable-green);transition-delay:.07s;">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="8" width="18" height="12" rx="1"/><path d="M8 8V5h8v3"/></svg></div>
+        <h3>Private Courtyard &amp; BBQ</h3>
+        <p>Enclosed courtyard with seating, garden furniture and a BBQ.</p>
+      </div>
+      <div class="feat-card reveal" style="background:var(--gable-green);transition-delay:.14s;">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3s5 4 5 9a5 5 0 01-10 0c0-2 1-3 1-3"/></svg></div>
+        <h3>Cosy Lounge</h3>
+        <p>Wooden beams and an electric fire for snug evenings in.</p>
+      </div>
+      <div class="feat-card reveal" style="background:var(--gable-green);transition-delay:.21s;">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8l8-4 8 4-8 4z"/><path d="M4 8v8l8 4 8-4V8"/></svg></div>
+        <h3>Fitted Kitchen</h3>
+        <p>Electric hob and oven, and all the essentials for self-catering.</p>
+      </div>
+      <div class="feat-card reveal" style="background:var(--gable-green);transition-delay:.28s;">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="18" height="12" rx="2"/><path d="M7 12h.01M12 12h.01M17 12h.01"/></svg></div>
+        <h3>Double + En-suite</h3>
+        <p>Comfortable double bedroom with its own en-suite shower room.</p>
+      </div>
+      <div class="feat-card reveal" style="background:var(--gable-green);transition-delay:.35s;">
+        <div class="feat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="11" width="18" height="8" rx="1"/><path d="M6 11V8a6 6 0 0112 0v3"/></svg></div>
+        <h3>Parking &amp; Bike Store</h3>
+        <p>Private parking for one car plus a secure bike store.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- COTTAGE INTERIOR STRIP -->
+  <section class="gallery-grid" style="grid-template-columns:repeat(4,1fr);grid-template-rows:280px;gap:0;">
+    <div class="g-card"><img src="/images/primrose-int-1.jpg" alt="Primrose Cottage interior" loading="lazy" /></div>
+    <div class="g-card"><img src="/images/primrose-int-2.jpg" alt="Primrose Cottage interior" loading="lazy" /></div>
+    <div class="g-card"><img src="/images/primrose-int-3.jpg" alt="Primrose Cottage interior" loading="lazy" /></div>
+    <div class="g-card"><img src="/images/primrose-int-4.jpg" alt="Primrose Cottage interior" loading="lazy" /></div>
+  </section>
+
+  <!-- GOOD TO KNOW -->
+  <section class="annexe" id="gallery">
+    <div class="annexe-content reveal" style="background:var(--kendal-mint);">
+      <p class="eyebrow">Good to Know</p>
+      <h2 class="section-h">A Few<br /><em>Practical Notes</em></h2>
+      <p>Primrose Cottage is full of character — which means a few cottage quirks worth knowing before you book.</p>
+      <div class="annexe-list">
+        <div class="al-item"><span class="al-dot"></span>Refurbished in 2023 — perfect for couples</div>
+        <div class="al-item"><span class="al-dot"></span>Enclosed courtyard with seating, garden furniture &amp; BBQ</div>
+        <div class="al-item"><span class="al-dot"></span>Private parking for 1 car &amp; bike store</div>
+        <div class="al-item"><span class="al-dot"></span>Cosy lounge with wooden beams &amp; electric fire</div>
+        <div class="al-item"><span class="al-dot"></span>Fitted kitchen with electric hob &amp; oven</div>
+        <div class="al-item"><span class="al-dot"></span>Double bedroom with en-suite shower room</div>
+        <div class="al-item"><span class="al-dot"></span>No smoking · Please note: low beams in the bedroom</div>
+        <div class="al-item"><span class="al-dot"></span>Please note: open, steep, spiral or narrow stairs</div>
+      </div>
+      <a href="#enquire" class="btn btn-green" style="margin-top:1.8rem;">Enquire About the Cottage</a>
+    </div>
+    <div class="annexe-img reveal" style="transition-delay:.15s;">
+      <img src="/images/primrose-int-4.jpg" alt="Primrose Cottage" loading="lazy" />
+      <div class="annexe-img-badge">Primrose Cottage</div>
+    </div>
+  </section>
+
+  <!-- LOCATION -->
+  <section class="section location" id="location">
+    <div class="location-inner">
+      <div class="reveal">
+        <p class="eyebrow">Where to Find Us</p>
+        <h2 class="section-h">Shap Village,<br /><em>Cumbria</em></h2>
+        <p>
+          On the eastern edge of the Lake District National Park, with the pub, shop and restaurant a
+          short stroll away, and the high fells, Haweswater and Ullswater within easy reach.
+        </p>
+        <div class="loc-stats">
+          <div class="loc-stat"><div class="ls-num">200 yds</div><div class="ls-label">Pub, Shop &amp; Restaurant</div></div>
+          <div class="loc-stat"><div class="ls-num">8 mi</div><div class="ls-label">Haweswater &amp; Eagles</div></div>
+          <div class="loc-stat"><div class="ls-num">&lt;15 mi</div><div class="ls-label">Penrith &amp; Ullswater</div></div>
+          <div class="loc-stat"><div class="ls-num">1 hr</div><div class="ls-label">Scotland &amp; Northumberland</div></div>
+        </div>
+      </div>
+      <div class="loc-map reveal" style="transition-delay:.15s;">
+        <div class="loc-map-bg"></div>
+        <div class="loc-pin"></div>
+        <p>Shap, Cumbria</p>
+        <small>CA10 · M6 Junction 39</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ENQUIRE -->
+  <section class="section enquire" style="background:var(--gable-green);" id="enquire">
+    <div class="enquire-inner">
+      <div class="reveal">
+        <p class="eyebrow" style="color:var(--kendal-mint);">Book Your Stay</p>
+        <h2 class="section-h" style="color:#fff;">Ready for a<br /><em style="color:var(--kendal-mint);">Cosy Escape</em>?</h2>
+        <p class="enquire-desc">
+          Send us your dates and we'll come back to you with full availability and pricing for Primrose
+          Cottage (UK1039). Add The Rockery for larger groups of up to 12.
+        </p>
+        <p class="enquire-desc" style="margin-top:1rem;">
+          Or reach us directly at<br /><strong style="color:#fff;">hello@lakedistrictescapes.uk</strong>
+        </p>
+      </div>
+      <div class="enquire-form-wrap reveal" style="transition-delay:.15s;">
+        <form name="enquiry-primrose" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/thank-you/">
+          <input type="hidden" name="form-name" value="enquiry-primrose" />
+          <input type="hidden" name="property" value="Primrose Cottage" />
+          <p class="hp-field"><label>Don't fill this in: <input name="bot-field" /></label></p>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="name">Name</label>
+              <input id="name" name="name" type="text" placeholder="Your name" required />
+            </div>
+            <div class="form-field">
+              <label for="email">Email</label>
+              <input id="email" name="email" type="email" placeholder="you@example.com" required />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-field">
+              <label for="arrive">Arrival</label>
+              <input id="arrive" name="arrive" type="date" />
+            </div>
+            <div class="form-field">
+              <label for="depart">Departure</label>
+              <input id="depart" name="depart" type="date" />
+            </div>
+          </div>
+          <div class="form-field">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Tell us a little about your trip…"></textarea>
+          </div>
+          <button class="form-submit" style="color:var(--gable-green);" type="submit">Send Enquiry</button>
+          <p class="form-note">We aim to respond within 4 hours during business hours.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <Footer slot="footer" />
+</Base>

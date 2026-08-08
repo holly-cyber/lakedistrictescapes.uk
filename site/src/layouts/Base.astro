@@ -1,0 +1,106 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Path to a social share image under /images (optional). */
+  ogImage?: string;
+}
+
+const {
+  title,
+  description = 'Lake District Escapes — award-winning self-catering holiday house & cottage in Shap, Cumbria. The Rockery sleeps 10; Primrose Cottage sleeps 2.',
+  ogImage = '/images/rockery-hero.jpg',
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://lakedistrictescapes.uk').href;
+---
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <!-- Mark JS as available so scroll-reveal only hides content when it can animate. -->
+    <script is:inline>
+      document.documentElement.classList.add('js');
+    </script>
+    <link rel="canonical" href={canonical} />
+
+    <!-- Open Graph / social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={new URL(ogImage, Astro.site ?? 'https://lakedistrictescapes.uk').href} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a href="#main" class="skip-link">Skip to content</a>
+
+    <!-- Decorative palette bar -->
+    <div class="swatch-bar" aria-hidden="true">
+      <div style="background:var(--gable-green)"></div>
+      <div style="background:var(--grasmere-slate)"></div>
+      <div style="background:var(--kendal-mint)"></div>
+      <div style="background:var(--scafell-sky)"></div>
+      <div style="background:var(--coniston-blue)"></div>
+    </div>
+
+    <slot name="nav" />
+
+    <main id="main">
+      <slot />
+    </main>
+
+    <slot name="footer" />
+
+    <script>
+      // Nav scroll shadow
+      const nav = document.getElementById('nav');
+      if (nav) {
+        window.addEventListener('scroll', () => {
+          nav.classList.toggle('scrolled', window.scrollY > 60);
+        });
+      }
+
+      // Mobile nav toggle
+      const toggle = document.querySelector('.nav-toggle');
+      if (nav && toggle) {
+        toggle.addEventListener('click', () => {
+          nav.classList.toggle('open');
+          const expanded = nav.classList.contains('open');
+          toggle.setAttribute('aria-expanded', String(expanded));
+        });
+        nav.querySelectorAll('.nav-links a').forEach((a) =>
+          a.addEventListener('click', () => nav.classList.remove('open'))
+        );
+      }
+
+      // Scroll reveal
+      const io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => {
+            if (e.isIntersecting) {
+              e.target.classList.add('in');
+              io.unobserve(e.target);
+            }
+          });
+        },
+        { threshold: 0.1 }
+      );
+      document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+    </script>
+  </body>
+</html>

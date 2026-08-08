@@ -1,0 +1,51 @@
+# ── Netlify configuration for lakedistrictescapes.uk ──
+# The Astro project lives in the `site/` sub-directory of the repo, so the
+# build runs from there. `base` tells Netlify where to cd before building.
+
+[build]
+  base = "site"
+  command = "npm run build"
+  publish = "dist"
+  # Netlify auto-detects these dirs (relative to `base`), but we set them
+  # explicitly for clarity.
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# Serverless (Netlify) Functions — the guest book API.
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+# Edge Functions — host-based routing so the `guest.` sub-domain serves
+# the guest book as its landing page.
+[[edge_functions]]
+  path = "/"
+  function = "subdomain-router"
+
+# Nice, short URLs.
+[[redirects]]
+  from = "/rockery"
+  to = "/the-rockery/"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "/cottage"
+  to = "/primrose-cottage/"
+  status = 301
+  force = true
+
+# Security & caching headers.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[[headers]]
+  for = "/images/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

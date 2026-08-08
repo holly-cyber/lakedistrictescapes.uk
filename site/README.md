@@ -18,10 +18,14 @@ Short URLs `/rockery` and `/cottage` redirect to the full property pages.
 
 ## Project structure
 
+The `netlify.toml` lives at the **repository root** (one level up from `site/`)
+because Netlify only auto-reads its config from the repo root. It sets
+`base = "site"` so the build runs inside this directory.
+
 ```
+netlify.toml                   # (repo root) Netlify build, redirects, headers, functions
 site/
 ├── astro.config.mjs          # Astro config (static output)
-├── netlify.toml              # Netlify build, redirects, headers, functions
 ├── public/
 │   ├── images/               # Property photography (extracted from the original mockup)
 │   └── favicon.svg
@@ -92,13 +96,18 @@ for spam protection and redirects to `/thank-you/` on success.
 ## Deploying
 
 Connect the repository to Netlify. Because the Astro project lives in the `site/`
-sub-directory, the settings are already declared in `netlify.toml`:
+sub-directory, the settings are declared in the root `netlify.toml` and applied
+automatically — no manual configuration needed:
 
 - **Base directory:** `site`
 - **Build command:** `npm run build`
-- **Publish directory:** `dist`
+- **Publish directory:** `dist` (i.e. `site/dist`)
 
-Netlify auto-detects the functions and edge functions from `netlify/`.
+Netlify auto-detects the functions and edge functions from `site/netlify/`.
+
+> **Note:** the site is served from the `main` branch. The production URL only
+> shows this site once these changes are merged to `main` (or you point the
+> project's production branch at the feature branch).
 
 ## Design system
 

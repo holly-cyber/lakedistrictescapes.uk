@@ -1,25 +1,24 @@
 # ── Netlify configuration for lakedistrictescapes.uk ──
-# The Astro project lives in the `site/` sub-directory of the repo, so the
-# build runs from there. `base` tells Netlify where to cd before building.
+# This file MUST live at the repository root so Netlify reads it automatically.
+# The Astro project lives in the `site/` sub-directory, so `base` points there;
+# all other paths below (command, publish, functions, edge functions) resolve
+# relative to that base directory.
 
 [build]
   base = "site"
   command = "npm run build"
   publish = "dist"
-  # Netlify auto-detects these dirs (relative to `base`), but we set them
-  # explicitly for clarity.
-  functions = "netlify/functions"
 
 [build.environment]
   NODE_VERSION = "22"
 
-# Serverless (Netlify) Functions — the guest book API.
+# Serverless (Netlify) Functions — the guest book API (site/netlify/functions).
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
-# Edge Functions — host-based routing so the `guest.` sub-domain serves
-# the guest book as its landing page.
+# Edge Functions — host-based routing so the `guest.` sub-domain serves the
+# guest book as its landing page (site/netlify/edge-functions/subdomain-router.js).
 [[edge_functions]]
   path = "/"
   function = "subdomain-router"

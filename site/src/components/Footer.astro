@@ -1,0 +1,27 @@
+---
+interface Link {
+  href: string;
+  label: string;
+}
+interface Props {
+  links?: Link[];
+}
+const {
+  links = [
+    { href: '/', label: 'Home' },
+    { href: '/the-rockery/', label: 'The Rockery' },
+    { href: '/primrose-cottage/', label: 'Primrose Cottage' },
+    { href: '/guest/', label: 'Guest Book' },
+    { href: '/#enquire', label: 'Enquire' },
+  ],
+} = Astro.props;
+---
+<footer>
+  <div class="footer-brand">Lake District <span>Escapes</span></div>
+  <ul class="footer-links">
+    {links.map((l) => (
+      <li><a href={l.href}>{l.label}</a></li>
+    ))}
+  </ul>
+  <div class="footer-legal">© 2026 lakedistrictescapes.uk · All rights reserved</div>
+</footer>

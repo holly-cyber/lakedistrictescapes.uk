@@ -1,0 +1,36 @@
+---
+interface Link {
+  href: string;
+  label: string;
+}
+interface Props {
+  links?: Link[];
+  ctaHref?: string;
+  ctaLabel?: string;
+  /** Where the logo links to (home of the current context). */
+  logoHref?: string;
+}
+
+const {
+  links = [
+    { href: '/', label: 'Home' },
+    { href: '/the-rockery/', label: 'The Rockery' },
+    { href: '/primrose-cottage/', label: 'Primrose Cottage' },
+  ],
+  ctaHref = '/#enquire',
+  ctaLabel = 'Enquire',
+  logoHref = '/',
+} = Astro.props;
+---
+<nav id="nav" class="nav">
+  <a href={logoHref} class="nav-logo">Lake District <span>Escapes</span></a>
+  <ul class="nav-links">
+    {links.map((l) => (
+      <li><a href={l.href}>{l.label}</a></li>
+    ))}
+    <li><a href={ctaHref} class="nav-cta">{ctaLabel}</a></li>
+  </ul>
+  <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false" aria-controls="nav">
+    <span></span><span></span><span></span>
+  </button>
+</nav>

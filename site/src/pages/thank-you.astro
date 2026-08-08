@@ -1,0 +1,21 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+<Base title="Thank You — Lake District Escapes" description="Your enquiry has been received.">
+  <Nav slot="nav" />
+  <section class="guest-hero" style="min-height:70vh;display:flex;flex-direction:column;justify-content:center;">
+    <p class="eyebrow">Enquiry Received</p>
+    <h1>Thank <em>You</em></h1>
+    <p>
+      Thanks for getting in touch — we've received your enquiry and aim to reply within 4 hours during
+      business hours. In the meantime, why not leave a note in our guest book?
+    </p>
+    <div style="margin-top:2rem;display:flex;gap:1rem;justify-content:center;flex-wrap:wrap;position:relative;">
+      <a href="/" class="btn btn-white">Back to Home</a>
+      <a href="/guest/" class="btn btn-outline">Visit the Guest Book</a>
+    </div>
+  </section>
+  <Footer slot="footer" />
+</Base>

@@ -3,18 +3,12 @@ import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 
-const links = [
-  { href: '#properties', label: 'Properties' },
-  { href: '#about', label: 'About' },
-  { href: '#location', label: 'Location' },
-  { href: '/guest/', label: 'Guest Guide' },
-];
 ---
 <Base
   title="Lake District Escapes — Holiday House & Cottage in Shap, Cumbria"
   description="Award-winning self-catering escapes in Shap, Cumbria — the 'Gateway to the Fells & Lakes'. Book The Rockery (sleeps 10) or Primrose Cottage (sleeps 2), or both together for up to 12."
 >
-  <Nav slot="nav" links={links} ctaHref="#enquire" ctaLabel="Enquire" />
+  <Nav slot="nav" ctaHref="#enquire" ctaLabel="Enquire" />
 
   <!-- HERO -->
   <section class="m-hero">

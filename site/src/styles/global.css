@@ -1522,3 +1522,89 @@
       .intro-strip { grid-template-columns: 1fr; gap: 2.5rem; }
       .guest-form .form-row { grid-template-columns: 1fr; }
     }
+
+    /* ════════════════ AVAILABILITY CALENDAR ════════════════ */
+    .availability-section { background: #fff; }
+    .availability--blue {
+      --cal-accent: var(--coniston-blue);
+      --cal-avail-bg: rgba(30,79,160,0.10);
+      --cal-avail-br: rgba(30,79,160,0.28);
+    }
+    .availability--green {
+      background: var(--aira-white);
+      --cal-accent: var(--gable-deep);
+      --cal-avail-bg: rgba(111,115,87,0.16);
+      --cal-avail-br: rgba(111,115,87,0.35);
+    }
+    .availability-head { text-align: center; max-width: 640px; margin: 0 auto 2.5rem; }
+    .availability-head .eyebrow { text-align: center; }
+    .availability-sub {
+      font-size: 0.95rem;
+      line-height: 1.7;
+      color: var(--mid);
+      font-weight: 300;
+      margin-top: 1rem;
+    }
+    .availability-legend {
+      display: flex;
+      gap: 1.6rem;
+      justify-content: center;
+      margin-top: 1.4rem;
+      font-size: 0.78rem;
+      color: var(--mid);
+    }
+    .availability-legend span { display: inline-flex; align-items: center; gap: 0.5rem; }
+    .leg-dot { width: 15px; height: 15px; border-radius: 3px; display: inline-block; }
+    .leg-avail { background: var(--cal-avail-bg); border: 1px solid var(--cal-avail-br); }
+    .leg-unavail { background: var(--aira-white); border: 1px solid var(--grasmere-slate); position: relative; overflow: hidden; }
+    .leg-unavail::after {
+      content: '';
+      position: absolute;
+      left: -2px; right: -2px; top: 50%;
+      height: 1px;
+      background: var(--grasmere-slate);
+      transform: rotate(-45deg);
+    }
+    .availability-note {
+      text-align: center;
+      color: var(--mid);
+      font-style: italic;
+      font-family: 'Playfair Display', serif;
+      padding: 2rem 1rem;
+    }
+    .cal-months {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 2rem 2.5rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .cal-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      color: var(--cal-accent);
+      text-align: center;
+      margin-bottom: 0.8rem;
+    }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-dow {
+      font-size: 0.58rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--grasmere-slate);
+      text-align: center;
+      padding-bottom: 0.3rem;
+    }
+    .cal-day {
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      border-radius: 4px;
+      color: var(--body-text);
+    }
+    .cal-day.is-blank { visibility: hidden; }
+    .cal-day.is-avail { background: var(--cal-avail-bg); border: 1px solid var(--cal-avail-br); color: var(--off-black); font-weight: 500; }
+    .cal-day.is-unavail { color: var(--grasmere-slate); text-decoration: line-through; }
+    .cal-day.is-past { color: var(--grasmere-slate); opacity: 0.35; }

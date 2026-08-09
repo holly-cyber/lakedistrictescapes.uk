@@ -104,6 +104,27 @@ The enquiry forms use [Netlify Forms](https://docs.netlify.com/forms/setup/)
 forwarded to email with no backend code. Each form has a honeypot (`bot-field`)
 for spam protection and redirects to `/thank-you/` on success.
 
+## Availability calendars (Airbnb iCal)
+
+Each property page shows a live availability calendar fed by that property's
+**Airbnb calendar export** (`Airbnb → Calendar → Availability settings → Connect
+to another website → Export calendar`, which gives a private `.ics` URL).
+
+- **Function:** `netlify/functions/availability.mjs` (`/api/availability?property=…`)
+  fetches the iCal, parses the booked/blocked date ranges, and returns them as
+  JSON. The response is cached at Netlify's edge for an hour.
+- **Widget:** `src/components/AvailabilityCalendar.astro` renders the next few
+  months, marking booked dates. If no URL is configured it shows a graceful
+  "please enquire" message instead.
+- **Config:** the iCal URLs are private (they contain a token), so they live in
+  environment variables — never in the repo:
+  - `AIRBNB_ICAL_THE_ROCKERY`
+  - `AIRBNB_ICAL_PRIMROSE_COTTAGE`
+
+  Set each in Netlify (**Site configuration → Environment variables**) to the
+  matching Airbnb export URL, then redeploy. The calendar is display-only —
+  guests still enquire/book direct; it just shows what's already taken.
+
 ## Deploying
 
 Connect the repository to Netlify. Because the Astro project lives in the `site/`

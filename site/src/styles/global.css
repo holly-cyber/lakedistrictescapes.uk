@@ -116,6 +116,25 @@
       opacity: 0.22;
     }
 
+    /* Hero variant with decorative fell & lake line art instead of circles */
+    .hero-scene::before,
+    .hero-scene::after { content: none; }
+    .hero-scene-inner { position: relative; z-index: 1; }
+    .hero-scene-art {
+      position: absolute;
+      right: 0;
+      bottom: 0;
+      width: min(72%, 560px);
+      height: auto;
+      color: var(--kendal-mint);
+      opacity: 0.22;
+      z-index: 0;
+      pointer-events: none;
+    }
+    @media (max-width: 900px) {
+      .hero-scene-art { width: min(80%, 420px); opacity: 0.16; }
+    }
+
     .hero-pill {
       display: inline-flex;
       align-items: center;

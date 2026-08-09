@@ -6,8 +6,12 @@ interface Props {
   months?: number;
   /** Deep-tone theme (for the green Primrose page). */
   theme?: 'blue' | 'green';
+  /** Public Airbnb listing URL — shows a "Book on Airbnb" button when set. */
+  airbnbUrl?: string;
+  /** Anchor for the direct-enquiry button. */
+  enquireHref?: string;
 }
-const { property, months = 4, theme = 'blue' } = Astro.props;
+const { property, months = 4, theme = 'blue', airbnbUrl, enquireHref = '#enquire' } = Astro.props;
 ---
 <section class={`section availability-section availability--${theme}`} id="availability">
   <div class="availability-head reveal">
@@ -24,6 +28,14 @@ const { property, months = 4, theme = 'blue' } = Astro.props;
   </div>
   <div class="availability reveal" data-property={property} data-months={months} style="transition-delay:.1s;">
     <p class="availability-note">Loading availability…</p>
+  </div>
+  <div class="availability-actions reveal">
+    <a href={enquireHref} class="btn btn-green">Enquire — Book Direct</a>
+    {airbnbUrl && (
+      <a href={airbnbUrl} class="btn btn-airbnb" target="_blank" rel="noopener noreferrer">
+        Book on Airbnb ↗
+      </a>
+    )}
   </div>
 </section>
 

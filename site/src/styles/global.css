@@ -1619,3 +1619,13 @@
     }
     .btn-airbnb { background: var(--coniston-blue); color: #fff; }
     .btn-airbnb:hover { background: var(--coniston-deep); }
+
+    /* Page footnote (e.g. award attribution) */
+    .page-footnote {
+      text-align: center;
+      font-size: 0.72rem;
+      color: var(--mid);
+      background: var(--aira-white);
+      padding: 1.2rem 1.5rem;
+      border-top: 1px solid rgba(176,168,153,0.25);
+    }

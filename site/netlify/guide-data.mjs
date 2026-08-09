@@ -27,7 +27,7 @@ export const GUIDE = {
           },
           {
             name: 'Fish & chips',
-            note: 'The village chip shop is a local favourite for a proper Cumbrian supper. [[Add name, days & hours]]',
+            note: 'The village chip shop is a local favourite for a proper Lakeland supper. [[Add name, days & hours]]',
           },
           {
             name: 'Cafe',
@@ -60,7 +60,7 @@ export const GUIDE = {
         name: 'Out & About',
         items: [
           { name: 'The fells & open moorland', note: 'On the doorstep — walking straight from the village, or ~15 min to the higher fells.' },
-          { name: 'Haweswater & Mardale', note: '~15 min — quiet valley, great walking, golden eagles country.' },
+          { name: 'Haweswater & Mardale', note: '~15 min — quiet valley, great walking and red squirrel country.' },
           { name: 'Ullswater & Pooley Bridge', note: '~25 min — steamers, lakeside walks and Aira Force.' },
           { name: 'Keswick & Derwentwater', note: '~40 min — launches, Catbells and the northern fells.' },
           { name: 'Windermere & Ambleside', note: '~45–50 min — the classic central Lakes day out.' },
@@ -73,7 +73,7 @@ export const GUIDE = {
   properties: {
     'the-rockery': {
       name: 'The Rockery',
-      tagline: 'Grade II Listed house · sleeps 10',
+      tagline: 'Grade II Listed house · sleeps 9',
       sections: [
         {
           title: 'Arrival & Keys',
@@ -158,8 +158,8 @@ export const GUIDE = {
           ],
         },
         {
-          title: 'Heating & the Electric Fire',
-          body: 'Central heating throughout plus an electric fire, so you can come in off the fells and be warm within minutes. [[How to set the heating; how the electric fire is switched on and its heat settings.]]',
+          title: 'Heating & the Fan Heater',
+          body: 'Central heating throughout plus a fan heater, so you can come in off the fells and be warm within minutes. [[How to set the heating; how the fan heater is switched on and its settings.]]',
         },
         {
           title: 'Kitchen & Appliances',
@@ -193,7 +193,7 @@ export const GUIDE = {
           title: 'Before You Leave',
           items: [
             '[[Check-out by HH:MM]]',
-            'Please pop the bins out if it’s collection day and turn off the heating and electric fire.',
+            'Please pop the bins out if it’s collection day and turn off the heating and fan heater.',
             '[[Where to leave the key.]]',
           ],
         },

@@ -1,0 +1,121 @@
+---
+interface Props {
+  /** Property slug — must match a key in the availability function. */
+  property: string;
+  /** How many months to show. */
+  months?: number;
+  /** Deep-tone theme (for the green Primrose page). */
+  theme?: 'blue' | 'green';
+}
+const { property, months = 4, theme = 'blue' } = Astro.props;
+---
+<section class={`section availability-section availability--${theme}`} id="availability">
+  <div class="availability-head reveal">
+    <p class="eyebrow">Availability</p>
+    <h2 class="section-h">When Can You<br /><em>Stay?</em></h2>
+    <p class="availability-sub">
+      Live from our Airbnb calendar. Booked dates are marked — everything else is open. Found your
+      dates? Send us an enquiry to book direct.
+    </p>
+    <div class="availability-legend">
+      <span><i class="leg-dot leg-avail"></i> Available</span>
+      <span><i class="leg-dot leg-unavail"></i> Booked</span>
+    </div>
+  </div>
+  <div class="availability reveal" data-property={property} data-months={months} style="transition-delay:.1s;">
+    <p class="availability-note">Loading availability…</p>
+  </div>
+</section>
+
+<script>
+  const pad = (n) => String(n).padStart(2, '0');
+  const iso = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  function expand(ranges) {
+    const set = new Set();
+    for (const r of ranges || []) {
+      const start = new Date(r.from + 'T00:00:00Z');
+      const end = new Date(r.to + 'T00:00:00Z'); // exclusive
+      for (let d = new Date(start); d < end; d.setUTCDate(d.getUTCDate() + 1)) {
+        set.add(d.toISOString().slice(0, 10));
+      }
+    }
+    return set;
+  }
+
+  function el(tag, cls, text) {
+    const n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (text != null) n.textContent = text;
+    return n;
+  }
+
+  function renderMonth(year, month, unavail, todayIso) {
+    const wrap = el('div', 'cal-month');
+    wrap.appendChild(el('div', 'cal-title', `${MONTHS[month]} ${year}`));
+    const grid = el('div', 'cal-grid');
+    DOW.forEach((d) => grid.appendChild(el('div', 'cal-dow', d)));
+
+    const first = new Date(Date.UTC(year, month, 1));
+    const blanks = (first.getUTCDay() + 6) % 7; // Monday-first
+    for (let i = 0; i < blanks; i++) grid.appendChild(el('div', 'cal-day is-blank'));
+
+    const days = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+    for (let d = 1; d <= days; d++) {
+      const key = iso(year, month, d);
+      let cls = 'cal-day';
+      if (key < todayIso) cls += ' is-past';
+      else if (unavail.has(key)) cls += ' is-unavail';
+      else cls += ' is-avail';
+      const cell = el('div', cls, String(d));
+      if (key >= todayIso && unavail.has(key)) cell.title = 'Booked';
+      grid.appendChild(cell);
+    }
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  async function init(box) {
+    const property = box.dataset.property;
+    const months = parseInt(box.dataset.months || '4', 10);
+    try {
+      const res = await fetch(`/api/availability?property=${encodeURIComponent(property)}`, {
+        headers: { Accept: 'application/json' },
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (data.configured === false) {
+        box.innerHTML = '';
+        box.appendChild(
+          el('p', 'availability-note', 'Please send us an enquiry and we’ll confirm availability by return.')
+        );
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || 'unavailable');
+
+      const unavail = expand(data.unavailable);
+      const now = new Date();
+      const todayIso = iso(now.getFullYear(), now.getMonth(), now.getDate());
+
+      box.innerHTML = '';
+      const grids = el('div', 'cal-months');
+      let y = now.getFullYear();
+      let m = now.getMonth();
+      for (let i = 0; i < months; i++) {
+        grids.appendChild(renderMonth(y, m, unavail, todayIso));
+        m += 1;
+        if (m > 11) { m = 0; y += 1; }
+      }
+      box.appendChild(grids);
+    } catch (err) {
+      box.innerHTML = '';
+      box.appendChild(
+        el('p', 'availability-note', 'We couldn’t load the live calendar — please enquire for availability.')
+      );
+    }
+  }
+
+  document.querySelectorAll('.availability').forEach(init);
+</script>

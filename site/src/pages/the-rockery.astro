@@ -2,21 +2,15 @@
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
+import AvailabilityCalendar from '../components/AvailabilityCalendar.astro';
 
-const links = [
-  { href: '#about', label: 'About' },
-  { href: '#rooms', label: 'Rooms' },
-  { href: '#gallery', label: 'Gallery' },
-  { href: '#location', label: 'Location' },
-  { href: '/', label: 'All Properties' },
-];
 ---
 <Base
   title="The Rockery — Grade II Listed Holiday House in Shap | Lake District Escapes"
   description="The Rockery is a Grade II Listed holiday house in Shap, Cumbria. Refurbished in 2023, sleeps 10 (up to 12 with Primrose Cottage). Six bedrooms, log burner, enclosed garden, all bills included."
   ogImage="/images/rockery-hero.jpg"
 >
-  <Nav slot="nav" links={links} logoHref="/" ctaHref="#enquire" ctaLabel="Book Now" />
+  <Nav slot="nav" logoHref="/" ctaHref="#enquire" ctaLabel="Book Now" />
 
   <!-- HERO -->
   <section class="hero page-hero">
@@ -277,6 +271,9 @@ const links = [
       </div>
     </div>
   </section>
+
+  <!-- AVAILABILITY -->
+  <AvailabilityCalendar property="the-rockery" months={4} theme="blue" />
 
   <!-- ENQUIRE -->
   <section class="section enquire" id="enquire">

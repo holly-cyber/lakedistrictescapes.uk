@@ -3,17 +3,12 @@ import Base from '../../layouts/Base.astro';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 
-const links = [
-  { href: '/', label: 'Home' },
-  { href: '/the-rockery/', label: 'The Rockery' },
-  { href: '/primrose-cottage/', label: 'Primrose Cottage' },
-];
 ---
 <Base
   title="Guest Guide — Lake District Escapes"
   description="The guest welcome guide for The Rockery and Primrose Cottage — local area tips and how everything works. Access with the code from your booking."
 >
-  <Nav slot="nav" links={links} logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
+  <Nav slot="nav" logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
 
   <div class="guest-page">
     <section class="guest-hero">

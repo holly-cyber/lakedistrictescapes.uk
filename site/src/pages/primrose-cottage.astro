@@ -2,14 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
-
-const links = [
-  { href: '#about', label: 'About' },
-  { href: '#inside', label: "What's Inside" },
-  { href: '#location', label: 'Location' },
-  { href: '#coast-to-coast', label: 'Walkers & Cyclists' },
-  { href: '/', label: 'All Properties' },
-];
+import AvailabilityCalendar from '../components/AvailabilityCalendar.astro';
 
 // Getting-around distances from Shap (drive times).
 const distances = [
@@ -28,7 +21,7 @@ const distances = [
   description="Primrose Cottage is a peaceful, self-contained one-bedroom retreat in Shap, Cumbria — king bed, private entrance, welcome pack and an ideal Coast to Coast stopover. Sleeps 2 adults plus 1 child under 2."
   ogImage="/images/primrose-main.jpg"
 >
-  <Nav slot="nav" links={links} logoHref="/" ctaHref="#enquire" ctaLabel="Book Now" />
+  <Nav slot="nav" logoHref="/" ctaHref="#enquire" ctaLabel="Book Now" />
 
   <!-- HERO -->
   <section class="hero page-hero">
@@ -259,6 +252,9 @@ const distances = [
       <a href="#enquire" class="btn btn-green" style="margin-top:1.8rem;">Plan Your Stopover</a>
     </div>
   </section>
+
+  <!-- AVAILABILITY -->
+  <AvailabilityCalendar property="primrose-cottage" months={4} theme="green" />
 
   <!-- ENQUIRE -->
   <section class="section enquire" style="background:var(--gable-deep);" id="enquire">

@@ -17,16 +17,17 @@ const ICAL_ENV = {
   'primrose-cottage': 'AIRBNB_ICAL_PRIMROSE_COTTAGE',
 };
 
-function json(body, status = 200, extraHeaders = {}) {
+// Never cache fallbacks/errors — only successful availability data (below).
+const NO_CACHE = { 'Cache-Control': 'no-store' };
+const EDGE_CACHE = {
+  'Cache-Control': 'public, max-age=300',
+  'Netlify-CDN-Cache-Control': 'public, s-maxage=1800, stale-while-revalidate=3600',
+};
+
+function json(body, status = 200, cacheHeaders = NO_CACHE) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: {
-      'Content-Type': 'application/json',
-      'Cache-Control': 'public, max-age=0, must-revalidate',
-      // Cache the parsed result at Netlify's edge for an hour.
-      'Netlify-CDN-Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
-      ...extraHeaders,
-    },
+    headers: { 'Content-Type': 'application/json', ...cacheHeaders },
   });
 }
 
@@ -105,12 +106,16 @@ export default async (req) => {
     if (!res.ok) throw new Error(`upstream ${res.status}`);
     const text = await res.text();
     const unavailable = parseICal(text);
-    return json({
-      configured: true,
-      property,
-      unavailable,
-      updatedAt: new Date().toISOString(),
-    });
+    return json(
+      {
+        configured: true,
+        property,
+        unavailable,
+        updatedAt: new Date().toISOString(),
+      },
+      200,
+      EDGE_CACHE
+    );
   } catch (err) {
     return json({ error: 'Could not load availability right now.', configured: true }, 502);
   }

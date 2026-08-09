@@ -81,9 +81,13 @@ const { property, months = 4, theme = 'blue' } = Astro.props;
     const property = box.dataset.property;
     const months = parseInt(box.dataset.months || '4', 10);
     try {
-      const res = await fetch(`/api/availability?property=${encodeURIComponent(property)}`, {
-        headers: { Accept: 'application/json' },
-      });
+      // 10-minute cache bucket: lets the edge cache work while rotating the
+      // cache key so a previously-cached response can't stick indefinitely.
+      const bucket = Math.floor(Date.now() / 600000);
+      const res = await fetch(
+        `/api/availability?property=${encodeURIComponent(property)}&w=${bucket}`,
+        { headers: { Accept: 'application/json' } }
+      );
       const data = await res.json().catch(() => ({}));
 
       if (data.configured === false) {

@@ -11,7 +11,7 @@ business in Shap, Cumbria. Built with [Astro](https://astro.build) and deployed 
 | **Master home** | `/` | Brand home page introducing both properties |
 | **The Rockery** | `/the-rockery/` | Standalone landing page — Grade II Listed house, sleeps 10 |
 | **Primrose Cottage** | `/primrose-cottage/` | Standalone landing page — cottage for two |
-| **Guest book** | `/guest/` | Public guest book (also served on the `guest.` sub-domain) |
+| **Guest guide** | `/guest/` | Access-code–gated welcome guide (also served on the `guest.` sub-domain) |
 | **Thank you** | `/thank-you/` | Post-enquiry confirmation |
 
 Short URLs `/rockery` and `/cottage` redirect to the full property pages.
@@ -35,7 +35,8 @@ site/
 │   ├── styles/global.css      # The shared "Lake District" design system
 │   └── pages/                 # index, the-rockery, primrose-cottage, guest/, thank-you
 └── netlify/
-    ├── functions/guestbook.mjs        # Guest book API (GET/POST) — Netlify Blobs
+    ├── guide-data.mjs                  # Guest guide content (edit the [[placeholders]] here)
+    ├── functions/guest-guide.mjs       # Gated guide API — validates the access code
     └── edge-functions/subdomain-router.js  # Routes guest.* → /guest/
 ```
 
@@ -47,43 +48,53 @@ npm install
 npm run dev        # http://localhost:4321
 ```
 
-To exercise the guest book API and edge routing locally you need the Netlify CLI
-(it runs the functions + blobs sandbox that `npm run dev` alone does not):
+To exercise the guide API and edge routing locally you need the Netlify CLI
+(it runs the functions sandbox that `npm run dev` alone does not):
 
 ```bash
 npm i -g netlify-cli
-netlify dev
+GUEST_ACCESS_CODE=test-code netlify dev
 ```
 
 Build the production site with `npm run build` (output in `dist/`).
 
-## The guest book
+## The guest guide (gated welcome guide)
 
-- **Frontend:** `src/pages/guest/index.astro` — a static page whose client script
-  fetches existing entries and posts new ones. All user text is rendered with
-  `textContent` (never `innerHTML`), so it is escaped at display time.
-- **Backend:** `netlify/functions/guestbook.mjs` — a Netlify Function exposed at
-  `/api/guestbook`.
-  - `GET` → returns approved entries, newest first.
-  - `POST` → validates and stores a new signing.
-  - Spam protection: a hidden honeypot field + length limits.
-  - Storage: [Netlify Blobs](https://docs.netlify.com/blobs/overview/) (key
-    `entries` in the `guestbook` store) — no external database required.
-- **Moderation:** entries are shown immediately with `approved: true`. To hide an
-  entry, edit the stored JSON in the Netlify Blobs UI and set its `approved` flag
-  to `false` (or delete it).
+A digital welcome guide for guests who have **already booked** — local-area tips
+(pubs, chip shop, cafe, Co-op) plus a per-property house manual (heating,
+appliances, Wi-Fi, check-out). It is gated by an access code so semi-private
+details (Wi-Fi passwords, door codes) stay out of the public page source.
+
+- **Content:** `netlify/guide-data.mjs` — a shared `area` section plus a
+  `properties` entry per property. **Edit the `[[bracketed placeholders]]`** with
+  your real details; on the live guide they show highlighted in amber until filled
+  in. Add or remove sections freely.
+- **Gate + backend:** `netlify/functions/guest-guide.mjs`, exposed at
+  `/api/guest-guide`. It only returns the guide when the posted code matches the
+  `GUEST_ACCESS_CODE` environment variable (case-insensitive). Until that variable
+  is set it fails closed, so the guide is never exposed by accident.
+- **Frontend:** `src/pages/guest/index.astro` — a lock screen that unlocks the
+  guide (tabbed: the area + each property). A valid code is remembered for the
+  browser session so a refresh keeps access. Content is rendered with `textContent`
+  only (never `innerHTML`).
+
+### Setting the access code
+
+In Netlify: **Site configuration → Environment variables → Add a variable** →
+`GUEST_ACCESS_CODE` = whatever code you want to give guests (e.g. in their booking
+email), then redeploy. Change it any time to rotate access.
 
 ## The `guest.` sub-domain
 
-The same deploy serves the guest book on a dedicated sub-domain so you can share a
-clean link like `guest.lakedistrictescapes.uk`.
+The same deploy serves the guide on a dedicated sub-domain so you can share a clean
+link like `guest.lakedistrictescapes.uk`.
 
 1. **DNS** — add a CNAME record:
    `guest` → `<your-site-name>.netlify.app`
 2. **Netlify** — in *Domain management*, add `guest.lakedistrictescapes.uk` as a
    **domain alias** of this site.
 3. The edge function `subdomain-router.js` detects the `guest.` host and serves
-   `/guest/` at the sub-domain root. All other paths (assets, `/api/guestbook`)
+   `/guest/` at the sub-domain root. All other paths (assets, `/api/guest-guide`)
    pass straight through, so they keep working on both domains.
 
 ## Enquiry forms

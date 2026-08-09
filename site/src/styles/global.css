@@ -1608,3 +1608,14 @@
     .cal-day.is-avail { background: var(--cal-avail-bg); border: 1px solid var(--cal-avail-br); color: var(--off-black); font-weight: 500; }
     .cal-day.is-unavail { color: var(--grasmere-slate); text-decoration: line-through; }
     .cal-day.is-past { color: var(--grasmere-slate); opacity: 0.35; }
+
+    /* Availability action buttons (direct + Airbnb) */
+    .availability-actions {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 2.5rem;
+    }
+    .btn-airbnb { background: var(--coniston-blue); color: #fff; }
+    .btn-airbnb:hover { background: var(--coniston-deep); }

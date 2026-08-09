@@ -10,86 +10,52 @@ const links = [
 ];
 ---
 <Base
-  title="Guest Book — Lake District Escapes"
-  description="Read what our guests say about The Rockery and Primrose Cottage — and leave a note of your own in the Lake District Escapes guest book."
+  title="Guest Guide — Lake District Escapes"
+  description="The guest welcome guide for The Rockery and Primrose Cottage — local area tips and how everything works. Access with the code from your booking."
 >
   <Nav slot="nav" links={links} logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
 
   <div class="guest-page">
     <section class="guest-hero">
-      <p class="eyebrow">Guest Book</p>
-      <h1>Kind Words from<br /><em>Our Guests</em></h1>
+      <p class="eyebrow">Guest Guide</p>
+      <h1>Welcome to Your<br /><em>Lake District Escape</em></h1>
       <p>
-        Stayed with us at The Rockery or Primrose Cottage? We'd love to hear about it. Read others'
-        stories below, then leave a note of your own.
+        Everything you need for a brilliant stay — where to eat, shop and explore around Shap, and how
+        everything works in the house. Enter the access code from your booking to open your guide.
       </p>
     </section>
 
     <div class="guest-wrap">
-      <!-- SIGN THE BOOK -->
-      <div class="guest-form-card">
-        <h2>Sign the Guest Book</h2>
-        <form class="guest-form" id="guest-form" novalidate>
-          <!-- Honeypot -->
-          <div class="hp-field" aria-hidden="true">
-            <label>Website<input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
-          </div>
-
-          <div class="form-row">
-            <div class="form-field">
-              <label for="g-name">Your Name *</label>
-              <input id="g-name" name="name" type="text" maxlength="60" placeholder="e.g. The Wilson Family" required />
-            </div>
-            <div class="form-field">
-              <label for="g-location">Where From</label>
-              <input id="g-location" name="location" type="text" maxlength="80" placeholder="e.g. Yorkshire" />
-            </div>
-          </div>
-
-          <div class="form-row">
-            <div class="form-field">
-              <label for="g-stay">Which Stay</label>
-              <select id="g-stay" name="stay">
-                <option value="The Rockery">The Rockery</option>
-                <option value="Primrose Cottage">Primrose Cottage</option>
-                <option value="Both properties">Both properties</option>
-              </select>
-            </div>
-            <div class="form-field">
-              <label>Your Rating</label>
-              <div class="guest-rating" id="g-rating" role="radiogroup" aria-label="Star rating">
-                <!-- rendered as stars; hidden radios hold the value -->
-                <input type="radio" name="rating" id="star5" value="5" checked />
-                <label for="star5" title="5 stars" aria-label="5 stars">★</label>
-                <input type="radio" name="rating" id="star4" value="4" />
-                <label for="star4" title="4 stars" aria-label="4 stars">★</label>
-                <input type="radio" name="rating" id="star3" value="3" />
-                <label for="star3" title="3 stars" aria-label="3 stars">★</label>
-                <input type="radio" name="rating" id="star2" value="2" />
-                <label for="star2" title="2 stars" aria-label="2 stars">★</label>
-                <input type="radio" name="rating" id="star1" value="1" />
-                <label for="star1" title="1 star" aria-label="1 star">★</label>
-              </div>
-            </div>
-          </div>
-
+      <!-- GATE -->
+      <div class="guest-form-card gate-card" id="gate">
+        <div class="gate-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="4" y="10" width="16" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 018 0v3" />
+          </svg>
+        </div>
+        <h2>Enter Your Access Code</h2>
+        <form class="guest-form" id="gate-form" novalidate>
           <div class="form-field">
-            <label for="g-message">Your Message *</label>
-            <textarea id="g-message" name="message" maxlength="800" placeholder="Tell us about your stay…" required></textarea>
+            <label for="g-code">Access Code</label>
+            <input id="g-code" name="code" type="text" autocomplete="off" autocapitalize="none"
+              spellcheck="false" placeholder="From your booking email" required />
           </div>
-
-          <button type="submit" class="guest-btn" id="g-submit">Sign the Guest Book</button>
+          <button type="submit" class="guest-btn" id="g-unlock">Open My Guide</button>
           <p class="guest-status" id="g-status" role="status" aria-live="polite"></p>
         </form>
+        <p class="gate-hint">
+          The code is in your booking confirmation. Can't find it? Email
+          <strong>hello@lakedistrictescapes.uk</strong> and we'll send it over.
+        </p>
       </div>
 
-      <!-- ENTRIES -->
-      <div class="guest-entries-head">
-        <h2>Recent Signings</h2>
-        <span class="guest-count" id="g-count"></span>
-      </div>
-      <div class="guest-entries" id="g-entries">
-        <p class="guest-loading">Loading the guest book…</p>
+      <!-- GUIDE (revealed after unlock) -->
+      <div class="guide" id="guide">
+        <div class="guide-tabs" id="guide-tabs" role="tablist"></div>
+        <div id="guide-content">
+          <p class="guide-loading">Loading your guide…</p>
+        </div>
       </div>
     </div>
   </div>
@@ -100,149 +66,174 @@ const links = [
       { href: '/', label: 'Home' },
       { href: '/the-rockery/', label: 'The Rockery' },
       { href: '/primrose-cottage/', label: 'Primrose Cottage' },
-      { href: '/guest/', label: 'Guest Book' },
+      { href: '/guest/', label: 'Guest Guide' },
       { href: '/#enquire', label: 'Enquire' },
     ]}
   />
 </Base>
 
 <script>
-  const API = '/api/guestbook';
-  const entriesEl = document.getElementById('g-entries');
-  const countEl = document.getElementById('g-count');
-  const form = document.getElementById('guest-form');
+  const API = '/api/guest-guide';
+  const STORAGE_KEY = 'lde-guest-code';
+
+  const gate = document.getElementById('gate');
+  const gateForm = document.getElementById('gate-form');
+  const codeInput = document.getElementById('g-code');
+  const unlockBtn = document.getElementById('g-unlock');
   const statusEl = document.getElementById('g-status');
-  const submitBtn = document.getElementById('g-submit');
-
-  const STARS = (n) => '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
-
-  function formatDate(ts) {
-    if (!ts) return '';
-    try {
-      return new Date(ts).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric',
-      });
-    } catch {
-      return '';
-    }
-  }
-
-  // Build each entry with textContent only — never innerHTML — so any user
-  // text is safely escaped by the DOM.
-  function renderEntry(e) {
-    const card = document.createElement('article');
-    card.className = 'guest-entry';
-
-    const top = document.createElement('div');
-    top.className = 'guest-entry-top';
-
-    const name = document.createElement('span');
-    name.className = 'guest-entry-name';
-    name.textContent = e.name || 'A guest';
-    top.appendChild(name);
-
-    if (e.stay) {
-      const stay = document.createElement('span');
-      stay.className = 'guest-entry-stay';
-      stay.textContent = e.stay;
-      top.appendChild(stay);
-    }
-    card.appendChild(top);
-
-    if (e.rating) {
-      const stars = document.createElement('div');
-      stars.className = 'guest-entry-stars';
-      stars.textContent = STARS(e.rating);
-      stars.setAttribute('aria-label', e.rating + ' out of 5');
-      card.appendChild(stars);
-    }
-
-    const msg = document.createElement('p');
-    msg.className = 'guest-entry-msg';
-    msg.textContent = e.message || '';
-    card.appendChild(msg);
-
-    const meta = document.createElement('div');
-    meta.className = 'guest-entry-date';
-    const bits = [];
-    if (e.location) bits.push(e.location);
-    const d = formatDate(e.createdAt);
-    if (d) bits.push(d);
-    meta.textContent = bits.join(' · ');
-    card.appendChild(meta);
-
-    return card;
-  }
-
-  async function loadEntries() {
-    try {
-      const res = await fetch(API, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error('bad status');
-      const data = await res.json();
-      const entries = Array.isArray(data.entries) ? data.entries : [];
-      entriesEl.textContent = '';
-      if (entries.length === 0) {
-        const empty = document.createElement('p');
-        empty.className = 'guest-empty';
-        empty.textContent = 'Be the first to sign our guest book.';
-        entriesEl.appendChild(empty);
-        countEl.textContent = '';
-        return;
-      }
-      entries.forEach((e) => entriesEl.appendChild(renderEntry(e)));
-      countEl.textContent =
-        entries.length + (entries.length === 1 ? ' signing' : ' signings');
-    } catch (err) {
-      entriesEl.textContent = '';
-      const p = document.createElement('p');
-      p.className = 'guest-empty';
-      p.textContent = 'The guest book is unavailable right now — please try again later.';
-      entriesEl.appendChild(p);
-    }
-  }
+  const guideEl = document.getElementById('guide');
+  const tabsEl = document.getElementById('guide-tabs');
+  const contentEl = document.getElementById('guide-content');
 
   function showStatus(msg, ok) {
     statusEl.textContent = msg;
     statusEl.className = 'guest-status show ' + (ok ? 'ok' : 'err');
   }
 
-  form.addEventListener('submit', async (ev) => {
-    ev.preventDefault();
-    const fd = new FormData(form);
-    const payload = {
-      name: (fd.get('name') || '').toString(),
-      location: (fd.get('location') || '').toString(),
-      stay: (fd.get('stay') || '').toString(),
-      rating: (fd.get('rating') || '5').toString(),
-      message: (fd.get('message') || '').toString(),
-      website: (fd.get('website') || '').toString(), // honeypot
-    };
+  // Append text, wrapping [[ placeholders ]] in a highlighted span so unfilled
+  // details are obvious to the owner. Uses text nodes only — never innerHTML.
+  function appendText(el, text) {
+    const re = /\[\[(.+?)\]\]/g;
+    let last = 0,
+      m;
+    while ((m = re.exec(text))) {
+      if (m.index > last) el.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const span = document.createElement('span');
+      span.className = 'ph';
+      span.textContent = m[1].trim();
+      el.appendChild(span);
+      last = re.lastIndex;
+    }
+    if (last < text.length) el.appendChild(document.createTextNode(text.slice(last)));
+  }
 
-    if (payload.name.trim().length < 2) return showStatus('Please tell us your name.', false);
-    if (payload.message.trim().length < 4) return showStatus('Please leave a short message.', false);
+  function el(tag, className, text) {
+    const n = document.createElement(tag);
+    if (className) n.className = className;
+    if (text != null) appendText(n, text);
+    return n;
+  }
 
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Signing…';
+  function renderArea(area) {
+    const wrap = document.createDocumentFragment();
+    if (area.intro) wrap.appendChild(el('p', 'guide-intro', area.intro));
+    (area.groups || []).forEach((group) => {
+      const g = el('div', 'area-group');
+      g.appendChild(el('h3', 'area-group-name', group.name));
+      (group.items || []).forEach((item) => {
+        const it = el('div', 'area-item');
+        it.appendChild(el('div', 'area-item-name', item.name));
+        if (item.note) it.appendChild(el('div', 'area-item-note', item.note));
+        g.appendChild(it);
+      });
+      wrap.appendChild(g);
+    });
+    return wrap;
+  }
+
+  function renderProperty(prop) {
+    const wrap = document.createDocumentFragment();
+    if (prop.tagline) wrap.appendChild(el('div', 'guide-property-tagline', prop.tagline));
+    (prop.sections || []).forEach((sec) => {
+      const s = el('div', 'manual-section');
+      s.appendChild(el('h3', null, sec.title));
+      if (sec.body) s.appendChild(el('p', null, sec.body));
+      if (Array.isArray(sec.items) && sec.items.length) {
+        const ul = el('ul', 'manual-list');
+        sec.items.forEach((li) => ul.appendChild(el('li', null, li)));
+        s.appendChild(ul);
+      }
+      if (Array.isArray(sec.fields) && sec.fields.length) {
+        const fw = el('div', 'manual-fields');
+        sec.fields.forEach((f) => {
+          const row = el('div', 'manual-field');
+          row.appendChild(el('span', 'manual-field-label', f.label));
+          row.appendChild(el('span', 'manual-field-value', f.value));
+          fw.appendChild(row);
+        });
+        s.appendChild(fw);
+      }
+      wrap.appendChild(s);
+    });
+    return wrap;
+  }
+
+  function buildGuide(guide) {
+    // Assemble tab definitions: Area first, then each property.
+    const panels = [];
+    panels.push({ id: 'area', label: guide.area.title || 'The Area', render: () => renderArea(guide.area) });
+    Object.entries(guide.properties || {}).forEach(([key, prop]) => {
+      panels.push({ id: key, label: prop.name, render: () => renderProperty(prop) });
+    });
+
+    tabsEl.textContent = '';
+    contentEl.textContent = '';
+
+    const panelEls = {};
+    panels.forEach((p, i) => {
+      const tab = document.createElement('button');
+      tab.className = 'guide-tab' + (i === 0 ? ' active' : '');
+      tab.textContent = p.label;
+      tab.setAttribute('role', 'tab');
+      tab.dataset.target = p.id;
+      tabsEl.appendChild(tab);
+
+      const panel = document.createElement('div');
+      panel.className = 'guide-panel' + (i === 0 ? ' active' : '');
+      panel.id = 'panel-' + p.id;
+      panel.appendChild(p.render());
+      contentEl.appendChild(panel);
+      panelEls[p.id] = { tab, panel };
+    });
+
+    tabsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.guide-tab');
+      if (!btn) return;
+      Object.values(panelEls).forEach(({ tab, panel }) => {
+        const on = tab === btn;
+        tab.classList.toggle('active', on);
+        panel.classList.toggle('active', on);
+      });
+      window.scrollTo({ top: guideEl.offsetTop - 80, behavior: 'smooth' });
+    });
+  }
+
+  async function unlock(code, { fromStorage } = {}) {
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Opening…';
     try {
       const res = await fetch(API, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ code }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Something went wrong.');
-      showStatus('Thank you — your message has been added to the guest book!', true);
-      form.reset();
-      await loadEntries();
+      sessionStorage.setItem(STORAGE_KEY, code);
+      gate.style.display = 'none';
+      guideEl.classList.add('show');
+      buildGuide(data.guide);
     } catch (err) {
-      showStatus(err.message || 'Sorry, we could not save your message.', false);
+      if (fromStorage) {
+        // stale/invalid stored code — just show the gate again
+        sessionStorage.removeItem(STORAGE_KEY);
+      } else {
+        showStatus(err.message || 'Sorry, we could not open the guide.', false);
+      }
     } finally {
-      submitBtn.disabled = false;
-      submitBtn.textContent = 'Sign the Guest Book';
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = 'Open My Guide';
     }
+  }
+
+  gateForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = codeInput.value.trim();
+    if (!code) return showStatus('Please enter your access code.', false);
+    unlock(code);
   });
 
-  loadEntries();
+  // Re-open automatically if a valid code was used earlier this session.
+  const saved = sessionStorage.getItem(STORAGE_KEY);
+  if (saved) unlock(saved, { fromStorage: true });
 </script>

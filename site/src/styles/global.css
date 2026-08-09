@@ -1,6 +1,7 @@
     /* ── LAKE DISTRICT PALETTE ── */
     :root {
-      --gable-green:   #6b7c2a;
+      --gable-green:   #babba5;  /* soft sage (Vert de Terre) */
+      --gable-deep:    #6f7357;  /* deeper sage for white-text panels & small text accents */
       --grasmere-slate:#b0a899;
       --kendal-mint:   #d8eae5;
       --aira-white:    #f0f4f2;
@@ -47,7 +48,7 @@
       letter-spacing: 0.02em;
     }
 
-    .nav-logo span { color: var(--gable-green); }
+    .nav-logo span { color: var(--gable-deep); }
 
     .nav-links {
       display: flex;
@@ -211,10 +212,10 @@
 
     .btn-green {
       background: var(--gable-green);
-      color: #fff;
+      color: var(--off-black);
     }
 
-    .btn-green:hover { background: #5a6922; }
+    .btn-green:hover { background: #a6a88b; }
 
     .hero-stats {
       display: flex;
@@ -273,7 +274,7 @@
       font-size: 0.62rem;
       letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: var(--gable-green);
+      color: var(--gable-deep);
       margin-bottom: 0.3rem;
     }
 
@@ -301,7 +302,7 @@
 
     /* ── BADGES BAR ── */
     .badges {
-      background: var(--gable-green);
+      background: var(--gable-deep);
       padding: 1.1rem 3rem;
       display: flex;
       gap: 0;
@@ -339,7 +340,7 @@
       font-weight: 500;
       letter-spacing: 0.3em;
       text-transform: uppercase;
-      color: var(--gable-green);
+      color: var(--gable-deep);
       margin-bottom: 0.8rem;
     }
 
@@ -540,7 +541,7 @@
 
     .room-dims {
       font-size: 0.72rem;
-      color: var(--gable-green);
+      color: var(--gable-deep);
       font-weight: 500;
       letter-spacing: 0.06em;
       margin-top: 0.2rem;
@@ -580,7 +581,7 @@
       position: absolute;
       top: 2rem;
       left: 2rem;
-      background: var(--gable-green);
+      background: var(--gable-deep);
       color: #fff;
       font-size: 0.65rem;
       font-weight: 500;
@@ -598,7 +599,7 @@
       justify-content: center;
     }
 
-    .annexe-content .eyebrow { color: var(--gable-green); }
+    .annexe-content .eyebrow { color: var(--gable-deep); }
     .annexe-content .section-h { color: var(--coniston-blue); }
 
     .annexe-content p {
@@ -794,7 +795,7 @@
     }
 
     /* ── ENQUIRE ── */
-    .enquire { background: var(--gable-green); }
+    .enquire { background: var(--gable-deep); }
 
     .enquire-inner {
       display: grid;
@@ -857,12 +858,12 @@
       background: rgba(255,255,255,0.15);
     }
 
-    .form-field select option { background: var(--gable-green); color: #fff; }
+    .form-field select option { background: var(--gable-deep); color: #fff; }
     .form-field textarea { resize: none; height: 90px; }
 
     .form-submit {
       background: #fff;
-      color: var(--gable-green);
+      color: var(--gable-deep);
       width: 100%;
       padding: 1rem;
       font-family: 'DM Sans', sans-serif;
@@ -1125,7 +1126,7 @@
     .prop-card-tag {
       position: absolute;
       top: 1.2rem; left: 1.2rem;
-      background: var(--gable-green);
+      background: var(--gable-deep);
       color: #fff;
       font-size: 0.62rem;
       font-weight: 500;
@@ -1309,32 +1310,6 @@
       width: 1px; height: 1px;
       overflow: hidden;
     }
-    /* Star rating — DOM order is 5→1, row-reverse renders it 1→5 so the
-       `:checked ~ label` sibling trick can fill the chosen star + those
-       to its left. */
-    .guest-rating {
-      display: inline-flex;
-      flex-direction: row-reverse;
-      justify-content: flex-end;
-      gap: 0.15rem;
-    }
-    .guest-rating input { position: absolute; opacity: 0; width: 0; height: 0; }
-    .guest-rating label {
-      cursor: pointer;
-      font-size: 1.7rem;
-      line-height: 1;
-      color: var(--grasmere-slate);
-      margin: 0;
-      transition: color 0.15s, transform 0.15s;
-    }
-    .guest-rating label:hover { transform: scale(1.15); }
-    /* selected star + all lower (to its left in the reversed row) */
-    .guest-rating input:checked ~ label { color: var(--gable-green); }
-    /* hover preview */
-    .guest-rating label:hover,
-    .guest-rating label:hover ~ label { color: var(--gable-green); }
-    /* keyboard focus visibility */
-    .guest-rating input:focus-visible + label { outline: 2px solid var(--coniston-blue); outline-offset: 2px; }
     .guest-btn {
       background: var(--coniston-blue);
       color: #fff;
@@ -1358,56 +1333,147 @@
       display: none;
     }
     .guest-status.show { display: block; }
-    .guest-status.ok { color: var(--gable-green); }
+    .guest-status.ok { color: var(--gable-deep); }
     .guest-status.err { color: #b23b3b; }
 
-    /* Entries */
-    .guest-entries-head {
+    /* Gate card — centred lock screen */
+    .gate-card { max-width: 460px; margin: 0 auto; text-align: center; }
+    .gate-icon {
+      width: 54px; height: 54px;
+      margin: 0 auto 1.2rem;
+      border-radius: 50%;
+      background: var(--kendal-mint);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--coniston-blue);
+    }
+    .gate-card .guest-form { text-align: left; margin-top: 1.4rem; }
+    .gate-hint { font-size: 0.8rem; color: var(--mid); margin-top: 1.2rem; line-height: 1.6; }
+
+    /* Guide — section tabs */
+    .guide { display: none; }
+    .guide.show { display: block; }
+    .guide-tabs {
       display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 1.4rem;
+      gap: 0.4rem;
       flex-wrap: wrap;
-      gap: 0.5rem;
+      border-bottom: 1px solid rgba(176,168,153,0.35);
+      margin-bottom: 2rem;
     }
-    .guest-entries-head h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.5rem;
-      font-weight: 400;
-      color: var(--off-black);
+    .guide-tab {
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 0.7rem 1rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--mid);
+      cursor: pointer;
+      margin-bottom: -1px;
+      transition: color 0.2s, border-color 0.2s;
     }
-    .guest-count { font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--grasmere-slate); }
-    .guest-entries { display: flex; flex-direction: column; gap: 1rem; }
-    .guest-entry {
-      background: #fff;
-      border-radius: 4px;
-      padding: 1.5rem 1.6rem;
-      box-shadow: 0 4px 20px rgba(30,79,160,0.06);
-      border-left: 3px solid var(--gable-green);
+    .guide-tab:hover { color: var(--coniston-blue); }
+    .guide-tab.active { color: var(--coniston-blue); border-bottom-color: var(--coniston-blue); }
+
+    .guide-panel { display: none; }
+    .guide-panel.active { display: block; animation: slideIn 0.4s both; }
+    .guide-intro {
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--mid);
+      font-weight: 300;
+      margin-bottom: 2rem;
     }
-    .guest-entry-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 1rem;
-      margin-bottom: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .guest-entry-name {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.1rem;
-      color: var(--off-black);
-    }
-    .guest-entry-stay {
-      font-size: 0.68rem;
-      letter-spacing: 0.12em;
+    .guide-property-tagline {
+      font-size: 0.7rem;
+      letter-spacing: 0.15em;
       text-transform: uppercase;
       color: var(--scafell-sky);
+      margin-bottom: 1.6rem;
     }
-    .guest-entry-stars { color: var(--gable-green); font-size: 0.95rem; letter-spacing: 2px; margin-bottom: 0.5rem; }
-    .guest-entry-msg { font-size: 0.92rem; line-height: 1.7; color: var(--body-text); font-weight: 300; }
-    .guest-entry-date { font-size: 0.68rem; color: var(--grasmere-slate); margin-top: 0.7rem; }
-    .guest-empty, .guest-loading {
+
+    /* Area — grouped listings */
+    .area-group { margin-bottom: 2.2rem; }
+    .area-group-name {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.3rem;
+      color: var(--off-black);
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--kendal-mint);
+    }
+    .area-item {
+      padding: 0.9rem 0;
+      border-bottom: 1px solid rgba(176,168,153,0.22);
+    }
+    .area-item:last-child { border-bottom: none; }
+    .area-item-name {
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--coniston-blue);
+      margin-bottom: 0.2rem;
+    }
+    .area-item-note { font-size: 0.88rem; line-height: 1.6; color: var(--mid); font-weight: 300; }
+
+    /* House manual — sections */
+    .manual-section {
+      background: #fff;
+      border-radius: 4px;
+      padding: 1.4rem 1.6rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 4px 20px rgba(30,79,160,0.05);
+      border-left: 3px solid var(--gable-green);
+    }
+    .manual-section h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.15rem;
+      font-weight: 400;
+      color: var(--off-black);
+      margin-bottom: 0.7rem;
+    }
+    .manual-section p { font-size: 0.9rem; line-height: 1.7; color: var(--body-text); font-weight: 300; }
+    .manual-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.3rem; }
+    .manual-list li {
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--body-text);
+      font-weight: 300;
+      padding-left: 1.2rem;
+      position: relative;
+    }
+    .manual-list li::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0.55em;
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--gable-green);
+    }
+    .manual-fields { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.3rem; }
+    .manual-field {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.5rem 0.8rem;
+      background: var(--aira-white);
+      border-radius: 3px;
+      flex-wrap: wrap;
+    }
+    .manual-field-label { font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mid); }
+    .manual-field-value { font-size: 0.92rem; font-weight: 500; color: var(--off-black); }
+
+    /* Placeholder highlight — flags [[ … ]] bits still to be filled in */
+    .ph {
+      background: #fff4d6;
+      color: #8a6d1a;
+      border-radius: 3px;
+      padding: 0 0.3em;
+      font-weight: 500;
+    }
+
+    .guide-loading {
       text-align: center;
       padding: 2.5rem 1rem;
       color: var(--mid);

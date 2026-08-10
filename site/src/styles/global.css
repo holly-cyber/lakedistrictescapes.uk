@@ -761,59 +761,87 @@
       border-radius: 2px;
       overflow: hidden;
       height: 380px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 1rem;
       position: relative;
     }
 
-    .loc-map-bg {
+    .loc-map img {
       position: absolute;
       inset: 0;
-      background:
-        radial-gradient(circle at 30% 40%, var(--scafell-sky) 0%, transparent 60%),
-        radial-gradient(circle at 70% 60%, var(--gable-green) 0%, transparent 50%);
-      opacity: 0.25;
+      width: 100%; height: 100%;
+      object-fit: cover;
     }
 
-    .loc-pin {
-      width: 56px; height: 56px;
-      background: var(--coniston-blue);
-      border-radius: 50% 50% 50% 0;
-      transform: rotate(-45deg);
-      position: relative;
-      z-index: 1;
-      box-shadow: 0 8px 24px rgba(30,79,160,0.3);
-    }
-
-    .loc-pin::after {
-      content: '';
+    .loc-map-caption {
       position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%,-50%) rotate(45deg);
-      width: 20px; height: 20px;
-      background: #fff;
-      border-radius: 50%;
+      left: 0; right: 0; bottom: 0;
+      padding: 2.4rem 1.6rem 1.4rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(to top, rgba(20,26,20,0.72) 0%, transparent 100%);
     }
 
-    .loc-map p {
+    .loc-map-caption p {
       font-family: 'Playfair Display', serif;
       font-size: 1.3rem;
       font-style: italic;
-      color: var(--coniston-blue);
-      text-align: center;
-      position: relative;
-      z-index: 1;
+      color: #fff;
+      margin: 0;
     }
 
-    .loc-map small {
+    .loc-map-caption small {
       font-size: 0.72rem;
-      color: var(--mid);
+      color: rgba(255,255,255,0.82);
       letter-spacing: 0.1em;
+    }
+
+    /* ── ATTRACTIONS ── */
+    .attractions { background: var(--aira-white); }
+    .attr-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+    .attr-card {
+      border-radius: 3px;
+      overflow: hidden;
       position: relative;
-      z-index: 1;
+      height: 420px;
+    }
+    .attr-card img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      transition: transform 0.6s;
+    }
+    .attr-card:hover img { transform: scale(1.05); }
+    .attr-label {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 2.6rem 1.3rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      background: linear-gradient(to top, rgba(20,26,20,0.82) 0%, transparent 100%);
+      color: #fff;
+    }
+    .attr-label strong {
+      font-family: 'Playfair Display', serif;
+      font-weight: 600;
+      font-size: 1.12rem;
+    }
+    .attr-label span {
+      font-size: 0.78rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.85);
+      letter-spacing: 0.02em;
+    }
+    @media (max-width: 800px) {
+      .attr-grid { grid-template-columns: 1fr; max-width: 460px; }
+      .attr-card { height: 340px; }
     }
 
     /* ── ENQUIRE ── */

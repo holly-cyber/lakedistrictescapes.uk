@@ -128,6 +128,8 @@ import Footer from '../../components/Footer.astro';
     leave: '<path d="M15 3H5v18h10"/><path d="M11 12h9M17 9l3 3-3 3"/>',
     help: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/>',
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.6"/>',
+    run: '<path d="M4 7l6 5-6 5M12 7l6 5-6 5"/>',
+    compass: '<circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.5 5.1-4.7 2.1 2.5-5.1z" stroke-linejoin="round"/>',
   };
   const CHEVRON = '<path d="M6 9l6 6 6-6"/>';
 
@@ -150,6 +152,10 @@ import Footer from '../../components/Footer.astro';
     if (t.includes('eat') || t.includes('drink')) return 'eat';
     if (t.includes('shop') || t.includes('essential')) return 'shop';
     if (t.includes('out') || t.includes('explore') || t.includes('about')) return 'explore';
+    if (t.includes('cycl') || t.includes('ride')) return 'bike';
+    if (t.includes('run')) return 'run';
+    if (t.includes('walk')) return 'explore';
+    if (t.includes('route') || t.includes('guide') || t.includes('komoot')) return 'compass';
     if (t.includes('arrival') || t.includes('key')) return 'key';
     if (t.includes('wi-fi') || t.includes('wifi')) return 'wifi';
     if (t.includes('kitchen') || t.includes('appliance')) return 'kitchen';
@@ -271,6 +277,9 @@ import Footer from '../../components/Footer.astro';
     // Assemble tab definitions: Area first, then each property.
     const panels = [];
     panels.push({ id: 'area', label: guide.area.title || 'The Area', render: () => renderArea(guide.area) });
+    if (guide.outdoors) {
+      panels.push({ id: 'outdoors', label: guide.outdoors.title || 'Walks & Rides', render: () => renderArea(guide.outdoors) });
+    }
     Object.entries(guide.properties || {}).forEach(([key, prop]) => {
       if (prop.hidden) return; // property hidden for now (e.g. not yet bookable)
       panels.push({ id: key, label: prop.name, render: () => renderProperty(prop) });

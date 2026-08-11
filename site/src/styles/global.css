@@ -797,6 +797,43 @@
       letter-spacing: 0.1em;
     }
 
+    /* Small framed map card (Rockery + Primrose location sections) */
+    .loc-map-card {
+      max-width: 440px;
+      margin: 0;
+      background: #fff;
+      border: 7px solid #fff;
+      border-radius: 6px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.32);
+      overflow: hidden;
+    }
+    .loc-map-card img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: 3px 3px 0 0;
+    }
+    .loc-map-card figcaption {
+      padding: 0.7rem 1rem 0.6rem;
+      text-align: center;
+      background: #fff;
+    }
+    .loc-map-card figcaption strong {
+      display: block;
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1.05rem;
+      color: var(--off-black);
+    }
+    .loc-map-card figcaption span {
+      font-size: 0.66rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--mid);
+    }
+    .loc-stat--lead { grid-column: 1 / -1; }
+
     /* Map + photo stack for the location sections */
     .loc-media {
       display: grid;

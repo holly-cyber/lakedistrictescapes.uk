@@ -296,7 +296,7 @@ export const GUIDE = {
           },
           {
             name: 'Fuel, cash & pharmacy',
-            note: 'Free-to-use cashpoint at the Co-op in the village. Nearest fuel is Tebay Services (handy but pricey), with cheaper filling up in Penrith and Kendal. [[Nearest pharmacy]]',
+            note: 'Free-to-use cashpoint at the Co-op in the village. Nearest fuel is Tebay Services (handy but pricey); for cheaper filling up, the Esso garage on the A6 into Penrith (Bridge Lane, CA11 8JB — over the roundabout) or on into Kendal. [[Nearest pharmacy]]',
           },
         ],
       },

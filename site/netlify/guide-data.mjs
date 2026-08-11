@@ -74,7 +74,7 @@ export const GUIDE = {
             name: 'The Mardale Inn, Bampton',
             meta: '12 min · CA10 2RQ',
             note: 'A warm community pub with a short, well-judged menu and good beer — a lovely stop after Haweswater or the Wainwright walks. Evenings only Mon–Thurs.',
-            link: 'https://www.bamptonvalleycommunitypub.org',
+            link: 'https://www.themardaleinn.com/',
           },
           {
             name: 'Mill Yard Café & Bistro, Morland',

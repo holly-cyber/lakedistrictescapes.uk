@@ -115,7 +115,7 @@ export const GUIDE = {
           {
             name: 'Orton Scar Cafe, Orton',
             meta: '15 min · Orton',
-            note: 'A friendly village cafe in Orton for coffee, cake and a bite of lunch — a good stop while exploring the Orton fells.',
+            note: 'Simple fare — bacon buns, canned drinks and the like — with the option to eat in or take away. A handy stop while exploring the Orton fells.',
             link: 'https://maps.app.goo.gl/xN4rBV1mvxcxEkto6',
             linkLabel: 'View on map ↗',
           },

@@ -1,0 +1,118 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+
+// Private owner dashboard, served at management.lakedistrictescapes.uk.
+// Everything (bookings, income, expenses) is fetched from the gated
+// `management` Netlify Function only after a valid MANAGEMENT_ACCESS_CODE —
+// nothing appears in the page source, and the page is noindex.
+---
+<Base
+  title="Management — Lake District Escapes"
+  description="Private owner dashboard for Lake District Escapes."
+  noindex={true}
+>
+  <Nav slot="nav" logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
+
+  <div class="guest-page">
+    <section class="guest-hero mgmt-hero">
+      <p class="eyebrow">Management</p>
+      <h1>Lake District Escapes<br /><em>Dashboard</em></h1>
+      <p>
+        Occupancy, income and expenditure for The Rockery and Primrose Cottage — combined and per
+        property. Private to the owners. Enter your management access code to continue.
+      </p>
+    </section>
+
+    <div class="mgmt-wrap">
+      <!-- GATE -->
+      <div class="guest-form-card gate-card" id="gate">
+        <div class="gate-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="4" y="10" width="16" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 018 0v3" />
+          </svg>
+        </div>
+        <h2>Owner Access</h2>
+        <form class="guest-form" id="gate-form" novalidate>
+          <div class="form-field">
+            <label for="m-code">Management Code</label>
+            <input id="m-code" name="code" type="password" autocomplete="off" autocapitalize="none"
+              spellcheck="false" placeholder="Owner access code" required />
+          </div>
+          <button type="submit" class="guest-btn" id="m-unlock">Open Dashboard</button>
+          <p class="guest-status" id="m-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <!-- DASHBOARD (revealed after unlock) -->
+      <div id="dashboard" class="dashboard"></div>
+    </div>
+  </div>
+
+  <Footer
+    slot="footer"
+    links={[
+      { href: '/', label: 'Home' },
+      { href: '/the-rockery/', label: 'The Rockery' },
+      { href: '/primrose-cottage/', label: 'Primrose Cottage' },
+    ]}
+  />
+</Base>
+
+<script>
+  import { initDashboard } from '../../scripts/dashboard.js';
+
+  const API = '/api/management';
+  const STORAGE_KEY = 'lde-mgmt-code';
+
+  const gate = document.getElementById('gate');
+  const gateForm = document.getElementById('gate-form');
+  const codeInput = document.getElementById('m-code');
+  const unlockBtn = document.getElementById('m-unlock');
+  const statusEl = document.getElementById('m-status');
+  const dashboardEl = document.getElementById('dashboard');
+
+  function showStatus(msg) {
+    statusEl.textContent = msg;
+    statusEl.className = 'guest-status show err';
+  }
+
+  async function unlock(code, { fromStorage } = {}) {
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Opening…';
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+      sessionStorage.setItem(STORAGE_KEY, code);
+      gate.style.display = 'none';
+      dashboardEl.classList.add('show');
+      initDashboard(dashboardEl, data);
+    } catch (err) {
+      if (fromStorage) {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } else {
+        showStatus(err.message || 'Sorry, we could not open the dashboard.');
+      }
+    } finally {
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = 'Open Dashboard';
+    }
+  }
+
+  gateForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const code = codeInput.value.trim();
+    if (!code) return showStatus('Please enter your access code.');
+    unlock(code);
+  });
+
+  const saved = sessionStorage.getItem(STORAGE_KEY);
+  if (saved) unlock(saved, { fromStorage: true });
+</script>

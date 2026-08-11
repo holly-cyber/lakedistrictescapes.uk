@@ -4,6 +4,7 @@
 //                                                       property manual gated)
 //   cottage.lakedistrictescapes.uk  → /cottage-guide/ (everything gated —
 //                                                       fully private for guests)
+//   management.lakedistrictescapes.uk → /management/   (private owner dashboard)
 //
 // Only the site root ("/") is rewritten, so assets (/images/*, CSS, JS) and the
 // API (/api/*) keep resolving normally on the sub-domains. On the apex/www
@@ -15,6 +16,9 @@ export default async (request, context) => {
 
   if (!atRoot) return context.next();
 
+  if (host.startsWith('management.')) {
+    return context.rewrite('/management/');
+  }
   if (host.startsWith('cottage.')) {
     return context.rewrite('/cottage-guide/');
   }

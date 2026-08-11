@@ -2,11 +2,24 @@
 import Base from '../../layouts/Base.astro';
 import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
+import { GUIDE } from '../../../netlify/guide-data.mjs';
 
+// Public content (local area + walks) is safe to render for everyone, so it is
+// inlined into the page at build time. Private property manuals (Wi-Fi codes,
+// key-safe, etc.) are NOT included here — they are fetched from the gated
+// Netlify Function only after a valid access code.
+const publicGuide = {
+  area: GUIDE.area,
+  outdoors: GUIDE.outdoors,
+  propertyTabs: Object.entries(GUIDE.properties)
+    .filter(([, p]) => !p.hidden)
+    .map(([key, p]) => ({ key, name: p.name, tagline: p.tagline })),
+};
+const publicJson = JSON.stringify(publicGuide).replace(/</g, '\\u003c');
 ---
 <Base
   title="Guest Guide — Lake District Escapes"
-  description="The guest welcome guide for The Rockery and Primrose Cottage — local area tips and how everything works. Access with the code from your booking."
+  description="Explore Shap and the Lake District — where to eat, shop and explore, plus the walks, runs and rides on the doorstep. Booked guests can open the house guide with the code from their booking."
 >
   <Nav slot="nav" logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
 
@@ -15,43 +28,18 @@ import Footer from '../../components/Footer.astro';
       <p class="eyebrow">Guest Guide</p>
       <h1>Welcome to Your<br /><em>Lake District Escape</em></h1>
       <p>
-        Everything you need for a brilliant stay — where to eat, shop and explore around Shap, and how
-        everything works in the house. Enter the access code from your booking to open your guide.
+        Where to eat, drink and explore around Shap, plus the walks, runs and rides on the doorstep —
+        open to everyone. Booked with us? Open the property tab with your access code for how
+        everything works inside.
       </p>
     </section>
 
     <div class="guest-wrap">
-      <!-- GATE -->
-      <div class="guest-form-card gate-card" id="gate">
-        <div class="gate-icon" aria-hidden="true">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
-            <rect x="4" y="10" width="16" height="10" rx="2" />
-            <path d="M8 10V7a4 4 0 018 0v3" />
-          </svg>
-        </div>
-        <h2>Enter Your Access Code</h2>
-        <form class="guest-form" id="gate-form" novalidate>
-          <div class="form-field">
-            <label for="g-code">Access Code</label>
-            <input id="g-code" name="code" type="text" autocomplete="off" autocapitalize="none"
-              spellcheck="false" placeholder="From your booking email" required />
-          </div>
-          <button type="submit" class="guest-btn" id="g-unlock">Open My Guide</button>
-          <p class="guest-status" id="g-status" role="status" aria-live="polite"></p>
-        </form>
-        <p class="gate-hint">
-          The code is in your booking confirmation. Can't find it? Email
-          <strong>hello@lakedistrictescapes.uk</strong> and we'll send it over.
-        </p>
-      </div>
-
-      <!-- GUIDE (revealed after unlock) -->
-      <div class="guide" id="guide">
+      <div class="guide show" id="guide">
         <div class="guide-tabs" id="guide-tabs" role="tablist"></div>
-        <div id="guide-content">
-          <p class="guide-loading">Loading your guide…</p>
-        </div>
+        <div id="guide-content"></div>
       </div>
+      <script type="application/json" id="public-guide" is:inline set:html={publicJson}></script>
     </div>
   </div>
 
@@ -71,18 +59,14 @@ import Footer from '../../components/Footer.astro';
   const API = '/api/guest-guide';
   const STORAGE_KEY = 'lde-guest-code';
 
-  const gate = document.getElementById('gate');
-  const gateForm = document.getElementById('gate-form');
-  const codeInput = document.getElementById('g-code');
-  const unlockBtn = document.getElementById('g-unlock');
-  const statusEl = document.getElementById('g-status');
-  const guideEl = document.getElementById('guide');
   const tabsEl = document.getElementById('guide-tabs');
   const contentEl = document.getElementById('guide-content');
 
-  function showStatus(msg, ok) {
-    statusEl.textContent = msg;
-    statusEl.className = 'guest-status show ' + (ok ? 'ok' : 'err');
+  let PUBLIC = {};
+  try {
+    PUBLIC = JSON.parse(document.getElementById('public-guide').textContent || '{}');
+  } catch (e) {
+    PUBLIC = {};
   }
 
   // Append text, wrapping [[ placeholders ]] in a highlighted span so unfilled
@@ -130,6 +114,7 @@ import Footer from '../../components/Footer.astro';
     info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.6"/>',
     run: '<path d="M4 7l6 5-6 5M12 7l6 5-6 5"/>',
     compass: '<circle cx="12" cy="12" r="9"/><path d="M15.6 8.4l-2.5 5.1-4.7 2.1 2.5-5.1z" stroke-linejoin="round"/>',
+    lock: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/>',
   };
   const CHEVRON = '<path d="M6 9l6 6 6-6"/>';
 
@@ -273,54 +258,143 @@ import Footer from '../../components/Footer.astro';
     return wrap;
   }
 
-  function buildGuide(guide) {
-    // Assemble tab definitions: Area first, then each property.
-    const panels = [];
-    // Properties first (the guest's own place), then the shared area guides.
-    Object.entries(guide.properties || {}).forEach(([key, prop]) => {
-      if (prop.hidden) return; // property hidden for now (e.g. not yet bookable)
-      panels.push({ id: key, label: prop.name, render: () => renderProperty(prop) });
+  // The gated panel content for a private property (before the code is entered).
+  function makeGate(prop) {
+    const card = el('div', 'guest-form-card guide-gate');
+
+    const icon = el('div', 'gate-icon');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.appendChild(svg(ICONS.lock));
+    card.appendChild(icon);
+
+    card.appendChild(el('h2', null, 'Guest access — ' + prop.name));
+    card.appendChild(
+      el(
+        'p',
+        'gate-hint',
+        'The ' +
+          prop.name +
+          ' guide — Wi-Fi, keys, appliances and how everything works — is just for booked guests. Enter the access code from your booking to open it. Exploring the area? The other tabs are open to everyone.'
+      )
+    );
+
+    const form = document.createElement('form');
+    form.className = 'guest-form';
+    form.noValidate = true;
+
+    const field = el('div', 'form-field');
+    const label = document.createElement('label');
+    label.setAttribute('for', 'g-code');
+    label.textContent = 'Access Code';
+    field.appendChild(label);
+    const input = document.createElement('input');
+    input.id = 'g-code';
+    input.name = 'code';
+    input.type = 'text';
+    input.autocomplete = 'off';
+    input.setAttribute('autocapitalize', 'none');
+    input.spellcheck = false;
+    input.placeholder = 'From your booking email';
+    input.required = true;
+    field.appendChild(input);
+    form.appendChild(field);
+
+    const btn = document.createElement('button');
+    btn.type = 'submit';
+    btn.className = 'guest-btn';
+    btn.textContent = 'Open My Guide';
+    form.appendChild(btn);
+
+    const status = el('p', 'guest-status');
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    form.appendChild(status);
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const code = input.value.trim();
+      if (!code) {
+        status.textContent = 'Please enter your access code.';
+        status.className = 'guest-status show err';
+        return;
+      }
+      unlock(code, { btn, status });
     });
-    panels.push({ id: 'area', label: guide.area.title || 'The Area', render: () => renderArea(guide.area) });
-    if (guide.outdoors) {
-      panels.push({ id: 'outdoors', label: guide.outdoors.title || 'Walks & Rides', render: () => renderArea(guide.outdoors) });
+
+    card.appendChild(form);
+    return card;
+  }
+
+  const panelRefs = {};
+
+  function buildTabs() {
+    const panels = [];
+    // Private property tab(s) first, then the public area guides.
+    (PUBLIC.propertyTabs || []).forEach((pt) => {
+      panels.push({ id: pt.key, label: pt.name, property: pt });
+    });
+    if (PUBLIC.area) {
+      panels.push({ id: 'area', label: PUBLIC.area.title || 'The Area', render: () => renderArea(PUBLIC.area) });
+    }
+    if (PUBLIC.outdoors) {
+      panels.push({ id: 'outdoors', label: PUBLIC.outdoors.title || 'Walks & Rides', render: () => renderArea(PUBLIC.outdoors) });
     }
 
     tabsEl.textContent = '';
     contentEl.textContent = '';
 
-    const panelEls = {};
     panels.forEach((p, i) => {
       const tab = document.createElement('button');
       tab.className = 'guide-tab' + (i === 0 ? ' active' : '');
-      tab.textContent = p.label;
       tab.setAttribute('role', 'tab');
       tab.dataset.target = p.id;
+      if (p.property) {
+        tab.appendChild(document.createTextNode(p.label + ' '));
+        const lock = svg(ICONS.lock, 'guide-tab-lock');
+        lock.setAttribute('aria-hidden', 'true');
+        tab.appendChild(lock);
+      } else {
+        tab.textContent = p.label;
+      }
       tabsEl.appendChild(tab);
 
       const panel = document.createElement('div');
       panel.className = 'guide-panel' + (i === 0 ? ' active' : '');
       panel.id = 'panel-' + p.id;
-      panel.appendChild(p.render());
+      panel.appendChild(p.property ? makeGate(p.property) : p.render());
       contentEl.appendChild(panel);
-      panelEls[p.id] = { tab, panel };
+      panelRefs[p.id] = { tab, panel, property: p.property || null };
     });
 
     tabsEl.addEventListener('click', (e) => {
       const btn = e.target.closest('.guide-tab');
       if (!btn) return;
-      Object.values(panelEls).forEach(({ tab, panel }) => {
+      Object.values(panelRefs).forEach(({ tab, panel }) => {
         const on = tab === btn;
         tab.classList.toggle('active', on);
         panel.classList.toggle('active', on);
       });
-      window.scrollTo({ top: guideEl.offsetTop - 80, behavior: 'smooth' });
     });
   }
 
-  async function unlock(code, { fromStorage } = {}) {
-    unlockBtn.disabled = true;
-    unlockBtn.textContent = 'Opening…';
+  function fillProperties(properties) {
+    Object.entries(panelRefs).forEach(([id, ref]) => {
+      if (!ref.property) return;
+      const prop = properties[id];
+      if (!prop) return;
+      ref.panel.textContent = '';
+      ref.panel.appendChild(renderProperty(prop));
+      const lock = ref.tab.querySelector('.guide-tab-lock');
+      if (lock) lock.remove();
+    });
+  }
+
+  async function unlock(code, ui) {
+    const { btn, status } = ui || {};
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = 'Opening…';
+    }
     try {
       const res = await fetch(API, {
         method: 'POST',
@@ -330,30 +404,23 @@ import Footer from '../../components/Footer.astro';
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.error || 'Something went wrong.');
       sessionStorage.setItem(STORAGE_KEY, code);
-      gate.style.display = 'none';
-      guideEl.classList.add('show');
-      buildGuide(data.guide);
+      fillProperties(data.properties || {});
     } catch (err) {
-      if (fromStorage) {
-        // stale/invalid stored code — just show the gate again
-        sessionStorage.removeItem(STORAGE_KEY);
-      } else {
-        showStatus(err.message || 'Sorry, we could not open the guide.', false);
+      if (status) {
+        status.textContent = err.message || 'Sorry, we could not open the guide.';
+        status.className = 'guest-status show err';
       }
     } finally {
-      unlockBtn.disabled = false;
-      unlockBtn.textContent = 'Open My Guide';
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = 'Open My Guide';
+      }
     }
   }
 
-  gateForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const code = codeInput.value.trim();
-    if (!code) return showStatus('Please enter your access code.', false);
-    unlock(code);
-  });
+  buildTabs();
 
-  // Re-open automatically if a valid code was used earlier this session.
+  // Silently re-open the private guide if a valid code was used earlier this session.
   const saved = sessionStorage.getItem(STORAGE_KEY);
-  if (saved) unlock(saved, { fromStorage: true });
+  if (saved) unlock(saved, {});
 </script>

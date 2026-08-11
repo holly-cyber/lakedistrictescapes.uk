@@ -59,7 +59,13 @@ export default async (req) => {
     return json({ error: 'That access code isn’t right. Please check your booking email.' }, 401);
   }
 
-  return json({ guide: GUIDE });
+  // Only the private property manuals are returned here — the local-area and
+  // walks content is public and rendered directly on the page. Hidden
+  // properties (e.g. not yet bookable) are withheld entirely.
+  const properties = Object.fromEntries(
+    Object.entries(GUIDE.properties).filter(([, p]) => !p.hidden)
+  );
+  return json({ properties });
 };
 
 export const config = {

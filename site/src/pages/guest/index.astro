@@ -211,7 +211,7 @@ import Footer from '../../components/Footer.astro';
           a.href = item.link;
           a.target = '_blank';
           a.rel = 'noopener noreferrer';
-          a.textContent = 'Visit website ↗';
+          a.textContent = item.linkLabel || 'Visit website ↗';
           it.appendChild(a);
         }
         body.appendChild(it);

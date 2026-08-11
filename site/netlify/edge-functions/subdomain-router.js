@@ -1,21 +1,27 @@
-// Edge Function — serves the guest book as the landing page for the
-// `guest.` sub-domain (e.g. guest.lakedistrictescapes.uk).
+// Edge Function — host-based routing for the guest sub-domains.
 //
-// It only rewrites the site root ("/") so that assets (/images/*, CSS) and
-// the API (/api/guestbook) continue to resolve normally on the sub-domain.
-// On the apex/www domain it does nothing.
+//   guest.lakedistrictescapes.uk    → /guest/         (area + walks public,
+//                                                       property manual gated)
+//   cottage.lakedistrictescapes.uk  → /cottage-guide/ (everything gated —
+//                                                       fully private for guests)
+//
+// Only the site root ("/") is rewritten, so assets (/images/*, CSS, JS) and the
+// API (/api/*) keep resolving normally on the sub-domains. On the apex/www
+// domain this does nothing.
 export default async (request, context) => {
   const url = new URL(request.url);
   const host = (request.headers.get('host') || '').toLowerCase();
+  const atRoot = url.pathname === '/' || url.pathname === '/index.html';
 
-  const isGuestSubdomain = host.startsWith('guest.');
+  if (!atRoot) return context.next();
 
-  if (isGuestSubdomain && (url.pathname === '/' || url.pathname === '/index.html')) {
-    // Serve the /guest/ page at the sub-domain root without changing the URL.
+  if (host.startsWith('cottage.')) {
+    return context.rewrite('/cottage-guide/');
+  }
+  if (host.startsWith('guest.')) {
     return context.rewrite('/guest/');
   }
 
-  // Everything else passes straight through.
   return context.next();
 };
 

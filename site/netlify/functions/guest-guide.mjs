@@ -59,13 +59,15 @@ export default async (req) => {
     return json({ error: 'That access code isn’t right. Please check your booking email.' }, 401);
   }
 
-  // Only the private property manuals are returned here — the local-area and
-  // walks content is public and rendered directly on the page. Hidden
-  // properties (e.g. not yet bookable) are withheld entirely.
+  // Returned only after the access code validates. Hidden properties (e.g. not
+  // yet bookable) are withheld entirely. `properties` is kept for the main-site
+  // /guest/ page (which renders the area/walks publicly and only needs the
+  // manuals); `guide` carries everything for the fully-gated cottage guide.
   const properties = Object.fromEntries(
     Object.entries(GUIDE.properties).filter(([, p]) => !p.hidden)
   );
-  return json({ properties });
+  const guide = { area: GUIDE.area, outdoors: GUIDE.outdoors, properties };
+  return json({ properties, guide });
 };
 
 export const config = {

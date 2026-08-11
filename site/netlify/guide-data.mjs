@@ -459,8 +459,10 @@ export const GUIDE = {
           title: 'Before You Leave',
           items: [
             'Check out by 10:00am.',
-            'Please pop the bins out if it’s collection day and turn off the heating and fan heater.',
-            '[[Where to leave the key.]]',
+            'Please put all wet towels in the shower cubicle.',
+            'Put any rubbish from the bathroom bin into the kitchen bin.',
+            'Turn off the heating and the fan heater.',
+            'Leave the key back in the lockbox and lock the keys in.',
           ],
         },
         {

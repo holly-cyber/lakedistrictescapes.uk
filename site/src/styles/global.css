@@ -797,6 +797,53 @@
       letter-spacing: 0.1em;
     }
 
+    /* Map + photo stack for the location sections */
+    .loc-media {
+      display: grid;
+      grid-template-rows: 1.25fr 1fr;
+      gap: 0.9rem;
+      min-height: 420px;
+    }
+    .loc-figure {
+      position: relative;
+      margin: 0;
+      border-radius: 2px;
+      overflow: hidden;
+      background: var(--kendal-mint);
+    }
+    .loc-figure img {
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .loc-figure figcaption {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 2rem 1.2rem 0.9rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+      align-items: center;
+      text-align: center;
+      background: linear-gradient(to top, rgba(20,26,20,0.74) 0%, transparent 100%);
+    }
+    .loc-figure figcaption strong {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      font-style: italic;
+      font-size: 1.2rem;
+      color: #fff;
+    }
+    .loc-figure figcaption span {
+      font-size: 0.7rem;
+      letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.82);
+    }
+    @media (max-width: 900px) {
+      .loc-media { min-height: 0; }
+      .loc-figure { height: 240px; }
+    }
+
     /* ── ATTRACTIONS ── */
     .attractions { background: var(--aira-white); }
     .attr-grid {

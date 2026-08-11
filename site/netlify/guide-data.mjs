@@ -362,7 +362,7 @@ export const GUIDE = {
         },
         {
           title: 'TV & Entertainment',
-          body: '[[Smart TV in the living room — how to turn it on and which streaming apps are available.]]',
+          body: 'The Amazon Fire TV is connected to the Wi-Fi and gives you a range of streaming apps — Netflix, Amazon Prime and Apple TV, as well as BBC, ITV, Channel 4 and Channel 5. Simply switch the TV on with the remote control and navigate to your preferred app. Sky TV and Sky Cinema are also available in the house.',
         },
         {
           title: 'Bins & Recycling',
@@ -433,7 +433,7 @@ export const GUIDE = {
         },
         {
           title: 'TV & Entertainment',
-          body: '[[Digital TV in the sitting room — how to turn it on and tune/stream.]]',
+          body: 'The Amazon Fire TV is connected to the Wi-Fi and gives you a range of streaming apps — Netflix, Amazon Prime and Apple TV, as well as BBC, ITV, Channel 4 and Channel 5. Simply switch the TV on with the remote control and navigate to your preferred app.',
         },
         {
           title: 'Drying Wet Gear',

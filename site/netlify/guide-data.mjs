@@ -88,7 +88,12 @@ export const GUIDE = {
         },
         {
           title: 'Heating & Hot Water',
-          body: 'Central heating and hot water throughout. [[Where the thermostat/controls are and how to adjust the temperature and timer.]]',
+          body: 'Central heating and hot water throughout, controlled by a Hive thermostat. To turn the heating on manually:',
+          items: [
+            'Wake up the screen by pressing any button or tapping the dial.',
+            'Turn the dial (or press the up/down arrows) to raise the target temperature higher than your current room temperature — the heating will come on.',
+            'The fan heater can be found under the stairs if you’d like a quick extra boost.',
+          ],
         },
         {
           title: 'The Log Burner',
@@ -159,7 +164,12 @@ export const GUIDE = {
         },
         {
           title: 'Heating & the Fan Heater',
-          body: 'Central heating throughout plus a fan heater, so you can come in off the fells and be warm within minutes. [[How to set the heating; how the fan heater is switched on and its settings.]]',
+          body: 'Central heating throughout, controlled by a Hive thermostat, plus a fan heater so you can come in off the fells and be warm within minutes. To turn the heating on manually:',
+          items: [
+            'Wake up the screen by pressing any button or tapping the dial.',
+            'Turn the dial (or press the up/down arrows) to raise the target temperature higher than your current room temperature — the heating will come on.',
+            'The fan heater can be found under the stairs.',
+          ],
         },
         {
           title: 'Kitchen & Appliances',

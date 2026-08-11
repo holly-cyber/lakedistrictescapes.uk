@@ -331,7 +331,7 @@ export const GUIDE = {
       sections: [
         {
           title: 'Arrival & Keys',
-          body: 'There is a key safe in the passageway between the cottage and the main house. The exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm.',
+          body: 'There is a key safe in the passageway between the cottage and the main house. The exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm, though we’re happy to accommodate an earlier check-in where we can — just ask.',
         },
         {
           title: 'Wi-Fi',
@@ -409,7 +409,7 @@ export const GUIDE = {
       sections: [
         {
           title: 'Arrival & Keys',
-          body: 'Primrose Cottage has its own private entrance and key. There is a key safe in the passageway between the cottage and the main house — the exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm.',
+          body: 'Primrose Cottage has its own private entrance and key. There is a key safe in the passageway between the cottage and the main house — the exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm, though we’re happy to accommodate an earlier check-in where we can — just ask.',
         },
         {
           title: 'Wi-Fi',

@@ -437,7 +437,12 @@ export const GUIDE = {
         },
         {
           title: 'Drying Wet Gear',
-          body: 'There’s a drying rack for damp walking gear, and hooks and a shoe rack by the door for wet coats and boots.',
+          body: 'We provide two drying racks — one upstairs and one downstairs — for drying wet clothes and jackets.',
+          items: [
+            'Please take off wet jackets and all shoes as you come into the cottage.',
+            'You’ll find coat hooks for jackets and a shoe rack for any wet, muddy or dusty shoes.',
+            'Please use the larger downstairs rack in the kitchen, so the carpet doesn’t get wet and spoiled.',
+          ],
         },
         {
           title: 'Bins & Recycling',

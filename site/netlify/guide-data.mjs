@@ -134,7 +134,7 @@ export const GUIDE = {
             name: 'Cross Keys Inn, Tebay',
             meta: '15 min · 015396 24240',
             note: 'Traditional roadside inn just off J38 — straightforward and dependable.',
-            link: 'https://www.crosskeystebay.co.uk',
+            link: 'https://crosskeysinntebay.co.uk/',
           },
         ],
       },

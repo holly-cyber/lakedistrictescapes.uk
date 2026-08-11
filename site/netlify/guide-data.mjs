@@ -123,7 +123,7 @@ export const GUIDE = {
             name: 'The George Hotel, Orton',
             meta: '15 min · CA10 3RJ',
             note: 'Friendly village pub popular with Coast to Coast walkers — great-value Sunday lunch, good with gluten-free. Opens 3pm weekdays.',
-            link: 'https://www.thegeorgeorton.co.uk',
+            link: 'https://georgeorton.co.uk/',
           },
           {
             name: 'Kennedys Fine Chocolates, Orton',

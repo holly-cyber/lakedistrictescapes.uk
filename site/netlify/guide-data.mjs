@@ -322,6 +322,101 @@ export const GUIDE = {
     ],
   },
 
+  outdoors: {
+    title: 'Walks, Runs & Rides',
+    intro:
+      'Everything here is on Komoot, so you can send a route straight to your phone and navigate offline — which matters, because mobile signal on the fells is patchy at best (a free account lets you see more than the top few in each list). Routes described as “from Shap” start in the village, walkable or ride-able from the door; anything from Bampton, Keld or Rosgill needs a short drive first (5–12 minutes). One local quirk: Komoot names routes after the most-tagged landmark nearby, and around here that’s often Shap Chippy — so a surprising number of routes are titled “Chippy Chippy” after the chip shop.',
+    groups: [
+      {
+        name: 'Route Guides on Komoot',
+        items: [
+          { name: 'Walking', note: 'Hiking routes around Shap.', link: 'https://www.komoot.com/guide/2765191/hiking-around-shap', linkLabel: 'Open guide ↗' },
+          { name: 'Easy walks', note: 'The gentler hikes around Shap.', link: 'https://www.komoot.com/guide/3597325/easy-hikes-around-shap', linkLabel: 'Open guide ↗' },
+          { name: 'Running trails', note: 'Running routes around Shap.', link: 'https://www.komoot.com/guide/2765196/running-trails-around-shap', linkLabel: 'Open guide ↗' },
+          { name: 'Cycling', note: 'Cycling routes around Shap.', link: 'https://www.komoot.com/guide/2765194/cycling-around-shap', linkLabel: 'Open guide ↗' },
+          { name: 'Road cycling', note: 'Road-cycling routes around Shap.', link: 'https://www.komoot.com/guide/2765193/road-cycling-routes-around-shap', linkLabel: 'Open guide ↗' },
+          { name: 'Mountain biking', note: 'MTB trails around Shap.', link: 'https://www.komoot.com/guide/2765192/mtb-trails-around-shap', linkLabel: 'Open guide ↗' },
+          { name: 'Gravel biking', note: 'Gravel routes around Shap.', link: 'https://www.komoot.com/guide/3676344/gravel-biking-around-shap', linkLabel: 'Open guide ↗' },
+        ],
+      },
+      {
+        name: 'Walking — From the Door',
+        items: [
+          { name: 'Goggleby Stone loop', meta: 'from Shap · 3.1 mi · easy · 60m ascent', note: 'Takes in the surviving stones of the Shap Stone Avenue, a Neolithic megalithic complex that ran through what is now the village. Flat, well-defined and good for anyone.' },
+          { name: 'Fairy Crag loop', meta: 'from Shap · 2.9 mi · easy · 80m ascent', note: 'Short, varied and genuinely lovely — the name likely comes from old Westmorland fairy folklore.' },
+          { name: 'Fairy Crag – Goggleby Stone loop', meta: 'from Shap · 5.5 mi · moderate · 130m ascent', note: 'The two above combined — the best single half-day walk that starts and finishes in the village.' },
+          { name: 'Shap Abbey loop', meta: 'from Shap · 5.3 mi · 130m ascent', note: 'Down to the 12th-century abbey ruins in the Lowther valley — English Heritage, free, and almost always empty.' },
+          { name: 'Hardendale Quarry loop', meta: '3.8 mi · easy · 110m ascent', note: 'A disused limestone quarry east of the village, being restored as an amphibian habitat. Odd and rather good.' },
+        ],
+      },
+      {
+        name: 'Walking — A Short Drive (Bampton & Haweswater)',
+        items: [
+          { name: 'Haweswater Reservoir loop', meta: 'from Bampton · 4.1 mi · easy · 200m ascent', note: 'The gentlest way to see Haweswater, along the Lakeside Path.' },
+          { name: 'Knipescar Common loop', meta: 'from Bampton · 2.8 mi · easy · 130m ascent', note: 'A limestone ridge with big views across to High Street and the Mardale fells — a lot of view for very little effort.' },
+          { name: 'Old Church loop', meta: 'from Bampton · 2.9 mi · easy · 60m ascent' },
+          { name: 'Hare Shaw loop', meta: 'from Bampton · 8.6 mi · moderate · 1,175ft ascent', note: 'Hare Shaw is one of Wainwright’s Outlying Fells of Lakeland.' },
+        ],
+      },
+      {
+        name: 'Walking — Full Days on the Fells',
+        items: [
+          { name: 'Gatescarth Pass – Branstree loop', meta: 'from Bampton · 6.0 mi · moderate · 1,575ft ascent' },
+          { name: 'High Street summit – The Knott loop', meta: 'from Bampton · 9.2 mi · hard · 870m ascent', note: 'The Roman road along the ridge — the classic big walk from this side.' },
+          { name: 'High Street – Nan Bield Pass loop', meta: 'from Bampton · 11.1 mi · expert · 2,975ft ascent' },
+          { name: 'Branstree – Tarn Crag loop', meta: 'from Keld · 13.9 mi · expert · 750m ascent', note: 'Passes waterfalls.' },
+          { name: 'Wainwright’s Coast to Coast', note: 'The Coast to Coast passes right through Shap — walkers finish the hard Patterdale–Shap stage (~16 miles) here, and the next leg east across the limestone is comparatively gentle. Komoot has the whole route broken into 13 stages.' },
+        ],
+      },
+      {
+        name: 'Running Routes',
+        items: [
+          { name: 'Running loop', meta: 'from Shap · 2.6 mi · easy · ~26 min', note: 'The obvious early-morning shakeout from the door.' },
+          { name: 'Chippy Chippy – Flat Approach loop', meta: 'from Shap · 5.0 mi · moderate · ~50 min', note: 'An exposed stretch of road, redeemed by the fish and chips waiting at the end.' },
+          { name: 'Fairy Crag – Goggleby Stone loop', meta: 'from Shap · 5.1 mi · moderate · ~56 min', note: 'The best mixed-surface loop of the shorter ones.' },
+          { name: 'Shap Abbey loop', meta: 'from Shap · 5.3 mi · moderate · ~58 min' },
+          { name: 'Hardendale Quarry loop', meta: 'from Shap · 6.2 mi · moderate · ~1hr 4' },
+          { name: 'Chippy Chippy loop', meta: 'from Turnmire Bottom · 6.1 mi · moderate · ~1hr 2' },
+          { name: 'Stone Circle loop', meta: 'from Keld · 6.2 mi · moderate · ~1hr 3' },
+          { name: 'Chippy Chippy – Limekiln on Rosgill Hill loop', meta: 'from Shap · 9.0 mi · moderate', note: 'The long one that still starts in the village.' },
+          { name: 'View of Yoke – Thornthwaite Beacon loop', meta: 'from Bampton · 16.7 mi · expert · 1,400m ascent', note: 'Proper fell running — not one for a casual day.' },
+          { name: 'Underfoot', note: 'Surfaces are a mix of tarmac, gravel and grass tracks; most routes cross farmland, so dogs on leads.' },
+        ],
+      },
+      {
+        name: 'Cycling — Half-Day Rides',
+        items: [
+          { name: 'Land’s End to John o’ Groats', note: 'Shap sits roughly halfway on the LEJOG cycleway, and Shap Summit on the A6 is a landmark climb for anyone touring north.' },
+          { name: 'Chippy Chippy – Naddle Bridge loop', meta: 'from Shap · 11.1 mi · moderate · 220m ascent', note: 'The easiest way into the Lowther valley lanes — good for a family or a first ride.' },
+          { name: 'Frith Wood loop', meta: 'from Shap · 10.9 mi · moderate · 220m ascent' },
+          { name: 'Haweswater Dam – Mardale Head loop', meta: 'from Shap · 20.1 mi · moderate · 420m ascent', note: 'Komoot’s most popular ride from Shap — out along the reservoir to the head of Mardale and back. There’s an RSPB donation cairn in the Mardale Head car park (cash only — no signal for cards).' },
+          { name: 'View of Shap Countryside – Lowther Castle loop', meta: 'from Shap · 22.4 mi · moderate · 440m ascent', note: 'Takes in Lowther Castle, and passes the Grade II listed Low Gardens Bridge over the River Lowther.' },
+          { name: 'Granny Dowbekin’s – Pooley Bridge loop', meta: 'from Shap · 23.1 mi · moderate · 440m ascent', note: 'Built around a tea stop on the river at Pooley Bridge — pairs neatly with the eating-out guide.' },
+          { name: 'Chippy Chippy loop', meta: 'from Shap · 24.2 mi · road bike · 420m ascent' },
+        ],
+      },
+      {
+        name: 'Cycling — Big Days & Off-Road',
+        items: [
+          { name: 'River Sprint – Shap Summit loop', meta: 'from Shap · 35.7 mi · hard · 830m ascent' },
+          { name: 'Orton Scar Café – River Sprint loop', meta: 'from Shap · 36.3 mi · hard · 840m ascent', note: 'Komoot rates this the toughest ride starting from Shap — café stop built in.' },
+          { name: 'Quiet Back Lanes to Staveley loop', meta: 'from Greenholme · 76 mi · expert · 1,390m ascent' },
+          { name: 'Haweswater – Old Corpse Road loop', meta: 'from Keld · 18.5 mi · moderate · MTB · 640m ascent', note: 'The Old Corpse Road once carried the dead from Mardale over to Shap for burial — the drowned village of Mardale Green lies under the reservoir.' },
+        ],
+      },
+      {
+        name: 'Good to Know',
+        items: [
+          { name: 'No permits needed', note: 'Public footpaths and bridleways here — including inside the National Park — need no permits. Follow the Countryside Code and respect signage.' },
+          { name: 'Download for offline', note: 'Mobile signal is unreliable on the fells — download your route for offline use before you set off.' },
+          { name: 'Livestock & dogs', note: 'Livestock everywhere — dogs on leads across farmland, and especially during lambing (roughly March to May).' },
+          { name: 'Wildlife', note: 'Genuinely good birdlife on the Shap Fells blanket bog — golden plover, short-eared owl, merlin, snipe and red grouse — plus red squirrels around Haweswater.' },
+          { name: 'Wonderfully quiet', note: 'The same fells as the central Lakes, a fraction of the people, and no queuing for a parking space at Glenridding.' },
+        ],
+      },
+    ],
+  },
+
   properties: {
     'the-rockery': {
       name: 'The Rockery',

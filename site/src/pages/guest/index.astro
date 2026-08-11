@@ -276,14 +276,15 @@ import Footer from '../../components/Footer.astro';
   function buildGuide(guide) {
     // Assemble tab definitions: Area first, then each property.
     const panels = [];
-    panels.push({ id: 'area', label: guide.area.title || 'The Area', render: () => renderArea(guide.area) });
-    if (guide.outdoors) {
-      panels.push({ id: 'outdoors', label: guide.outdoors.title || 'Walks & Rides', render: () => renderArea(guide.outdoors) });
-    }
+    // Properties first (the guest's own place), then the shared area guides.
     Object.entries(guide.properties || {}).forEach(([key, prop]) => {
       if (prop.hidden) return; // property hidden for now (e.g. not yet bookable)
       panels.push({ id: key, label: prop.name, render: () => renderProperty(prop) });
     });
+    panels.push({ id: 'area', label: guide.area.title || 'The Area', render: () => renderArea(guide.area) });
+    if (guide.outdoors) {
+      panels.push({ id: 'outdoors', label: guide.outdoors.title || 'Walks & Rides', render: () => renderArea(guide.outdoors) });
+    }
 
     tabsEl.textContent = '';
     contentEl.textContent = '';

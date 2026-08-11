@@ -1,0 +1,174 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+
+// Fully-gated guest guide, served at cottage.lakedistrictescapes.uk.
+// NOTHING is inlined here — the whole guide (local area, walks and the private
+// property manual) is fetched from the gated Netlify Function only after a
+// valid access code, so none of it appears in the page source.
+---
+<Base
+  title="Guest Guide — Lake District Escapes"
+  description="Private guest guide for Primrose Cottage. Enter the access code from your booking to open it."
+  noindex={true}
+>
+  <Nav slot="nav" logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
+
+  <div class="guest-page">
+    <section class="guest-hero">
+      <p class="eyebrow">Guest Guide</p>
+      <h1>Welcome to Your<br /><em>Lake District Escape</em></h1>
+      <p>
+        Everything for your stay in one place — how the cottage works, plus where to eat, explore and
+        the walks, runs and rides on the doorstep. Enter the access code from your booking to open it.
+      </p>
+    </section>
+
+    <div class="guest-wrap">
+      <!-- GATE -->
+      <div class="guest-form-card gate-card" id="gate">
+        <div class="gate-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="4" y="10" width="16" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 018 0v3" />
+          </svg>
+        </div>
+        <h2>Enter Your Access Code</h2>
+        <form class="guest-form" id="gate-form" novalidate>
+          <div class="form-field">
+            <label for="g-code">Access Code</label>
+            <input id="g-code" name="code" type="text" autocomplete="off" autocapitalize="none"
+              spellcheck="false" placeholder="From your booking email" required />
+          </div>
+          <button type="submit" class="guest-btn" id="g-unlock">Open My Guide</button>
+          <p class="guest-status" id="g-status" role="status" aria-live="polite"></p>
+        </form>
+        <p class="gate-hint">
+          The code is in your booking confirmation. Can't find it? Email
+          <strong>hello@lakedistrictescapes.uk</strong> and we'll send it over.
+        </p>
+      </div>
+
+      <!-- GUIDE (revealed after unlock) -->
+      <div class="guide" id="guide">
+        <div class="guide-tabs" id="guide-tabs" role="tablist"></div>
+        <div id="guide-content"></div>
+      </div>
+    </div>
+  </div>
+
+  <Footer
+    slot="footer"
+    links={[
+      { href: '/', label: 'Home' },
+      { href: '/the-rockery/', label: 'The Rockery' },
+      { href: '/primrose-cottage/', label: 'Primrose Cottage' },
+      { href: '/#enquire', label: 'Enquire' },
+    ]}
+  />
+</Base>
+
+<script>
+  import { renderArea, renderProperty } from '../../scripts/guide-ui.js';
+
+  const API = '/api/guest-guide';
+  const STORAGE_KEY = 'lde-guest-code';
+
+  const gate = document.getElementById('gate');
+  const gateForm = document.getElementById('gate-form');
+  const codeInput = document.getElementById('g-code');
+  const unlockBtn = document.getElementById('g-unlock');
+  const statusEl = document.getElementById('g-status');
+  const guideEl = document.getElementById('guide');
+  const tabsEl = document.getElementById('guide-tabs');
+  const contentEl = document.getElementById('guide-content');
+
+  function showStatus(msg, ok) {
+    statusEl.textContent = msg;
+    statusEl.className = 'guest-status show ' + (ok ? 'ok' : 'err');
+  }
+
+  function buildGuide(guide) {
+    // Property (the guest's own place) first, then the shared area guides.
+    const panels = [];
+    Object.entries(guide.properties || {}).forEach(([key, prop]) => {
+      if (prop.hidden) return;
+      panels.push({ id: key, label: prop.name, render: () => renderProperty(prop) });
+    });
+    if (guide.area) {
+      panels.push({ id: 'area', label: guide.area.title || 'The Area', render: () => renderArea(guide.area) });
+    }
+    if (guide.outdoors) {
+      panels.push({ id: 'outdoors', label: guide.outdoors.title || 'Walks & Rides', render: () => renderArea(guide.outdoors) });
+    }
+
+    tabsEl.textContent = '';
+    contentEl.textContent = '';
+
+    const panelEls = {};
+    panels.forEach((p, i) => {
+      const tab = document.createElement('button');
+      tab.className = 'guide-tab' + (i === 0 ? ' active' : '');
+      tab.textContent = p.label;
+      tab.setAttribute('role', 'tab');
+      tab.dataset.target = p.id;
+      tabsEl.appendChild(tab);
+
+      const panel = document.createElement('div');
+      panel.className = 'guide-panel' + (i === 0 ? ' active' : '');
+      panel.id = 'panel-' + p.id;
+      panel.appendChild(p.render());
+      contentEl.appendChild(panel);
+      panelEls[p.id] = { tab, panel };
+    });
+
+    tabsEl.addEventListener('click', (e) => {
+      const btn = e.target.closest('.guide-tab');
+      if (!btn) return;
+      Object.values(panelEls).forEach(({ tab, panel }) => {
+        const on = tab === btn;
+        tab.classList.toggle('active', on);
+        panel.classList.toggle('active', on);
+      });
+    });
+  }
+
+  async function unlock(code, { fromStorage } = {}) {
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Opening…';
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+      sessionStorage.setItem(STORAGE_KEY, code);
+      gate.style.display = 'none';
+      guideEl.classList.add('show');
+      buildGuide(data.guide || {});
+    } catch (err) {
+      if (fromStorage) {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } else {
+        showStatus(err.message || 'Sorry, we could not open the guide.', false);
+      }
+    } finally {
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = 'Open My Guide';
+    }
+  }
+
+  gateForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const code = codeInput.value.trim();
+    if (!code) return showStatus('Please enter your access code.', false);
+    unlock(code);
+  });
+
+  // Re-open automatically if a valid code was used earlier this session.
+  const saved = sessionStorage.getItem(STORAGE_KEY);
+  if (saved) unlock(saved, { fromStorage: true });
+</script>

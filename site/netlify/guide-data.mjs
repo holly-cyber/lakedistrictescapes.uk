@@ -430,7 +430,7 @@ export const GUIDE = {
         {
           title: 'Kitchen & Appliances',
           items: [
-            'Induction hob & oven — the hob only heats magnetic pans, and all the pans provided work with it. [[Any control quirks.]]',
+            'Induction hob & oven — the hob only heats magnetic pans, and all the pans provided work with it.',
             'Fridge, microwave, kettle and toaster are all provided.',
             'Everything you need to cook a proper meal: pots, pans, baking trays, knives, crockery and glassware.',
             'Cooking oils, salt and pepper are provided, plus tea, coffee and sugar.',

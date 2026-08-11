@@ -45,7 +45,7 @@ export const GUIDE = {
           {
             name: 'Shap Chippy',
             meta: '5 min walk · Cleveland House',
-            note: 'The most useful address in the village — properly cooked fish and a menu that goes well beyond fish & chips (curry specials too). Closed Mondays; lunch 12–1.30, evenings from 4.',
+            note: 'The most useful address in the village — properly cooked fish and a menu that goes well beyond fish & chips (curry specials too). Closed Mondays; lunch 12–1.30, evenings from 4. Last orders are 7pm for eating in and 7.30pm for takeaway — don’t be late, they close sharpish!',
             link: 'https://shapchippy.co.uk',
           },
           {
@@ -467,10 +467,38 @@ export const GUIDE = {
         },
         {
           title: 'Help & Emergencies',
+          body: 'In a genuine emergency always dial 999. For anything that isn’t obviously an emergency, call NHS 111 first — they can direct you to the right place and save a wasted drive to a unit that’s closed.',
+          items: [
+            {
+              text: '24-hour A&E — Cumberland Infirmary, Newtown Road, Carlisle CA2 7HY. The closest, about 30 miles / 40 min via the M6, and the main acute and trauma site for north and east Cumbria. Open 24 hours, every day · switchboard 01228 523444.',
+              link: 'https://www.aewaittime.co.uk/hospitals/cumberland-infirmary-carlisle',
+              linkLabel: 'Check A&E wait time ↗',
+            },
+            {
+              text: '24-hour A&E — Royal Lancaster Infirmary, Ashton Road, Lancaster LA1 4RP. About 40 miles / 50 min via the M6; a straight run south if you’re already heading that way. Open 24 hours, 7 days a week.',
+              link: 'https://www.aandewaittimes.uk/hospital/royal-lancaster-infirmary',
+              linkLabel: 'Check A&E wait time ↗',
+            },
+            {
+              text: 'Urgent treatment centre (sprains, suspected simple fractures, cuts, minor burns and head injuries) — Penrith Community Hospital, Bridge Lane, Penrith CA11 8HX. 10 miles / 20 min, open daily 8am–10pm · 01768 245555 (option 1). On-site X-ray runs Mon–Fri 8.30am–4.30pm only, so a weekend suspected fracture may be sent on to Carlisle.',
+              link: 'https://www.aewaittime.co.uk/hospitals/penrith-community-hospital',
+              linkLabel: 'Check wait time ↗',
+            },
+            {
+              text: 'Urgent treatment centre — Westmorland General, Burton Road, Kendal LA9 7RG. 16 miles / 30 min, open daily 8am–11pm (last appointment 10pm), X-ray 9am–8pm with overnight on-call — better weekend X-ray cover than Penrith.',
+              link: 'https://www.aewaittime.co.uk/hospitals/westmorland-general-hospital',
+              linkLabel: 'Check wait time ↗',
+            },
+            {
+              text: 'Urgent treatment centre — Keswick Hospital, Crosthwaite Road CA12 5PH. 30 miles / 50 min, open daily 8.30am–6pm; only really relevant if you’re already over that side.',
+              link: 'https://www.ncic.nhs.uk/services/urgent-treatment-centre',
+              linkLabel: 'More info ↗',
+            },
+          ],
           fields: [
             { label: 'Your hosts', value: 'Holly 07771 346748 · Mel 07720 840898' },
             { label: 'Fuse board', value: '[[ location ]]' },
-            { label: 'Nearest A&E', value: 'Penrith / Carlisle — dial 999 in an emergency' },
+            { label: 'what3words', value: '///arrival.snowballs.attic' },
           ],
         },
       ],

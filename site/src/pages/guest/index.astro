@@ -231,7 +231,24 @@ import Footer from '../../components/Footer.astro';
       if (sec.body) body.appendChild(el('p', 'gcard-text', sec.body));
       if (Array.isArray(sec.items) && sec.items.length) {
         const ul = el('ul', 'manual-list');
-        sec.items.forEach((li) => ul.appendChild(el('li', null, li)));
+        sec.items.forEach((li) => {
+          if (typeof li === 'string') {
+            ul.appendChild(el('li', null, li));
+            return;
+          }
+          const item = el('li', null, li.text || '');
+          if (li.link && /^https?:\/\//.test(li.link)) {
+            item.appendChild(document.createElement('br'));
+            const a = document.createElement('a');
+            a.className = 'manual-link';
+            a.href = li.link;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = li.linkLabel || 'More ↗';
+            item.appendChild(a);
+          }
+          ul.appendChild(item);
+        });
         body.appendChild(ul);
       }
       if (Array.isArray(sec.fields) && sec.fields.length) {

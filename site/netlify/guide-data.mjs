@@ -115,7 +115,7 @@ export const GUIDE = {
           {
             name: 'Orton Scar Cafe, Orton',
             meta: '15 min · Orton',
-            note: 'A friendly village cafe in Orton for coffee, cake and a bite of lunch — a good stop while exploring the Orton fells.',
+            note: 'Simple fare — bacon buns, canned drinks and the like — with the option to eat in or take away. A handy stop while exploring the Orton fells.',
             link: 'https://maps.app.goo.gl/xN4rBV1mvxcxEkto6',
             linkLabel: 'View on map ↗',
           },
@@ -311,7 +311,7 @@ export const GUIDE = {
         name: 'Out & About',
         items: [
           { name: 'The fells & open moorland', note: 'On the doorstep — walking straight from the village, or ~15 min to the higher fells.' },
-          { name: 'Shap Swimming Pool', note: 'A heated open-air community pool in the village, run by volunteers and open through the summer season — a lovely spot on a warm day, and walkable from the door.' },
+          { name: 'Shap Swimming Pool', note: 'A heated open-air community pool in the village, run by volunteers and open through the summer season — a lovely spot on a warm day, and walkable from the door.', link: 'https://shapswimmingpool.co.uk/' },
           { name: 'Haweswater & Mardale', note: '~15 min — quiet valley, great walking and red squirrel country.' },
           { name: 'Ullswater & Pooley Bridge', note: '~25 min — steamers, lakeside walks and Aira Force.' },
           { name: 'Keswick & Derwentwater', note: '~40 min — launches, Catbells and the northern fells.' },

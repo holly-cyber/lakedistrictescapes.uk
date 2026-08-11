@@ -288,11 +288,11 @@ export const GUIDE = {
         items: [
           {
             name: 'Co-op / village shop',
-            note: 'Groceries, essentials and the morning paper in the village — open 7am–10pm, with a free-to-use cashpoint outside.',
+            note: 'The Co-op in the village has a little of everything you’ll need — groceries, essentials and the morning paper. Open 7am–10pm, with a free-to-use cashpoint outside.',
           },
           {
-            name: 'Bigger food shop',
-            note: 'Booths supermarket in Penrith (15 min north up the A6) for a serious shop.',
+            name: 'Major supermarkets',
+            note: 'For a serious shop, the closest big supermarkets are in Penrith (15–20 min) and Kendal (20–25 min) — including Booths.',
           },
           {
             name: 'Fuel, cash & pharmacy',

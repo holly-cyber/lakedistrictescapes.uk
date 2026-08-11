@@ -288,7 +288,7 @@ export const GUIDE = {
         items: [
           {
             name: 'Co-op / village shop',
-            note: 'Groceries, essentials and the morning paper in the village. [[Add Co-op opening hours]]',
+            note: 'Groceries, essentials and the morning paper in the village — open 7am–10pm, with a free-to-use cashpoint outside.',
           },
           {
             name: 'Bigger food shop',
@@ -296,7 +296,7 @@ export const GUIDE = {
           },
           {
             name: 'Fuel, cash & pharmacy',
-            note: '[[Add nearest petrol station, cash machine and pharmacy]]',
+            note: 'Free-to-use cashpoint at the Co-op in the village. Nearest fuel is Tebay Services (handy but pricey), with cheaper filling up in Penrith and Kendal. [[Nearest pharmacy]]',
           },
         ],
       },
@@ -324,7 +324,7 @@ export const GUIDE = {
       sections: [
         {
           title: 'Arrival & Keys',
-          body: 'There is a key safe in the passageway between the cottage and the main house. The exact lockbox location and code are sent to you on the day of arrival. [[Check-in from HH:MM.]]',
+          body: 'There is a key safe in the passageway between the cottage and the main house. The exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm.',
         },
         {
           title: 'Wi-Fi',
@@ -402,7 +402,7 @@ export const GUIDE = {
       sections: [
         {
           title: 'Arrival & Keys',
-          body: 'Primrose Cottage has its own private entrance and key. There is a key safe in the passageway between the cottage and the main house — the exact lockbox location and code are sent to you on the day of arrival. [[Check-in from HH:MM.]]',
+          body: 'Primrose Cottage has its own private entrance and key. There is a key safe in the passageway between the cottage and the main house — the exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm.',
         },
         {
           title: 'Wi-Fi',

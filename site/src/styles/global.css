@@ -1595,7 +1595,25 @@
       color: var(--coniston-blue);
       margin-bottom: 0.2rem;
     }
+    .area-item-meta {
+      font-size: 0.7rem;
+      letter-spacing: 0.04em;
+      font-weight: 500;
+      color: var(--gable-deep);
+      margin-bottom: 0.3rem;
+    }
     .area-item-note { font-size: 0.88rem; line-height: 1.6; color: var(--mid); font-weight: 300; }
+    .area-item-link {
+      display: inline-block;
+      margin-top: 0.45rem;
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--coniston-blue);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(30,79,160,0.3);
+      transition: border-color 0.2s;
+    }
+    .area-item-link:hover { border-bottom-color: var(--coniston-blue); }
 
     .manual-list { list-style: none; display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.6rem; }
     .manual-list li {

@@ -1358,18 +1358,18 @@
     .guest-hero {
       padding: 120px clamp(1.5rem, 5vw, 5rem) 3.5rem;
       text-align: center;
-      background: var(--coniston-blue);
+      background:
+        linear-gradient(rgba(47,51,38,0.60), rgba(47,51,38,0.78)),
+        url('/images/shap-stepping-stones.jpg') center 55% / cover no-repeat;
       position: relative;
       overflow: hidden;
     }
     .guest-hero::before {
       content: '';
       position: absolute;
-      bottom: -100px; right: -60px;
-      width: 340px; height: 340px;
-      border-radius: 50%;
-      background: var(--gable-green);
-      opacity: 0.18;
+      inset: 0;
+      background: linear-gradient(to top, rgba(111,115,87,0.35), transparent 60%);
+      pointer-events: none;
     }
     .guest-hero .eyebrow { color: var(--kendal-mint); text-align: center; position: relative; }
     .guest-hero h1 {
@@ -1379,15 +1379,17 @@
       color: #fff;
       line-height: 1.1;
       position: relative;
+      text-shadow: 0 2px 18px rgba(0,0,0,0.4);
     }
     .guest-hero h1 em { font-style: italic; color: var(--kendal-mint); }
     .guest-hero p {
-      color: rgba(255,255,255,0.8);
+      color: rgba(255,255,255,0.88);
       max-width: 560px;
       margin: 1.2rem auto 0;
       font-weight: 300;
       line-height: 1.7;
       position: relative;
+      text-shadow: 0 1px 12px rgba(0,0,0,0.35);
     }
     .guest-wrap {
       max-width: 780px;

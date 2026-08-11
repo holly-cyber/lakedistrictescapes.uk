@@ -120,6 +120,17 @@
     .hero-scene::before,
     .hero-scene::after { content: none; }
     .hero-scene-inner { position: relative; z-index: 1; }
+    .hero-scene-moon {
+      position: absolute;
+      top: -12px;
+      right: 0;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: var(--kendal-mint);
+      opacity: 0.55;
+      pointer-events: none;
+    }
     .hero-scene-art {
       position: absolute;
       left: 0;

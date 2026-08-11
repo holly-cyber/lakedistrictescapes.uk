@@ -255,6 +255,7 @@ import Footer from '../../components/Footer.astro';
     const panels = [];
     panels.push({ id: 'area', label: guide.area.title || 'The Area', render: () => renderArea(guide.area) });
     Object.entries(guide.properties || {}).forEach(([key, prop]) => {
+      if (prop.hidden) return; // property hidden for now (e.g. not yet bookable)
       panels.push({ id: key, label: prop.name, render: () => renderProperty(prop) });
     });
 

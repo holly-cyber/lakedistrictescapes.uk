@@ -317,6 +317,9 @@ export const GUIDE = {
   properties: {
     'the-rockery': {
       name: 'The Rockery',
+      // Hidden for now (The Rockery isn't taking bookings yet). Remove this
+      // line to show the tab again — all its content below is preserved.
+      hidden: true,
       tagline: 'Grade II Listed house · sleeps 9',
       sections: [
         {
@@ -362,7 +365,7 @@ export const GUIDE = {
         },
         {
           title: 'TV & Entertainment',
-          body: 'The Amazon Fire TV is connected to the Wi-Fi and gives you a range of streaming apps — Netflix, Amazon Prime and Apple TV, as well as BBC, ITV, Channel 4 and Channel 5. Simply switch the TV on with the remote control and navigate to your preferred app. Sky TV and Sky Cinema are also available in the house.',
+          body: 'The Amazon Fire TV is connected to the Wi-Fi and gives you a range of streaming apps — Netflix, Amazon Prime and Apple TV, as well as BBC, ITV, Channel 4 and Channel 5. Simply switch the TV on with the remote control and navigate to your preferred app. You’ll need to sign in with your own personal streaming accounts. Sky TV and Sky Cinema are also available in the house.',
         },
         {
           title: 'Bins & Recycling',
@@ -433,7 +436,7 @@ export const GUIDE = {
         },
         {
           title: 'TV & Entertainment',
-          body: 'The Amazon Fire TV is connected to the Wi-Fi and gives you a range of streaming apps — Netflix, Amazon Prime and Apple TV, as well as BBC, ITV, Channel 4 and Channel 5. Simply switch the TV on with the remote control and navigate to your preferred app.',
+          body: 'The Amazon Fire TV is connected to the Wi-Fi and gives you a range of streaming apps — Netflix, Amazon Prime and Apple TV, as well as BBC, ITV, Channel 4 and Channel 5. Simply switch the TV on with the remote control and navigate to your preferred app. You’ll need to sign in with your own personal streaming accounts.',
         },
         {
           title: 'Drying Wet Gear',

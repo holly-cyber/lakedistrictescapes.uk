@@ -1489,6 +1489,20 @@
     .gate-card .guest-form { text-align: left; margin-top: 1.4rem; }
     .gate-hint { font-size: 0.8rem; color: var(--mid); margin-top: 1.2rem; line-height: 1.6; }
 
+    /* Gate shown inside the (locked) property tab panel */
+    .guide-gate { max-width: 500px; margin: 0.5rem auto 1.5rem; text-align: center; }
+    .guide-gate h2 {
+      font-family: 'Playfair Display', serif;
+      font-weight: 400;
+      font-size: 1.4rem;
+      color: var(--off-black);
+      margin-bottom: 0.4rem;
+    }
+    .guide-gate .guest-form { text-align: left; margin-top: 1.4rem; }
+    .guide-gate .gate-hint { margin-top: 0; }
+    /* Lock glyph on a private tab */
+    .guide-tab-lock { width: 12px; height: 12px; opacity: 0.55; vertical-align: -1px; margin-left: 3px; }
+
     /* Guide — section tabs */
     .guide { display: none; }
     .guide.show { display: block; }

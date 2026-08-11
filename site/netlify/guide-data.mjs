@@ -19,6 +19,35 @@ export const GUIDE = {
       'Everything you need for a great stay in Shap and the wider Lake District — where to eat, drink, shop and explore. Booking is worth doing almost everywhere between Easter and October, and on any Sunday; several places are small and shut two or three days a week, so a quick call the day before saves a wasted drive. All distances are driving times from the door unless a walk is noted.',
     groups: [
       {
+        name: 'Out & About',
+        items: [
+          { name: 'The fells & open moorland', note: 'On the doorstep — walking straight from the village, or ~15 min to the higher fells.' },
+          { name: 'Shap Swimming Pool', note: 'A heated open-air community pool in the village, run by volunteers and open through the summer season — a lovely spot on a warm day, and walkable from the door.', link: 'https://shapswimmingpool.co.uk/' },
+          { name: 'Haweswater & Mardale', note: '~15 min — quiet valley, great walking and red squirrel country.' },
+          { name: 'Ullswater & Pooley Bridge', note: '~25 min — steamers, lakeside walks and Aira Force.' },
+          { name: 'Keswick & Derwentwater', note: '~40 min — launches, Catbells and the northern fells.' },
+          { name: 'Windermere & Ambleside', note: '~45–50 min — the classic central Lakes day out.' },
+          { name: 'Penrith & Kendal', note: 'Market towns 15–20 min away for shops, cafes and a rainy day.' },
+        ],
+      },
+      {
+        name: 'Shops & Essentials',
+        items: [
+          {
+            name: 'Co-op / village shop',
+            note: 'The Co-op in the village has a little of everything you’ll need — groceries, essentials and the morning paper. Open 7am–10pm, with a free-to-use cashpoint outside.',
+          },
+          {
+            name: 'Major supermarkets',
+            note: 'For a serious shop, the closest big supermarkets are in Penrith (15–20 min) and Kendal (20–25 min) — including Booths.',
+          },
+          {
+            name: 'Fuel, cash & pharmacy',
+            note: 'Free-to-use cashpoint at the Co-op in the village. Nearest fuel is Tebay Services (handy but pricey); for cheaper filling up, the Esso garage on the A6 into Penrith (Bridge Lane, CA11 8JB — over the roundabout) or on into Kendal. The nearest pharmacy is in Penrith (about 15–20 min).',
+          },
+        ],
+      },
+      {
         name: 'Eat & Drink — Our Quick Picks',
         items: [
           { name: 'Breakfast, lunch or cake', note: 'Birchwood Cafe, in the village — 5 min walk.' },
@@ -290,35 +319,6 @@ export const GUIDE = {
           },
         ],
       },
-      {
-        name: 'Shops & Essentials',
-        items: [
-          {
-            name: 'Co-op / village shop',
-            note: 'The Co-op in the village has a little of everything you’ll need — groceries, essentials and the morning paper. Open 7am–10pm, with a free-to-use cashpoint outside.',
-          },
-          {
-            name: 'Major supermarkets',
-            note: 'For a serious shop, the closest big supermarkets are in Penrith (15–20 min) and Kendal (20–25 min) — including Booths.',
-          },
-          {
-            name: 'Fuel, cash & pharmacy',
-            note: 'Free-to-use cashpoint at the Co-op in the village. Nearest fuel is Tebay Services (handy but pricey); for cheaper filling up, the Esso garage on the A6 into Penrith (Bridge Lane, CA11 8JB — over the roundabout) or on into Kendal. The nearest pharmacy is in Penrith (about 15–20 min).',
-          },
-        ],
-      },
-      {
-        name: 'Out & About',
-        items: [
-          { name: 'The fells & open moorland', note: 'On the doorstep — walking straight from the village, or ~15 min to the higher fells.' },
-          { name: 'Shap Swimming Pool', note: 'A heated open-air community pool in the village, run by volunteers and open through the summer season — a lovely spot on a warm day, and walkable from the door.', link: 'https://shapswimmingpool.co.uk/' },
-          { name: 'Haweswater & Mardale', note: '~15 min — quiet valley, great walking and red squirrel country.' },
-          { name: 'Ullswater & Pooley Bridge', note: '~25 min — steamers, lakeside walks and Aira Force.' },
-          { name: 'Keswick & Derwentwater', note: '~40 min — launches, Catbells and the northern fells.' },
-          { name: 'Windermere & Ambleside', note: '~45–50 min — the classic central Lakes day out.' },
-          { name: 'Penrith & Kendal', note: 'Market towns 15–20 min away for shops, cafes and a rainy day.' },
-        ],
-      },
     ],
   },
 
@@ -505,7 +505,7 @@ export const GUIDE = {
           ],
           fields: [
             { label: 'Your hosts', value: 'Holly 07771 346748 · Mel 07720 840898' },
-            { label: 'Fuse board', value: '[[ location ]]' },
+            { label: 'Fuse board', value: 'Under the stairs' },
             { label: 'what3words', value: '///arrival.snowballs.attic' },
           ],
         },

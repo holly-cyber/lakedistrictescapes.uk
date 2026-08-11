@@ -203,7 +203,17 @@ import Footer from '../../components/Footer.astro';
       (group.items || []).forEach((item) => {
         const it = el('div', 'area-item');
         it.appendChild(el('div', 'area-item-name', item.name));
+        if (item.meta) it.appendChild(el('div', 'area-item-meta', item.meta));
         if (item.note) it.appendChild(el('div', 'area-item-note', item.note));
+        if (item.link && /^https?:\/\//.test(item.link)) {
+          const a = document.createElement('a');
+          a.className = 'area-item-link';
+          a.href = item.link;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = 'Visit website ↗';
+          it.appendChild(a);
+        }
         body.appendChild(it);
       });
       cards.appendChild(makeCard(group.name, body, i === 0));

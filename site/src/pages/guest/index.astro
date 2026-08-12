@@ -4,33 +4,27 @@ import Nav from '../../components/Nav.astro';
 import Footer from '../../components/Footer.astro';
 import { GUIDE } from '../../../netlify/guide-data.mjs';
 
-// Public content (local area + walks) is safe to render for everyone, so it is
-// inlined into the page at build time. Private property manuals (Wi-Fi codes,
-// key-safe, etc.) are NOT included here — they are fetched from the gated
-// Netlify Function only after a valid access code.
+// Public local guide (no access code). Shows the area + walks content only;
+// the private property manual lives on the (unlisted) cottage guide.
 const publicGuide = {
   area: GUIDE.area,
   outdoors: GUIDE.outdoors,
-  propertyTabs: Object.entries(GUIDE.properties)
-    .filter(([, p]) => !p.hidden)
-    .map(([key, p]) => ({ key, name: p.name, tagline: p.tagline })),
 };
 const publicJson = JSON.stringify(publicGuide).replace(/</g, '\\u003c');
 ---
 <Base
-  title="Guest Guide — Lake District Escapes"
-  description="Explore Shap and the Lake District — where to eat, shop and explore, plus the walks, runs and rides on the doorstep. Booked guests can open the house guide with the code from their booking."
+  title="Local Area Guide — Lake District Escapes"
+  description="Explore Shap and the Lake District — where to eat, drink and shop, plus the walks, runs and rides right on the doorstep."
 >
   <Nav slot="nav" logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
 
   <div class="guest-page">
     <section class="guest-hero">
-      <p class="eyebrow">Guest Guide</p>
-      <h1>Welcome to Your<br /><em>Lake District Escape</em></h1>
+      <p class="eyebrow">Local Area Guide</p>
+      <h1>Shap &amp; the<br /><em>Lake District</em></h1>
       <p>
-        Where to eat, drink and explore around Shap, plus the walks, runs and rides on the doorstep —
-        open to everyone. Booked with us? Open the property tab with your access code for how
-        everything works inside.
+        Where to eat, drink and explore around Shap, plus the walks, runs and rides right on the
+        doorstep — everything you need to make the most of the Eastern Lakes.
       </p>
     </section>
 
@@ -49,191 +43,56 @@ const publicJson = JSON.stringify(publicGuide).replace(/</g, '\\u003c');
       { href: '/', label: 'Home' },
       { href: '/the-rockery/', label: 'The Rockery' },
       { href: '/primrose-cottage/', label: 'Primrose Cottage' },
-      { href: '/guest/', label: 'Guest Guide' },
       { href: '/#enquire', label: 'Enquire' },
     ]}
   />
 </Base>
 
 <script>
-  import { el, svg, ICONS, renderArea, renderProperty } from '../../scripts/guide-ui.js';
-
-  const API = '/api/guest-guide';
-  const STORAGE_KEY = 'lde-guest-code';
+  import { renderArea } from '../../scripts/guide-ui.js';
 
   const tabsEl = document.getElementById('guide-tabs');
   const contentEl = document.getElementById('guide-content');
 
-  let PUBLIC = {};
+  let GUIDE = {};
   try {
-    PUBLIC = JSON.parse(document.getElementById('public-guide').textContent || '{}');
+    GUIDE = JSON.parse(document.getElementById('public-guide').textContent || '{}');
   } catch (e) {
-    PUBLIC = {};
+    GUIDE = {};
   }
 
-  // The gated panel content for a private property (before the code is entered).
-  function makeGate(prop) {
-    const card = el('div', 'guest-form-card guide-gate');
-
-    const icon = el('div', 'gate-icon');
-    icon.setAttribute('aria-hidden', 'true');
-    icon.appendChild(svg(ICONS.lock));
-    card.appendChild(icon);
-
-    card.appendChild(el('h2', null, 'Guest access — ' + prop.name));
-    card.appendChild(
-      el(
-        'p',
-        'gate-hint',
-        'The ' +
-          prop.name +
-          ' guide — Wi-Fi, keys, appliances and how everything works — is just for booked guests. Enter the access code from your booking to open it. Exploring the area? The other tabs are open to everyone.'
-      )
-    );
-
-    const form = document.createElement('form');
-    form.className = 'guest-form';
-    form.noValidate = true;
-
-    const field = el('div', 'form-field');
-    const label = document.createElement('label');
-    label.setAttribute('for', 'g-code');
-    label.textContent = 'Access Code';
-    field.appendChild(label);
-    const input = document.createElement('input');
-    input.id = 'g-code';
-    input.name = 'code';
-    input.type = 'text';
-    input.autocomplete = 'off';
-    input.setAttribute('autocapitalize', 'none');
-    input.spellcheck = false;
-    input.placeholder = 'From your booking email';
-    input.required = true;
-    field.appendChild(input);
-    form.appendChild(field);
-
-    const btn = document.createElement('button');
-    btn.type = 'submit';
-    btn.className = 'guest-btn';
-    btn.textContent = 'Open My Guide';
-    form.appendChild(btn);
-
-    const status = el('p', 'guest-status');
-    status.setAttribute('role', 'status');
-    status.setAttribute('aria-live', 'polite');
-    form.appendChild(status);
-
-    form.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const code = input.value.trim();
-      if (!code) {
-        status.textContent = 'Please enter your access code.';
-        status.className = 'guest-status show err';
-        return;
-      }
-      unlock(code, { btn, status });
-    });
-
-    card.appendChild(form);
-    return card;
+  const panels = [];
+  if (GUIDE.area) {
+    panels.push({ id: 'area', label: GUIDE.area.title || 'The Area', render: () => renderArea(GUIDE.area) });
+  }
+  if (GUIDE.outdoors) {
+    panels.push({ id: 'outdoors', label: GUIDE.outdoors.title || 'Walks & Rides', render: () => renderArea(GUIDE.outdoors) });
   }
 
-  const panelRefs = {};
+  const panelEls = {};
+  panels.forEach((p, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'guide-tab' + (i === 0 ? ' active' : '');
+    tab.textContent = p.label;
+    tab.setAttribute('role', 'tab');
+    tab.dataset.target = p.id;
+    tabsEl.appendChild(tab);
 
-  function buildTabs() {
-    const panels = [];
-    // Private property tab(s) first, then the public area guides.
-    (PUBLIC.propertyTabs || []).forEach((pt) => {
-      panels.push({ id: pt.key, label: pt.name, property: pt });
+    const panel = document.createElement('div');
+    panel.className = 'guide-panel' + (i === 0 ? ' active' : '');
+    panel.id = 'panel-' + p.id;
+    panel.appendChild(p.render());
+    contentEl.appendChild(panel);
+    panelEls[p.id] = { tab, panel };
+  });
+
+  tabsEl.addEventListener('click', (ev) => {
+    const btn = ev.target.closest('.guide-tab');
+    if (!btn) return;
+    Object.values(panelEls).forEach(({ tab, panel }) => {
+      const on = tab === btn;
+      tab.classList.toggle('active', on);
+      panel.classList.toggle('active', on);
     });
-    if (PUBLIC.area) {
-      panels.push({ id: 'area', label: PUBLIC.area.title || 'The Area', render: () => renderArea(PUBLIC.area) });
-    }
-    if (PUBLIC.outdoors) {
-      panels.push({ id: 'outdoors', label: PUBLIC.outdoors.title || 'Walks & Rides', render: () => renderArea(PUBLIC.outdoors) });
-    }
-
-    tabsEl.textContent = '';
-    contentEl.textContent = '';
-
-    panels.forEach((p, i) => {
-      const tab = document.createElement('button');
-      tab.className = 'guide-tab' + (i === 0 ? ' active' : '');
-      tab.setAttribute('role', 'tab');
-      tab.dataset.target = p.id;
-      if (p.property) {
-        tab.appendChild(document.createTextNode(p.label + ' '));
-        const lock = svg(ICONS.lock, 'guide-tab-lock');
-        lock.setAttribute('aria-hidden', 'true');
-        tab.appendChild(lock);
-      } else {
-        tab.textContent = p.label;
-      }
-      tabsEl.appendChild(tab);
-
-      const panel = document.createElement('div');
-      panel.className = 'guide-panel' + (i === 0 ? ' active' : '');
-      panel.id = 'panel-' + p.id;
-      panel.appendChild(p.property ? makeGate(p.property) : p.render());
-      contentEl.appendChild(panel);
-      panelRefs[p.id] = { tab, panel, property: p.property || null };
-    });
-
-    tabsEl.addEventListener('click', (e) => {
-      const btn = e.target.closest('.guide-tab');
-      if (!btn) return;
-      Object.values(panelRefs).forEach(({ tab, panel }) => {
-        const on = tab === btn;
-        tab.classList.toggle('active', on);
-        panel.classList.toggle('active', on);
-      });
-    });
-  }
-
-  function fillProperties(properties) {
-    Object.entries(panelRefs).forEach(([id, ref]) => {
-      if (!ref.property) return;
-      const prop = properties[id];
-      if (!prop) return;
-      ref.panel.textContent = '';
-      ref.panel.appendChild(renderProperty(prop));
-      const lock = ref.tab.querySelector('.guide-tab-lock');
-      if (lock) lock.remove();
-    });
-  }
-
-  async function unlock(code, ui) {
-    const { btn, status } = ui || {};
-    if (btn) {
-      btn.disabled = true;
-      btn.textContent = 'Opening…';
-    }
-    try {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
-      sessionStorage.setItem(STORAGE_KEY, code);
-      fillProperties(data.properties || {});
-    } catch (err) {
-      if (status) {
-        status.textContent = err.message || 'Sorry, we could not open the guide.';
-        status.className = 'guest-status show err';
-      }
-    } finally {
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = 'Open My Guide';
-      }
-    }
-  }
-
-  buildTabs();
-
-  // Silently re-open the private guide if a valid code was used earlier this session.
-  const saved = sessionStorage.getItem(STORAGE_KEY);
-  if (saved) unlock(saved, {});
+  });
 </script>

@@ -389,6 +389,18 @@ export function initDashboard(root, data) {
 
   root.textContent = '';
   root.appendChild(toggle);
+
+  if (data.meta) {
+    const live = data.meta.source === 'airtable';
+    const meta = e('div', { class: 'dash-meta' }, [
+      e('span', { class: 'dash-dot' + (live ? ' live' : '') }),
+      (live ? 'Live from Airtable' : 'Built-in sample data') +
+        ' · ' + (data.bookings || []).length + ' bookings, ' + (data.expenses || []).length + ' expenses',
+    ]);
+    if (data.meta.warning) meta.appendChild(e('span', { class: 'dash-warn', text: ' — ' + data.meta.warning }));
+    root.appendChild(meta);
+  }
+
   root.appendChild(body);
   render();
 }

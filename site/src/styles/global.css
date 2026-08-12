@@ -1983,3 +1983,9 @@
       .kpi { padding: 0.9rem; }
       .kpi-num { font-size: 1.4rem; }
     }
+
+    /* dashboard data-source indicator */
+    .dash-meta { display: flex; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--mid); margin: -0.6rem 0 1.4rem; flex-wrap: wrap; }
+    .dash-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--grasmere-slate); display: inline-block; }
+    .dash-dot.live { background: #4a9d6a; }
+    .dash-warn { color: #b23b3b; }

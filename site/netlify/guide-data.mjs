@@ -1,9 +1,13 @@
 // ─────────────────────────────────────────────────────────────────────────
 // GUEST GUIDE CONTENT
 //
-// This is the digital welcome guide shown at guest.lakedistrictescapes.uk
-// AFTER a guest enters the access code. It is served by the guest-guide
-// Netlify Function, so it never appears in the public page source.
+// The digital welcome guide. The full guide (property manual + area + walks)
+// is shown at the unlisted cottage.lakedistrictescapes.uk; the public
+// /guest/ page shows the area + walks content only.
+//
+// NOTE: the cottage guide is open (no access code), so anything here —
+// including Wi-Fi passwords and key details — is visible to anyone with that
+// link. Keep that in mind when filling in the property manual.
 //
 // HOW TO EDIT:
 //   • Replace every [[ bracketed placeholder ]] with your real details.

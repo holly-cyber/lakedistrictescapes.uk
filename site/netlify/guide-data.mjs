@@ -542,6 +542,7 @@ export const GUIDE = {
           items: [
             'Switch the shower on at the on/off button just outside the cubicle.',
             'Pull the cord above the button to switch on the extractor fan.',
+            'Then step into the cubicle and switch the shower on at the control inside.',
           ],
         },
         {

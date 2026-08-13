@@ -512,6 +512,15 @@ export const GUIDE = {
           body: 'Primrose Cottage has its own private entrance and key. There is a key safe in the passageway between the cottage and the main house — the exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm, though we’re happy to accommodate an earlier check-in where we can — just ask.',
         },
         {
+          title: 'Parking',
+          body: 'As you turn into the driveway, the main house is in front of you and the cottage is on the right-hand side.',
+          items: [
+            'Please park in front of the woodshed, on the right-hand side.',
+            'A flower pot marks out the spacing — we park next to it, so please leave enough room to open car doors on both sides.',
+            'Our tip: drive in, then reverse into the spot next to the wall, right by the cottage.',
+          ],
+        },
+        {
           title: 'Wi-Fi',
           fields: [
             { label: 'Network', value: 'Lake District Escapes' },

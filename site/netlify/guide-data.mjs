@@ -524,7 +524,7 @@ export const GUIDE = {
           items: [
             'Wake up the screen by pressing any button or tapping the dial.',
             'Turn the dial (or press the up/down arrows) to raise the target temperature higher than your current room temperature — the heating will come on.',
-            'The fan heater can be found under the stairs.',
+            'The fan heater can be found behind the TV.',
           ],
         },
         {

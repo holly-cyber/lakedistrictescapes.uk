@@ -546,6 +546,15 @@ export const GUIDE = {
           ],
         },
         {
+          title: 'The Cooker & Oven',
+          body: 'First, switch the cooker on at the on/off switch above the cooker, to the left. Then, to use the oven:',
+          items: [
+            'Turn the temperature gauge to the temperature you’d like.',
+            'Turn the right-hand knob to fan oven or grill, as you prefer.',
+            'Press “+” on the timer — you’ll hear the oven start up.',
+          ],
+        },
+        {
           title: 'Your Welcome Pack',
           body: 'On arrival the kitchen is loaded with milk, tea, coffee and cereal to see you through the first morning. Told us your dietary needs or milk preference at booking? It’ll already be sorted.',
         },

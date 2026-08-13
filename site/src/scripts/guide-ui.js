@@ -73,7 +73,7 @@ export function iconKeyFor(title) {
   if (t.includes('route') || t.includes('guide') || t.includes('komoot')) return 'compass';
   if (t.includes('arrival') || t.includes('key')) return 'key';
   if (t.includes('wi-fi') || t.includes('wifi')) return 'wifi';
-  if (t.includes('kitchen') || t.includes('appliance')) return 'kitchen';
+  if (t.includes('kitchen') || t.includes('appliance') || t.includes('cooker') || t.includes('oven') || t.includes('hob')) return 'kitchen';
   if (t.includes('welcome pack')) return 'gift';
   if (t.includes('tv') || t.includes('entertainment')) return 'tv';
   if (t.includes('drying') || t.includes('wet gear') || t.includes('shower') || t.includes('bathroom')) return 'droplet';

@@ -76,7 +76,7 @@ export function iconKeyFor(title) {
   if (t.includes('kitchen') || t.includes('appliance')) return 'kitchen';
   if (t.includes('welcome pack')) return 'gift';
   if (t.includes('tv') || t.includes('entertainment')) return 'tv';
-  if (t.includes('drying') || t.includes('wet gear')) return 'droplet';
+  if (t.includes('drying') || t.includes('wet gear') || t.includes('shower') || t.includes('bathroom')) return 'droplet';
   if (t.includes('bin') || t.includes('recycl')) return 'bin';
   if (t.includes('parking')) return 'parking';
   if (t.includes('bike') || t.includes('luggage')) return 'bike';

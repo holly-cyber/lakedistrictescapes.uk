@@ -528,6 +528,14 @@ export const GUIDE = {
           ],
         },
         {
+          title: 'The Shower',
+          body: 'Quick to get going:',
+          items: [
+            'Switch the shower on at the on/off button just outside the cubicle.',
+            'Pull the cord above the button to switch on the extractor fan.',
+          ],
+        },
+        {
           title: 'Kitchen & Appliances',
           items: [
             'Induction hob & oven — the hob only heats magnetic pans, and all the pans provided work with it.',

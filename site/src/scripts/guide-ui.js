@@ -70,7 +70,7 @@ export function iconKeyFor(title) {
   if (t.includes('cycl') || t.includes('ride')) return 'bike';
   if (t.includes('run')) return 'run';
   if (t.includes('walk')) return 'explore';
-  if (t.includes('route') || t.includes('guide') || t.includes('komoot')) return 'compass';
+  if (t.includes('route') || t.includes('guide') || t.includes('komoot') || t.includes('direction') || t.includes('finding')) return 'compass';
   if (t.includes('arrival') || t.includes('key')) return 'key';
   if (t.includes('wi-fi') || t.includes('wifi')) return 'wifi';
   if (t.includes('kitchen') || t.includes('appliance') || t.includes('cooker') || t.includes('oven') || t.includes('hob')) return 'kitchen';

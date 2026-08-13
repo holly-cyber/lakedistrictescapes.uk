@@ -548,9 +548,9 @@ export const GUIDE = {
         {
           title: 'Kitchen & Appliances',
           items: [
-            'Induction hob & oven — the hob only heats magnetic pans, and all the pans provided work with it.',
+            'There is a hob and an oven.',
             'Fridge, microwave, kettle and toaster are all provided.',
-            'Everything you need to cook a proper meal: pots, pans, baking trays, knives, crockery and glassware.',
+            'Pots, pans, baking trays, knives, crockery and glassware can be found in the relevant cupboards.',
             'Cooking oils, salt and pepper are provided, plus tea, coffee and sugar.',
             'You’ll also find a teapot, a cafetière and a French coffee press, with coffee to see you through the first few days.',
           ],

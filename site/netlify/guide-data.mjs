@@ -501,11 +501,14 @@ export const GUIDE = {
       tagline: 'Self-contained one-bedroom cottage · sleeps 2 (+1 under 2)',
       sections: [
         {
-          title: 'Directions',
-          body: 'Turn off following the brown sign for Bampton, Haweswater and Shap Abbey — a left turn if you’re coming from the south, or a right turn if you’re coming from the north.',
+          title: 'Finding Primrose Cottage',
+          body: 'By car, Shap is easy to reach. From the south, leave the M6 at Junction 39 and follow signs into Shap village. From the north, take the A6 south from Penrith.',
           items: [
-            'Coming from the north: the driveway is straight in front of you as you turn.',
-            'Coming from the south: carry on 50–75 metres along that road — it’s the second driveway on your left.',
+            'Once in Shap, follow your sat nav to postcode CA10 3LY, which brings you onto Pow Lane (sometimes called Back Lane).',
+            'Our top tip: spot the sign for Bampton and Haweswater and take that turn.',
+            'Coming from the north, The Rockery driveway is straight in front of you. Coming from the south, follow the road for 50–75 metres and the driveway is second on the left.',
+            'If your sat nav struggles with the postcode, use what3words — ///arrival.snowballs.attic takes you right to the entrance.',
+            'Turn in at The Rockery (the gate will be open) and head up the short driveway. Primrose Cottage sits to the right of the main house, and you can park right next to the wood shed.',
           ],
         },
         {

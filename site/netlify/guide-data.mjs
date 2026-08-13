@@ -501,6 +501,14 @@ export const GUIDE = {
       tagline: 'Self-contained one-bedroom cottage · sleeps 2 (+1 under 2)',
       sections: [
         {
+          title: 'Directions',
+          body: 'Turn off following the brown sign for Bampton, Haweswater and Shap Abbey — a left turn if you’re coming from the south, or a right turn if you’re coming from the north.',
+          items: [
+            'Coming from the north: the driveway is straight in front of you as you turn.',
+            'Coming from the south: carry on 50–75 metres along that road — it’s the second driveway on your left.',
+          ],
+        },
+        {
           title: 'Arrival & Keys',
           body: 'Primrose Cottage has its own private entrance and key. There is a key safe in the passageway between the cottage and the main house — the exact lockbox location and code are sent to you on the day of arrival. Check-in is from 3pm, though we’re happy to accommodate an earlier check-in where we can — just ask.',
         },

@@ -146,13 +146,6 @@ export const GUIDE = {
             link: 'https://georgeanddragonclifton.co.uk',
           },
           {
-            name: 'Orton Scar Cafe, Orton',
-            meta: '15 min · Orton',
-            note: 'Simple fare — bacon buns, canned drinks and the like — with the option to eat in or take away. A handy stop while exploring the Orton fells.',
-            link: 'https://maps.app.goo.gl/xN4rBV1mvxcxEkto6',
-            linkLabel: 'View on map ↗',
-          },
-          {
             name: 'The George Hotel, Orton',
             meta: '15 min · CA10 3RJ',
             note: 'Friendly village pub popular with Coast to Coast walkers — great-value Sunday lunch, good with gluten-free. Opens 3pm weekdays.',

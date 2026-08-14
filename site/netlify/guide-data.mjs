@@ -550,6 +550,10 @@ export const GUIDE = {
           ],
         },
         {
+          title: 'Hairdryer',
+          body: 'There’s a hairdryer in the wardrobe upstairs — first drawer down, on the left.',
+        },
+        {
           title: 'Kitchen & Appliances',
           items: [
             'There is a hob and an oven.',

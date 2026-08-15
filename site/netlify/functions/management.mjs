@@ -188,6 +188,38 @@ function bookingPublic(b) {
     source: 'owner',
   };
 }
+// Decode + validate + store a receipt file under `receipt/<id>`. Returns
+// { receipt:{receiptId,receiptName,receiptType} } or { error, status }.
+async function storeReceiptFile(id, r) {
+  let buf;
+  try {
+    buf = Buffer.from(r.data, 'base64');
+  } catch {
+    return { error: 'The receipt file could not be read.', status: 400 };
+  }
+  if (!buf.length) return { error: 'The receipt file appears to be empty.', status: 400 };
+  if (buf.length > RCPT_MAX_BYTES) {
+    return { error: 'That receipt is too large — please use a file under 4MB.', status: 400 };
+  }
+  try {
+    await rcptStore().set(`receipt/${id}`, buf, {
+      metadata: {
+        contentType: String(r.type || 'application/octet-stream'),
+        name: String(r.name || 'receipt'),
+      },
+    });
+  } catch (err) {
+    return { error: 'Could not save the receipt file. ' + err.message, status: 500 };
+  }
+  return {
+    receipt: {
+      receiptId: id,
+      receiptName: String(r.name || 'receipt').slice(0, 200),
+      receiptType: String(r.type || 'application/octet-stream'),
+    },
+  };
+}
+
 // Trim an owner record down to the fields the dashboard needs.
 function ownerPublic(x) {
   return {
@@ -242,31 +274,9 @@ export default async (req) => {
     let receipt = {};
     const r = body.receipt;
     if (r && typeof r.data === 'string' && r.data.length) {
-      let buf;
-      try {
-        buf = Buffer.from(r.data, 'base64');
-      } catch {
-        return json({ error: 'The receipt file could not be read.' }, 400);
-      }
-      if (!buf.length) return json({ error: 'The receipt file appears to be empty.' }, 400);
-      if (buf.length > RCPT_MAX_BYTES) {
-        return json({ error: 'That receipt is too large — please use a file under 4MB.' }, 400);
-      }
-      try {
-        await rcptStore().set(`receipt/${id}`, buf, {
-          metadata: {
-            contentType: String(r.type || 'application/octet-stream'),
-            name: String(r.name || 'receipt'),
-          },
-        });
-        receipt = {
-          receiptId: id,
-          receiptName: String(r.name || 'receipt').slice(0, 200),
-          receiptType: String(r.type || 'application/octet-stream'),
-        };
-      } catch (err) {
-        return json({ error: 'Could not save the receipt file. ' + err.message }, 500);
-      }
+      const res = await storeReceiptFile(id, r);
+      if (res.error) return json({ error: res.error }, res.status || 400);
+      receipt = res.receipt;
     }
 
     const expense = {
@@ -293,6 +303,71 @@ export default async (req) => {
       return json({ error: 'Could not save the expense. ' + err.message }, 500);
     }
     return json({ ok: true, expense: ownerPublic(expense) });
+  }
+
+  // ---- WRITE: edit an existing owner expense (fields and/or receipt) ----
+  if (action === 'updateExpense') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    const amount = num(body.amount);
+    const date = isoDate(body.date);
+    if (!(amount > 0)) return json({ error: 'Please enter an amount greater than £0.' }, 400);
+    if (!date) return json({ error: 'Please choose a date for the receipt.' }, 400);
+
+    let list;
+    let idx;
+    try {
+      list = await loadOwnerExpenses();
+      idx = list.findIndex((x) => x.id === id);
+    } catch (err) {
+      return json({ error: 'Could not load the expense. ' + err.message }, 500);
+    }
+    if (idx < 0) return json({ error: 'That expense was not found.' }, 404);
+    const cur = list[idx];
+
+    // Receipt: replace (new file), remove, or leave as-is.
+    let receipt = {
+      receiptId: cur.receiptId || null,
+      receiptName: cur.receiptName || null,
+      receiptType: cur.receiptType || null,
+    };
+    const r = body.receipt;
+    if (r && typeof r.data === 'string' && r.data.length) {
+      const res = await storeReceiptFile(id, r);
+      if (res.error) return json({ error: res.error }, res.status || 400);
+      receipt = res.receipt;
+    } else if (body.removeReceipt && cur.receiptId) {
+      try {
+        await rcptStore().delete(`receipt/${cur.receiptId}`);
+      } catch {
+        /* file may already be gone */
+      }
+      receipt = { receiptId: null, receiptName: null, receiptType: null };
+    }
+
+    const updated = {
+      ...cur,
+      property: propKey(body.property),
+      date,
+      vendor: String(body.vendor || '').trim().slice(0, 200),
+      category: String(body.category || '').trim().slice(0, 120) || 'Uncategorised',
+      note: String(body.note || '').trim().slice(0, 500),
+      amount,
+      businessPct: clampPct(body.businessPct == null ? 100 : body.businessPct),
+      vat: num(body.vat),
+      method: String(body.method || '').trim().slice(0, 60),
+      source: 'owner',
+      updatedAt: new Date().toISOString(),
+      ...receipt,
+    };
+
+    try {
+      list[idx] = updated;
+      await saveOwnerExpenses(list);
+    } catch (err) {
+      return json({ error: 'Could not save the expense. ' + err.message }, 500);
+    }
+    return json({ ok: true, expense: ownerPublic(updated) });
   }
 
   // ---- WRITE: delete an owner receipt / expense ----

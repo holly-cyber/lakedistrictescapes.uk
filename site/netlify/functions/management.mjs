@@ -188,6 +188,48 @@ function bookingPublic(b) {
     source: 'owner',
   };
 }
+// Validate + normalise a booking from user/CSV input. Returns { booking } or
+// { error }. Shared by the single-add and bulk-CSV-import actions.
+function buildBooking(input) {
+  const start = isoDate(input.start);
+  const end = isoDate(input.end);
+  const gross = num(input.gross);
+  if (!start || !end) return { error: 'Missing check-in / check-out dates.' };
+  if (nightsBetween(start, end) < 1) return { error: 'Check-out must be after check-in.' };
+  if (!(gross > 0)) return { error: 'Missing gross earnings.' };
+  const property = propKey(input.property);
+  if (property === 'shared') return { error: 'Please attribute the booking to one property.' };
+  const fee = num(input.fee);
+  const cleaning = num(input.cleaning);
+  const nightsRaw = num(input.nights);
+  const nights = nightsRaw > 0 ? Math.round(nightsRaw) : nightsBetween(start, end);
+  const net = num(input.net) > 0 ? round2(input.net) : round2(gross - fee - cleaning);
+  return {
+    booking: {
+      id: crypto.randomUUID(),
+      property,
+      channel: String(input.channel || 'Airbnb').trim().slice(0, 40) || 'Airbnb',
+      code: String(input.code || '').trim().slice(0, 40),
+      guest: String(input.guest || '').trim().slice(0, 120),
+      booked: isoDate(input.booked),
+      start,
+      end,
+      nights,
+      gross: round2(gross),
+      fee: round2(fee),
+      cleaning: round2(cleaning),
+      net,
+      payout: isoDate(input.payout),
+      currency: 'GBP',
+      source: 'owner',
+      createdAt: new Date().toISOString(),
+    },
+  };
+}
+// Dedup key for a booking with no confirmation code.
+function bookingCompositeKey(b) {
+  return [b.property, b.start, b.end, round2(b.gross)].join('|');
+}
 // Decode + validate + store a receipt file under `receipt/<id>`. Returns
 // { receipt:{receiptId,receiptName,receiptType} } or { error, status }.
 async function storeReceiptFile(id, r) {
@@ -504,49 +546,63 @@ export default async (req) => {
 
   // ---- WRITE: add a booking ----
   if (action === 'addBooking') {
-    const start = isoDate(body.start);
-    const end = isoDate(body.end);
-    const gross = num(body.gross);
-    if (!start || !end) return json({ error: 'Please choose check-in and check-out dates.' }, 400);
-    if (nightsBetween(start, end) < 1) return json({ error: 'Check-out must be after check-in.' }, 400);
-    if (!(gross > 0)) return json({ error: 'Please enter the gross earnings (greater than £0).' }, 400);
-
-    const property = propKey(body.property);
-    if (property === 'shared') return json({ error: 'Please attribute the booking to one property.' }, 400);
-
-    const fee = num(body.fee);
-    const cleaning = num(body.cleaning);
-    const nightsRaw = num(body.nights);
-    const nights = nightsRaw > 0 ? Math.round(nightsRaw) : nightsBetween(start, end);
-    const net = num(body.net) > 0 ? round2(body.net) : round2(gross - fee - cleaning);
-
-    const booking = {
-      id: crypto.randomUUID(),
-      property,
-      channel: String(body.channel || 'Airbnb').trim().slice(0, 40) || 'Airbnb',
-      code: String(body.code || '').trim().slice(0, 40),
-      guest: String(body.guest || '').trim().slice(0, 120),
-      booked: isoDate(body.booked),
-      start,
-      end,
-      nights,
-      gross: round2(gross),
-      fee: round2(fee),
-      cleaning: round2(cleaning),
-      net,
-      payout: isoDate(body.payout),
-      currency: 'GBP',
-      source: 'owner',
-      createdAt: new Date().toISOString(),
-    };
+    const r = buildBooking(body);
+    if (r.error) return json({ error: r.error }, 400);
     try {
       const list = await loadOwnerBookings();
-      list.push(booking);
+      list.push(r.booking);
       await saveOwnerBookings(list);
     } catch (err) {
       return json({ error: 'Could not save the booking. ' + err.message }, 500);
     }
-    return json({ ok: true, booking: bookingPublic(booking) });
+    return json({ ok: true, booking: bookingPublic(r.booking) });
+  }
+
+  // ---- WRITE: bulk-add bookings from a CSV import (dedup by code) ----
+  if (action === 'addBookings') {
+    const rows = Array.isArray(body.bookings) ? body.bookings : [];
+    if (!rows.length) return json({ error: 'No bookings found in that file.' }, 400);
+    if (rows.length > 1000) return json({ error: 'That file has too many rows to import at once.' }, 400);
+
+    let list;
+    try {
+      list = await loadOwnerBookings();
+    } catch (err) {
+      return json({ error: 'Could not load bookings. ' + err.message }, 500);
+    }
+
+    // Existing codes + composite keys across the seed data and owner bookings.
+    const codes = new Set();
+    const composites = new Set();
+    for (const b of [...SEED_BOOKINGS, ...list]) {
+      if (b.code) codes.add(String(b.code).toUpperCase());
+      composites.add(bookingCompositeKey(b));
+    }
+
+    const added = [];
+    let skipped = 0;
+    let invalid = 0;
+    for (const row of rows) {
+      const r = buildBooking(row);
+      if (r.error) { invalid++; continue; }
+      const b = r.booking;
+      const codeKey = b.code ? b.code.toUpperCase() : '';
+      const comp = bookingCompositeKey(b);
+      if ((codeKey && codes.has(codeKey)) || composites.has(comp)) { skipped++; continue; }
+      if (codeKey) codes.add(codeKey);
+      composites.add(comp);
+      list.push(b);
+      added.push(b);
+    }
+
+    if (added.length) {
+      try {
+        await saveOwnerBookings(list);
+      } catch (err) {
+        return json({ error: 'Could not save the bookings. ' + err.message }, 500);
+      }
+    }
+    return json({ ok: true, added: added.map(bookingPublic), addedCount: added.length, skipped, invalid });
   }
 
   // ---- WRITE: delete an owner booking ----

@@ -337,7 +337,98 @@ function nightsBetweenIso(a, b) {
   return d > 0 ? Math.round(d) : 0;
 }
 
-function addBookingForm(properties, onAdd) {
+// ---------- CSV import (Airbnb reservations export) ----------
+// Robust CSV parser — handles quoted fields, escaped "" quotes, embedded
+// commas and newlines (the Airbnb "Listing" column spans lines).
+function parseCsv(text) {
+  const s = String(text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rows = [];
+  let row = [];
+  let field = '';
+  let inQuotes = false;
+  for (let i = 0; i < s.length; i++) {
+    const c = s[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (s[i + 1] === '"') { field += '"'; i++; } else inQuotes = false;
+      } else field += c;
+    } else if (c === '"') inQuotes = true;
+    else if (c === ',') { row.push(field); field = ''; }
+    else if (c === '\n') { row.push(field); rows.push(row); row = []; field = ''; }
+    else field += c;
+  }
+  if (field.length || row.length) { row.push(field); rows.push(row); }
+  return rows.filter((r) => r.some((c) => String(c).trim() !== ''));
+}
+
+function csvNum(v) {
+  const n = parseFloat(String(v == null ? '' : v).replace(/[^0-9.\-]/g, ''));
+  return isFinite(n) ? n : 0;
+}
+// Accepts MM/DD/YYYY (Airbnb) or an ISO date; returns YYYY-MM-DD or ''.
+function csvDate(v) {
+  const t = String(v || '').trim();
+  const us = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(t);
+  if (us) return us[3] + '-' + us[1].padStart(2, '0') + '-' + us[2].padStart(2, '0');
+  if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10);
+  return '';
+}
+function propFromListing(listing) {
+  return /rockery/i.test(listing || '') ? 'the-rockery' : 'primrose-cottage';
+}
+
+// Turn parsed CSV rows into booking objects. Understands the Airbnb export
+// header; only imports "Reservation" rows with valid dates.
+function mapAirbnbCsv(rows) {
+  if (!rows.length) return { bookings: [], error: 'That file looks empty.' };
+  const headers = rows[0].map((h) => String(h).trim().toLowerCase());
+  const idx = (name) => headers.indexOf(name);
+  const iType = idx('type');
+  const iCode = idx('confirmation code');
+  const iBooked = idx('booking date');
+  const iStart = idx('start date');
+  const iEnd = idx('end date');
+  const iNights = idx('nights');
+  const iGuest = idx('guest');
+  const iListing = idx('listing');
+  const iAmount = idx('amount');
+  const iFee = idx('service fee');
+  const iClean = idx('cleaning fee');
+  const iGross = idx('gross earnings');
+  const iDate = idx('date');
+  if (iStart < 0 || iEnd < 0 || iGross < 0) {
+    return { bookings: [], error: 'That doesn’t look like an Airbnb reservations CSV.' };
+  }
+  const get = (row, i) => (i >= 0 && i < row.length ? String(row[i]).trim() : '');
+  const bookings = [];
+  for (let r = 1; r < rows.length; r++) {
+    const row = rows[r];
+    if (iType >= 0 && get(row, iType) && !/reservation/i.test(get(row, iType))) continue;
+    const start = csvDate(get(row, iStart));
+    const end = csvDate(get(row, iEnd));
+    const gross = csvNum(get(row, iGross));
+    if (!start || !end || !(gross > 0)) continue;
+    bookings.push({
+      property: propFromListing(get(row, iListing)),
+      channel: 'Airbnb',
+      code: get(row, iCode),
+      guest: get(row, iGuest),
+      booked: csvDate(get(row, iBooked)),
+      start,
+      end,
+      nights: parseInt(get(row, iNights), 10) || 0,
+      gross,
+      fee: csvNum(get(row, iFee)),
+      cleaning: csvNum(get(row, iClean)),
+      net: csvNum(get(row, iAmount)),
+      payout: csvDate(get(row, iDate)),
+      currency: 'GBP',
+    });
+  }
+  return { bookings };
+}
+
+function addBookingForm(properties, onAdd, onImport) {
   const details = e('details', { class: 'dash-card receipt-form' });
   details.appendChild(e('summary', { class: 'rf-summary' }, [
     e('span', { class: 'rf-plus', text: '＋' }),
@@ -389,6 +480,49 @@ function addBookingForm(properties, onAdd) {
 
   const status = e('p', { class: 'rf-status', role: 'status', 'aria-live': 'polite' });
   const submit = e('button', { class: 'guest-btn rf-submit', type: 'submit', text: 'Save booking' });
+
+  // CSV import block — upload an Airbnb reservations export to add them all.
+  if (typeof onImport === 'function') {
+    const csvIn = e('input', { type: 'file', accept: '.csv,text/csv', class: 'rf-csv' });
+    const csvStatus = e('p', { class: 'rf-parsestatus' });
+    csvIn.addEventListener('change', async () => {
+      const file = csvIn.files && csvIn.files[0];
+      if (!file) return;
+      csvStatus.textContent = 'Reading your CSV…';
+      csvStatus.className = 'rf-parsestatus busy';
+      try {
+        const text = await file.text();
+        const { bookings, error } = mapAirbnbCsv(parseCsv(text));
+        if (error || !bookings.length) {
+          csvStatus.textContent = error || 'No bookings found in that file.';
+          csvStatus.className = 'rf-parsestatus';
+          csvIn.value = '';
+          return;
+        }
+        const out = await onImport(bookings);
+        const added = (out && out.addedCount) || 0;
+        const skipped = (out && out.skipped) || 0;
+        csvStatus.textContent = added
+          ? 'Imported ' + added + ' booking' + (added === 1 ? '' : 's') + (skipped ? ' · ' + skipped + ' already recorded' : '') + '.'
+          : 'All ' + skipped + ' booking' + (skipped === 1 ? '' : 's') + ' in that file were already recorded.';
+        csvStatus.className = 'rf-parsestatus ok';
+      } catch (err) {
+        csvStatus.textContent = (err && err.message) || 'Sorry, that CSV could not be imported.';
+        csvStatus.className = 'rf-parsestatus';
+      } finally {
+        csvIn.value = '';
+      }
+    });
+    form.appendChild(e('div', { class: 'rf-import' }, [
+      e('div', { class: 'rf-import-head' }, [
+        e('strong', { text: 'Import from a CSV' }),
+        e('span', { class: 'rf-hint', text: 'Upload your Airbnb reservations export (Hosting → Earnings → Get report) to add every booking at once. Ones already recorded are skipped.' }),
+      ]),
+      field('CSV file', csvIn),
+      csvStatus,
+    ]));
+    form.appendChild(e('div', { class: 'rf-or' }, e('span', { text: 'or add one manually' })));
+  }
 
   form.appendChild(grid);
   form.appendChild(preview);
@@ -907,6 +1041,17 @@ export function initDashboard(root, data, opts = {}) {
       render();
       toast('Booking saved.', 'ok');
     },
+    async onImportBookings(bookings) {
+      const out = await apiCall('addBookings', { bookings });
+      (out.added || []).forEach((b) => data.bookings.push(b));
+      if (out.addedCount) {
+        render();
+        toast('Imported ' + out.addedCount + ' booking' + (out.addedCount === 1 ? '' : 's') + '.', 'ok');
+      } else {
+        toast('No new bookings — all were already recorded.', 'ok');
+      }
+      return out;
+    },
     async onDeleteBooking(b) {
       if (!window.confirm('Delete this booking' + (b.guest ? ' for ' + b.guest : '') + '? This cannot be undone.')) return;
       try {
@@ -984,7 +1129,7 @@ export function initDashboard(root, data, opts = {}) {
 
     // Add-booking and add-receipt forms are always available, in every view.
     body.appendChild(e('div', { class: 'dash-add-forms' }, [
-      addBookingForm(properties, handlers.onAddBooking),
+      addBookingForm(properties, handlers.onAddBooking, handlers.onImportBookings),
       addReceiptForm(properties, handlers.onAdd, handlers.onParse),
     ]));
 

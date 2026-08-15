@@ -2075,6 +2075,23 @@
     }
     .rf-parsestatus.ok { color: var(--gable-deep); }
     @keyframes rf-spin { to { transform: rotate(360deg); } }
+
+    /* CSV import block in the booking form */
+    .rf-import {
+      background: var(--kendal-mint); border-radius: 10px; padding: 0.9rem 1rem;
+      display: flex; flex-direction: column; gap: 0.7rem;
+    }
+    .rf-import-head { display: flex; flex-direction: column; gap: 0.2rem; }
+    .rf-import-head strong { font-size: 0.95rem; color: var(--off-black); }
+    .rf-import .rf-csv { font-size: 0.82rem; }
+    .rf-or {
+      position: relative; text-align: center; margin: 0.2rem 0;
+      border-top: 1px solid rgba(176,168,153,0.4);
+    }
+    .rf-or span {
+      position: relative; top: -0.7em; background: #fff; padding: 0 0.7rem;
+      font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid);
+    }
     @media (max-width: 560px) { .rf-grid { grid-template-columns: 1fr; } }
 
     /* row actions + edit button */

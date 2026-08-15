@@ -1972,6 +1972,28 @@
     .tax-v.neg { color: #b23b3b; }
     .tax-row--total .tax-v { font-family: 'Playfair Display', serif; font-size: 1.15rem; }
 
+    /* tax band selector in the card header */
+    .tax-rate-field { display: inline-flex; flex-direction: column; gap: 0.25rem; }
+    .tax-rate-field > span { font-size: 0.66rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mid); font-weight: 500; }
+    .tax-rate-sel {
+      font: inherit; font-size: 0.85rem; color: var(--body-text); background: #fff;
+      border: 1px solid rgba(176,168,153,0.5); border-radius: 8px; padding: 0.4rem 0.6rem;
+    }
+    .tax-rate-sel:focus { outline: none; border-color: var(--gable-deep); box-shadow: 0 0 0 3px rgba(60,90,70,0.12); }
+
+    /* set-aside-for-tax panel */
+    .tax-reserve { margin-top: 1.1rem; padding: 1rem 1.1rem; background: var(--kendal-mint); border-radius: 10px; }
+    .tax-reserve-row { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+    .tax-reserve-label { font-size: 0.95rem; font-weight: 500; color: var(--off-black); }
+    .tax-reserve-sub { font-size: 0.76rem; color: var(--gable-deep); margin-top: 0.1rem; }
+    .tax-reserve-amt { font-family: 'Playfair Display', serif; font-size: 1.65rem; color: var(--gable-deep); line-height: 1; white-space: nowrap; }
+    .tax-reserve-month { font-size: 0.86rem; color: var(--body-text); margin-top: 0.7rem; }
+    .tax-reserve-month strong { color: var(--gable-deep); }
+    .tax-reserve-note { font-size: 0.72rem; margin: 0.5rem 0 0; line-height: 1.4; }
+
+    /* Tax-to-set-aside KPI accent */
+    .kpi--tax .kpi-num { color: #b07a2e; }
+
     .dash-empty { background: #fff; border: 1px solid rgba(176,168,153,0.28); border-radius: 12px; padding: 2.5rem 1.5rem; text-align: center; }
     .dash-empty .muted { color: var(--mid); font-size: 0.85rem; margin-top: 0.5rem; }
 

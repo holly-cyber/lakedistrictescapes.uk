@@ -127,9 +127,14 @@ function mapExpense(f) {
   };
 }
 
-// --- owner receipts store (Netlify Blobs) ------------------------------------
+function round2(n) {
+  return Math.round((num(n) + Number.EPSILON) * 100) / 100;
+}
+
+// --- owner data stores (Netlify Blobs) ---------------------------------------
 const EXP_STORE = 'mgmt-expenses';
 const RCPT_STORE = 'mgmt-receipts';
+const BKG_STORE = 'mgmt-bookings';
 const RCPT_MAX_BYTES = Math.round(4.5 * 1024 * 1024); // ~4.5MB decoded
 
 function expStore() {
@@ -137,6 +142,9 @@ function expStore() {
 }
 function rcptStore() {
   return getStore({ name: RCPT_STORE, consistency: 'strong' });
+}
+function bkgStore() {
+  return getStore({ name: BKG_STORE, consistency: 'strong' });
 }
 async function loadOwnerExpenses() {
   try {
@@ -148,6 +156,37 @@ async function loadOwnerExpenses() {
 }
 async function saveOwnerExpenses(list) {
   await expStore().setJSON('list', list);
+}
+async function loadOwnerBookings() {
+  try {
+    const list = await bkgStore().get('list', { type: 'json' });
+    return Array.isArray(list) ? list : [];
+  } catch {
+    return [];
+  }
+}
+async function saveOwnerBookings(list) {
+  await bkgStore().setJSON('list', list);
+}
+function bookingPublic(b) {
+  return {
+    id: b.id,
+    property: b.property,
+    channel: b.channel || 'Airbnb',
+    code: b.code || '',
+    guest: b.guest || '',
+    booked: b.booked || '',
+    start: b.start,
+    end: b.end,
+    nights: b.nights,
+    gross: b.gross,
+    fee: b.fee || 0,
+    cleaning: b.cleaning || 0,
+    net: b.net,
+    payout: b.payout || '',
+    currency: b.currency || 'GBP',
+    source: 'owner',
+  };
 }
 // Trim an owner record down to the fields the dashboard needs.
 function ownerPublic(x) {
@@ -278,6 +317,67 @@ export default async (req) => {
     return json({ ok: true, id });
   }
 
+  // ---- WRITE: add a booking ----
+  if (action === 'addBooking') {
+    const start = isoDate(body.start);
+    const end = isoDate(body.end);
+    const gross = num(body.gross);
+    if (!start || !end) return json({ error: 'Please choose check-in and check-out dates.' }, 400);
+    if (nightsBetween(start, end) < 1) return json({ error: 'Check-out must be after check-in.' }, 400);
+    if (!(gross > 0)) return json({ error: 'Please enter the gross earnings (greater than £0).' }, 400);
+
+    const property = propKey(body.property);
+    if (property === 'shared') return json({ error: 'Please attribute the booking to one property.' }, 400);
+
+    const fee = num(body.fee);
+    const cleaning = num(body.cleaning);
+    const nightsRaw = num(body.nights);
+    const nights = nightsRaw > 0 ? Math.round(nightsRaw) : nightsBetween(start, end);
+    const net = num(body.net) > 0 ? round2(body.net) : round2(gross - fee - cleaning);
+
+    const booking = {
+      id: crypto.randomUUID(),
+      property,
+      channel: String(body.channel || 'Airbnb').trim().slice(0, 40) || 'Airbnb',
+      code: String(body.code || '').trim().slice(0, 40),
+      guest: String(body.guest || '').trim().slice(0, 120),
+      booked: isoDate(body.booked),
+      start,
+      end,
+      nights,
+      gross: round2(gross),
+      fee: round2(fee),
+      cleaning: round2(cleaning),
+      net,
+      payout: isoDate(body.payout),
+      currency: 'GBP',
+      source: 'owner',
+      createdAt: new Date().toISOString(),
+    };
+    try {
+      const list = await loadOwnerBookings();
+      list.push(booking);
+      await saveOwnerBookings(list);
+    } catch (err) {
+      return json({ error: 'Could not save the booking. ' + err.message }, 500);
+    }
+    return json({ ok: true, booking: bookingPublic(booking) });
+  }
+
+  // ---- WRITE: delete an owner booking ----
+  if (action === 'deleteBooking') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    try {
+      const list = await loadOwnerBookings();
+      if (!list.some((b) => b.id === id)) return json({ error: 'That booking was not found.' }, 404);
+      await saveOwnerBookings(list.filter((b) => b.id !== id));
+    } catch (err) {
+      return json({ error: 'Could not delete the booking. ' + err.message }, 500);
+    }
+    return json({ ok: true, id });
+  }
+
   // ---- READ: a single receipt file (base64) ----
   if (action === 'receipt') {
     const id = String(body.id || '');
@@ -326,14 +426,25 @@ export default async (req) => {
     }
   }
 
+  // Tag baseline bookings by source (seed/airtable) so the dashboard knows which
+  // are owner-editable, then merge in owner-entered bookings from Blobs.
+  const baseBookings = bookings.map((b) => ({ ...b, source: b.source || source }));
+  const ownerBookings = (await loadOwnerBookings()).map(bookingPublic);
+  const allBookings = [...baseBookings, ...ownerBookings];
+
   const owner = (await loadOwnerExpenses()).map(ownerPublic);
   const expenses = [...baseExpenses, ...owner];
 
   return json({
     properties: PROPERTIES,
-    bookings,
+    bookings: allBookings,
     expenses,
-    meta: { source, warning, ownerCount: owner.length },
+    meta: {
+      source,
+      warning,
+      ownerExpenseCount: owner.length,
+      ownerBookingCount: ownerBookings.length,
+    },
   });
 };
 

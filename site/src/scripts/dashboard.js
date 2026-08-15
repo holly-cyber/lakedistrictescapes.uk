@@ -278,22 +278,154 @@ function scroller(node) {
   return e('div', { class: 'chart-scroll' }, node);
 }
 
-function bookingsTable(bookings, properties) {
+function bookingsTable(bookings, properties, handlers, headExtra) {
   if (!bookings.length) return null;
-  const head = e('tr', {}, ['Check-in', 'Nights', 'Guest', 'Property', 'Gross', 'Fee', 'Net'].map((h) => e('th', { text: h })));
-  const rows = bookings.map((b) =>
-    e('tr', {}, [
+  const head = e('tr', {}, ['Check-in', 'Nights', 'Guest', 'Property', 'Channel', 'Gross', 'Fee', 'Net', ''].map((h) => e('th', { text: h })));
+  const rows = bookings.map((b) => {
+    let delCell;
+    if (b.source === 'owner') {
+      const del = e('button', { class: 'dash-del', type: 'button', title: 'Delete this booking', 'aria-label': 'Delete booking' }, '×');
+      del.addEventListener('click', () => handlers.onDeleteBooking(b));
+      delCell = e('td', {}, del);
+    } else {
+      delCell = e('td', {});
+    }
+    return e('tr', {}, [
       e('td', { text: b.start }),
       e('td', { text: String(b.nights) }),
-      e('td', { text: b.guest }),
-      e('td', { text: (properties[b.property] || {}).short || b.property }),
+      e('td', { text: b.guest || '—' }),
+      e('td', { text: propLabel(b.property, properties) }),
+      e('td', { class: 'muted', text: b.channel || 'Airbnb' }),
       e('td', { class: 'num', text: money(b.gross) }),
       e('td', { class: 'num muted', text: money(b.fee) }),
       e('td', { class: 'num', text: money(b.net) }),
-    ])
-  );
+      delCell,
+    ]);
+  });
   return card('Bookings', bookings.length + ' reservation' + (bookings.length === 1 ? '' : 's'),
-    scroller(e('table', { class: 'dash-table' }, [e('thead', {}, head), e('tbody', {}, rows)])));
+    scroller(e('table', { class: 'dash-table' }, [e('thead', {}, head), e('tbody', {}, rows)])), headExtra);
+}
+
+function exportBookingsCsv(bookings, properties, viewLabel) {
+  const header = ['Check-in', 'Check-out', 'Nights', 'Guest', 'Property', 'Channel', 'Gross', 'Fee', 'Cleaning', 'Net'];
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = [header.join(',')];
+  bookings.forEach((b) => {
+    lines.push([
+      b.start, b.end, b.nights, b.guest || '', propLabel(b.property, properties), b.channel || 'Airbnb',
+      b.gross.toFixed(2), (b.fee || 0).toFixed(2), (b.cleaning || 0).toFixed(2), b.net.toFixed(2),
+    ].map(esc).join(','));
+  });
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lde-bookings-' + viewLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+// ---------- add-booking form ----------
+function nightsBetweenIso(a, b) {
+  if (!a || !b) return 0;
+  const d = (new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000;
+  return d > 0 ? Math.round(d) : 0;
+}
+
+function addBookingForm(properties, onAdd) {
+  const details = e('details', { class: 'dash-card receipt-form' });
+  details.appendChild(e('summary', { class: 'rf-summary' }, [
+    e('span', { class: 'rf-plus', text: '＋' }),
+    e('span', { text: 'Add a booking' }),
+  ]));
+
+  const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
+
+  const propSel = e('select', { name: 'property', required: 'required' }, [
+    e('option', { value: 'primrose-cottage', text: 'Primrose Cottage' }),
+    e('option', { value: 'the-rockery', text: 'The Rockery' }),
+  ]);
+  const channelIn = e('input', { name: 'channel', type: 'text', value: 'Airbnb', placeholder: 'Airbnb, Direct…' });
+  const guestIn = e('input', { name: 'guest', type: 'text', placeholder: 'Guest name' });
+  const inIn = e('input', { name: 'start', type: 'date', required: 'required' });
+  const outIn = e('input', { name: 'end', type: 'date', required: 'required' });
+  const grossIn = e('input', { name: 'gross', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', required: 'required', placeholder: '0.00' });
+  const feeIn = e('input', { name: 'fee', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', placeholder: '0.00' });
+  const cleanIn = e('input', { name: 'cleaning', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', value: '0' });
+
+  const preview = e('p', { class: 'rf-preview' });
+  function updatePreview() {
+    const nights = nightsBetweenIso(inIn.value, outIn.value);
+    const gross = parseFloat(grossIn.value) || 0;
+    const net = gross - (parseFloat(feeIn.value) || 0) - (parseFloat(cleanIn.value) || 0);
+    if (nights > 0 && gross > 0) {
+      preview.textContent = nights + ' night' + (nights === 1 ? '' : 's') + ' · net payout ' + money(net);
+      preview.style.display = '';
+    } else if (inIn.value && outIn.value && nights < 1) {
+      preview.textContent = 'Check-out must be after check-in.';
+      preview.style.display = '';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+  [inIn, outIn, grossIn, feeIn, cleanIn].forEach((n) => n.addEventListener('input', updatePreview));
+  updatePreview();
+
+  const grid = e('div', { class: 'rf-grid' }, [
+    field('Property', propSel),
+    field('Channel', channelIn),
+    field('Guest name', guestIn),
+    field('Check-in', inIn),
+    field('Check-out', outIn),
+    field('Gross earnings (£)', grossIn, 'Total the guest paid, before fees.'),
+    field('Service fee (£)', feeIn, 'Airbnb / channel fee deducted.'),
+    field('Cleaning fee (£)', cleanIn),
+  ]);
+
+  const status = e('p', { class: 'rf-status', role: 'status', 'aria-live': 'polite' });
+  const submit = e('button', { class: 'guest-btn rf-submit', type: 'submit', text: 'Save booking' });
+
+  form.appendChild(grid);
+  form.appendChild(preview);
+  form.appendChild(e('div', { class: 'rf-actions' }, [submit, status]));
+  details.appendChild(form);
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const nights = nightsBetweenIso(inIn.value, outIn.value);
+    const gross = parseFloat(grossIn.value);
+    if (!inIn.value || !outIn.value) { status.textContent = 'Please choose check-in and check-out dates.'; status.className = 'rf-status err'; return; }
+    if (nights < 1) { status.textContent = 'Check-out must be after check-in.'; status.className = 'rf-status err'; return; }
+    if (!(gross > 0)) { status.textContent = 'Please enter the gross earnings.'; status.className = 'rf-status err'; return; }
+    submit.disabled = true;
+    submit.textContent = 'Saving…';
+    status.textContent = '';
+    status.className = 'rf-status';
+    try {
+      await onAdd({
+        property: propSel.value,
+        channel: channelIn.value,
+        guest: guestIn.value,
+        start: inIn.value,
+        end: outIn.value,
+        gross,
+        fee: parseFloat(feeIn.value) || 0,
+        cleaning: parseFloat(cleanIn.value) || 0,
+      });
+    } catch (err) {
+      submit.disabled = false;
+      submit.textContent = 'Save booking';
+      status.textContent = err.message || 'Sorry, that could not be saved.';
+      status.className = 'rf-status err';
+    }
+  });
+
+  return details;
 }
 
 function propLabel(key, properties) {
@@ -575,7 +707,6 @@ export function initDashboard(root, data, opts = {}) {
     async onAdd(payload) {
       const out = await apiCall('addExpense', payload);
       data.expenses.push(out.expense);
-      if (data.meta) data.meta.ownerCount = (data.meta.ownerCount || 0) + 1;
       render();
       toast('Receipt saved.', 'ok');
     },
@@ -584,9 +715,25 @@ export function initDashboard(root, data, opts = {}) {
       try {
         await apiCall('deleteExpense', { id: x.id });
         data.expenses = data.expenses.filter((it) => it.id !== x.id);
-        if (data.meta && data.meta.ownerCount) data.meta.ownerCount -= 1;
         render();
         toast('Receipt deleted.', 'ok');
+      } catch (err) {
+        toast(err.message || 'Could not delete.', 'err');
+      }
+    },
+    async onAddBooking(payload) {
+      const out = await apiCall('addBooking', payload);
+      data.bookings.push(out.booking);
+      render();
+      toast('Booking saved.', 'ok');
+    },
+    async onDeleteBooking(b) {
+      if (!window.confirm('Delete this booking' + (b.guest ? ' for ' + b.guest : '') + '? This cannot be undone.')) return;
+      try {
+        await apiCall('deleteBooking', { id: b.id });
+        data.bookings = data.bookings.filter((it) => it.id !== b.id);
+        render();
+        toast('Booking deleted.', 'ok');
       } catch (err) {
         toast(err.message || 'Could not delete.', 'err');
       }
@@ -629,8 +776,11 @@ export function initDashboard(root, data, opts = {}) {
     const v = computeView(data, view);
     body.textContent = '';
 
-    // Add-receipt form is always available, in every view.
-    body.appendChild(addReceiptForm(properties, handlers.onAdd));
+    // Add-booking and add-receipt forms are always available, in every view.
+    body.appendChild(e('div', { class: 'dash-add-forms' }, [
+      addBookingForm(properties, handlers.onAddBooking),
+      addReceiptForm(properties, handlers.onAdd),
+    ]));
 
     if (!v.bookings.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [
@@ -662,7 +812,15 @@ export function initDashboard(root, data, opts = {}) {
 
     // Tax + tables
     body.appendChild(taxSummary(v));
-    const bt = bookingsTable(v.bookings, properties);
+
+    // Bookings table — with CSV export in its header.
+    let bkgCsv = null;
+    if (v.bookings.length) {
+      bkgCsv = e('button', { class: 'dash-linkbtn dash-csv', type: 'button', text: '⬇ Export CSV' });
+      bkgCsv.addEventListener('click', () =>
+        exportBookingsCsv(v.bookings, properties, views.find((x) => x.id === view).label));
+    }
+    const bt = bookingsTable(v.bookings, properties, handlers, bkgCsv);
     if (bt) body.appendChild(bt);
 
     // Expenses table — with CSV export in its header.

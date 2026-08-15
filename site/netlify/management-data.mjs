@@ -18,8 +18,10 @@
 //     whole bill in `amount` and the let's share here (e.g. 40). Only that
 //     fraction of the amount (and its VAT) is counted as a claimable cost.
 //
-// Owner-entered receipts added through the dashboard are stored separately in
-// Netlify Blobs (not here) and merged into the same feed at request time.
+// Bookings and receipts added through the dashboard are stored separately in
+// Netlify Blobs (not here) and merged into the same feed at request time, so
+// day-to-day entries don't need a code change or Airtable. The rows below are
+// the starting/seed data; edit them only for corrections to the originals.
 // ─────────────────────────────────────────────────────────────────────────
 
 export const PROPERTIES = {

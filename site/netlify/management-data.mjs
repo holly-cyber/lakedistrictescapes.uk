@@ -36,6 +36,7 @@ export const BOOKINGS = [
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMBQJ3W8Z9', guest: 'Helen Schofield', booked: '2026-08-10', start: '2026-09-08', end: '2026-09-11', nights: 3, gross: 376.0, fee: 58.28, cleaning: 0, net: 317.72, payout: '2026-09-11', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMYF5DMYWQ', guest: "Mary O'Hagan", booked: '2026-08-09', start: '2026-09-11', end: '2026-09-13', nights: 2, gross: 250.0, fee: 38.75, cleaning: 0, net: 211.25, payout: '2026-09-13', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM3M99ERHT', guest: 'Liz Beverley', booked: '2026-08-08', start: '2026-09-25', end: '2026-09-27', nights: 2, gross: 250.0, fee: 38.75, cleaning: 0, net: 211.25, payout: '2026-09-27', currency: 'GBP' },
+  { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM835TMCWK', guest: 'Miranda Palmer', booked: '2026-08-12', start: '2026-10-20', end: '2026-10-23', nights: 3, gross: 363.37, fee: 69.76, cleaning: 0, net: 305.24, payout: '2026-10-23', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMTQT2FRBA', guest: 'Sarah Goodacre', booked: '2026-08-10', start: '2026-12-26', end: '2027-01-02', nights: 7, gross: 770.35, fee: 147.88, cleaning: 0, net: 647.12, payout: '2027-01-02', currency: 'GBP' },
 ];
 

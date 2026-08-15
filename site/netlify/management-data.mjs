@@ -13,6 +13,13 @@
 //     'shared' for costs spread across both (apportioned 50/50 in the
 //     per-property views, counted in full in the combined view).
 //   • `vat` is the reclaimable VAT within `amount` (0 if none / not registered).
+//   • `businessPct` (optional, default 100) is the % of the full `amount` that
+//     relates to the holiday let — for a shared bill like electricity, put the
+//     whole bill in `amount` and the let's share here (e.g. 40). Only that
+//     fraction of the amount (and its VAT) is counted as a claimable cost.
+//
+// Owner-entered receipts added through the dashboard are stored separately in
+// Netlify Blobs (not here) and merged into the same feed at request time.
 // ─────────────────────────────────────────────────────────────────────────
 
 export const PROPERTIES = {

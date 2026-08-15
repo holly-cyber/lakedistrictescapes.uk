@@ -1989,3 +1989,67 @@
     .dash-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--grasmere-slate); display: inline-block; }
     .dash-dot.live { background: #4a9d6a; }
     .dash-warn { color: #b23b3b; }
+
+    /* table: business-% column + inline action buttons */
+    .dash-table td.biz { color: var(--gable-deep); font-weight: 500; }
+    .dash-linkbtn {
+      appearance: none; border: 1px solid var(--kendal-mint); background: #fff;
+      color: var(--gable-deep); font: inherit; font-size: 0.78rem; font-weight: 500;
+      padding: 0.28rem 0.7rem; border-radius: 6px; cursor: pointer; white-space: nowrap;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .dash-linkbtn:hover { background: var(--kendal-mint); }
+    .dash-csv { align-self: flex-start; }
+    .dash-del {
+      appearance: none; border: none; background: none; cursor: pointer;
+      color: var(--mid); font-size: 1.2rem; line-height: 1; padding: 0 0.3rem; border-radius: 6px;
+      transition: color 0.15s ease, background 0.15s ease;
+    }
+    .dash-del:hover { color: #b23b3b; background: rgba(178,59,59,0.08); }
+    .dash-empty-sm { padding: 1.2rem 0.2rem; font-size: 0.85rem; }
+
+    /* add-receipt form */
+    .receipt-form { padding: 0; overflow: hidden; }
+    .rf-summary {
+      list-style: none; cursor: pointer; display: flex; align-items: center; gap: 0.6rem;
+      padding: 1.1rem 1.4rem; font-family: 'Playfair Display', serif; font-size: 1.1rem;
+      color: var(--off-black); user-select: none;
+    }
+    .rf-summary::-webkit-details-marker { display: none; }
+    .rf-plus {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 26px; height: 26px; border-radius: 50%; background: var(--kendal-mint);
+      color: var(--gable-deep); font-size: 1.1rem; line-height: 1; flex: none;
+      transition: transform 0.2s ease;
+    }
+    .receipt-form[open] .rf-plus { transform: rotate(45deg); }
+    .receipt-fields { padding: 0 1.4rem 1.4rem; display: flex; flex-direction: column; gap: 1rem; }
+    .rf-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem 1.2rem; }
+    .rf-field { display: flex; flex-direction: column; gap: 0.3rem; }
+    .rf-label { font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid); font-weight: 500; }
+    .rf-hint { font-size: 0.72rem; color: var(--mid); font-weight: 300; line-height: 1.35; }
+    .receipt-fields input,
+    .receipt-fields select {
+      font: inherit; font-size: 0.9rem; color: var(--body-text); background: #fff;
+      border: 1px solid rgba(176,168,153,0.5); border-radius: 8px; padding: 0.55rem 0.7rem; width: 100%;
+    }
+    .receipt-fields input[type="file"] { padding: 0.45rem 0.6rem; font-size: 0.82rem; }
+    .receipt-fields input:focus,
+    .receipt-fields select:focus { outline: none; border-color: var(--gable-deep); box-shadow: 0 0 0 3px rgba(60,90,70,0.12); }
+    .rf-preview { font-size: 0.82rem; color: var(--gable-deep); margin: -0.2rem 0 0; }
+    .rf-actions { display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .rf-submit { width: auto; margin: 0; }
+    .rf-status { font-size: 0.82rem; margin: 0; }
+    .rf-status.err { color: #b23b3b; }
+    @media (max-width: 560px) { .rf-grid { grid-template-columns: 1fr; } }
+
+    /* toast */
+    .dash-toast {
+      position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem);
+      background: var(--off-black); color: #fff; font-size: 0.85rem; font-weight: 400;
+      padding: 0.7rem 1.2rem; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+      opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; z-index: 200;
+    }
+    .dash-toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .dash-toast.ok { background: var(--gable-deep); }
+    .dash-toast.err { background: #b23b3b; }

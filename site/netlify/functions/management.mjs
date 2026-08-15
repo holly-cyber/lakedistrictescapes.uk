@@ -220,6 +220,116 @@ async function storeReceiptFile(id, r) {
   };
 }
 
+// --- receipt auto-fill (Claude vision) --------------------------------------
+// Reads a receipt/bill image or PDF and extracts the expense fields so the
+// dashboard form can pre-populate. Requires ANTHROPIC_API_KEY; returns
+// { ok:false, configured:false } (never an error) when it isn't set, so the
+// form silently falls back to manual entry.
+const RECEIPT_CATEGORIES = [
+  'Utilities (electric / gas / water)', 'Council tax / business rates', 'Broadband & TV',
+  'Cleaning', 'Laundry', 'Welcome Pack & Supplies', 'Maintenance & Repairs', 'Garden',
+  'Furnishings & Equipment', 'Insurance', 'Toiletries & Consumables', 'Marketing & Listing fees',
+  'Accountancy & Professional', 'Travel & Mileage', 'Other',
+];
+async function parseReceipt(r) {
+  const apiKey = Netlify.env.get('ANTHROPIC_API_KEY');
+  if (!apiKey) return json({ ok: false, configured: false });
+  if (!r || typeof r.data !== 'string' || !r.data.length) {
+    return json({ ok: false, error: 'No receipt supplied.' }, 400);
+  }
+  const type = String(r.type || '').toLowerCase();
+  let block;
+  if (type === 'application/pdf') {
+    block = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: r.data } };
+  } else if (/^image\/(jpeg|jpg|png|webp|gif)$/.test(type)) {
+    block = { type: 'image', source: { type: 'base64', media_type: type === 'image/jpg' ? 'image/jpeg' : type, data: r.data } };
+  } else {
+    return json({ ok: false, unsupported: true });
+  }
+  let bytes = 0;
+  try {
+    bytes = Buffer.from(r.data, 'base64').length;
+  } catch {
+    return json({ ok: false, error: 'Unreadable file.' }, 400);
+  }
+  if (!bytes || bytes > RCPT_MAX_BYTES) return json({ ok: false, tooLarge: true });
+
+  const model = Netlify.env.get('ANTHROPIC_MODEL') || 'claude-haiku-4-5';
+  const schema = {
+    type: 'object',
+    additionalProperties: false,
+    properties: {
+      vendor: { type: 'string' },
+      date: { type: 'string' },
+      amount: { type: 'number' },
+      vat: { type: 'number' },
+      category: { type: 'string' },
+      currency: { type: 'string' },
+    },
+    required: ['vendor', 'date', 'amount', 'vat', 'category', 'currency'],
+  };
+  const prompt =
+    'You are reading a purchase receipt, till receipt, or invoice for a UK holiday-let business. ' +
+    'Extract these fields from the image/PDF:\n' +
+    '- vendor: the shop or supplier name (e.g. "Lidl", "EDF Energy", "B&Q"). "" if not visible.\n' +
+    '- date: the purchase/transaction date as YYYY-MM-DD. "" if not visible.\n' +
+    '- amount: the FINAL grand total actually paid, including VAT, as a number (no currency symbol).\n' +
+    '- vat: the VAT/tax amount shown on the receipt as a number; 0 if none is shown.\n' +
+    '- category: the single closest match from this list, or a short custom label if none fit: ' +
+    RECEIPT_CATEGORIES.join('; ') + '.\n' +
+    '- currency: the ISO code, "GBP" unless clearly otherwise.\n' +
+    'Use empty string or 0 for anything you cannot read confidently. Do not guess wildly.';
+
+  let res;
+  try {
+    res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 400,
+        output_config: { format: { type: 'json_schema', schema } },
+        messages: [{ role: 'user', content: [block, { type: 'text', text: prompt }] }],
+      }),
+    });
+  } catch {
+    return json({ ok: false, error: 'The receipt reader is unreachable right now.' });
+  }
+  if (!res.ok) {
+    return json({ ok: false, error: 'The receipt reader is unavailable right now.' });
+  }
+  let out;
+  try {
+    out = await res.json();
+  } catch {
+    return json({ ok: false, error: 'The receipt reader returned an unexpected response.' });
+  }
+  if (out.stop_reason === 'refusal') return json({ ok: false, error: 'Could not read this receipt.' });
+  const textBlock = (out.content || []).find((b) => b && b.type === 'text' && b.text);
+  if (!textBlock) return json({ ok: false, error: 'No details found on the receipt.' });
+  let data;
+  try {
+    data = JSON.parse(textBlock.text);
+  } catch {
+    return json({ ok: false, error: 'Could not parse the receipt details.' });
+  }
+  return json({
+    ok: true,
+    fields: {
+      vendor: String(data.vendor || '').trim().slice(0, 200),
+      date: isoDate(data.date),
+      amount: num(data.amount),
+      vat: num(data.vat),
+      category: String(data.category || '').trim().slice(0, 120),
+      currency: String(data.currency || 'GBP').trim().slice(0, 8) || 'GBP',
+    },
+  });
+}
+
 // Trim an owner record down to the fields the dashboard needs.
 function ownerPublic(x) {
   return {
@@ -469,6 +579,11 @@ export default async (req) => {
     } catch (err) {
       return json({ error: 'Could not load the receipt. ' + err.message }, 500);
     }
+  }
+
+  // ---- READ: auto-fill an expense from a receipt image (AI extraction) ----
+  if (action === 'parseReceipt') {
+    return parseReceipt(body.receipt);
   }
 
   // ---- READ: dashboard data ----

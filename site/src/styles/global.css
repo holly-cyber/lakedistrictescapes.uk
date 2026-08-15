@@ -2008,7 +2008,10 @@
     .dash-del:hover { color: #b23b3b; background: rgba(178,59,59,0.08); }
     .dash-empty-sm { padding: 1.2rem 0.2rem; font-size: 0.85rem; }
 
-    /* add-receipt form */
+    /* add booking + receipt forms */
+    .dash-add-forms { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; align-items: start; margin-bottom: 1.6rem; }
+    .dash-add-forms .dash-card { margin: 0; }
+    @media (max-width: 720px) { .dash-add-forms { grid-template-columns: 1fr; } }
     .receipt-form { padding: 0; overflow: hidden; }
     .rf-summary {
       list-style: none; cursor: pointer; display: flex; align-items: center; gap: 0.6rem;

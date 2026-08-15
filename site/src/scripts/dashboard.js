@@ -792,7 +792,13 @@ function exportExpensesCsv(expenses, properties, viewLabel) {
   setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-function taxSummary(v) {
+const TAX_RATES = [
+  { v: 0.2, label: 'Basic rate — 20%' },
+  { v: 0.4, label: 'Higher rate — 40%' },
+  { v: 0.45, label: 'Additional rate — 45%' },
+];
+
+function taxSummary(v, taxRate, onRateChange) {
   const rows = [
     ['Rental income (turnover)', money(v.grossIncome), false],
     ['Less: channel / booking fees', '− ' + money(v.fees), true],
@@ -801,13 +807,45 @@ function taxSummary(v) {
     ['Cash received (net payouts)', money(v.netPayout), false],
     ['VAT within expenses (reclaimable if registered)', money(v.vatReclaim), false],
   ];
-  const body = e('div', { class: 'tax-rows' }, rows.map((r) =>
-    e('div', { class: 'tax-row' + (r[3] ? ' tax-row--total' : '') }, [
-      e('span', { class: 'tax-k', text: r[0] }),
-      e('span', { class: 'tax-v' + (r[2] ? ' neg' : ''), text: r[1] }),
-    ])
-  ));
-  return card('Tax summary', "2026/27 tax year · 6 Apr 2026 – 5 Apr 2027", body);
+  const body = e('div', {}, [
+    e('div', { class: 'tax-rows' }, rows.map((r) =>
+      e('div', { class: 'tax-row' + (r[3] ? ' tax-row--total' : '') }, [
+        e('span', { class: 'tax-k', text: r[0] }),
+        e('span', { class: 'tax-v' + (r[2] ? ' neg' : ''), text: r[1] }),
+      ])
+    )),
+  ]);
+
+  // Estimated tax to set aside on the profit.
+  const estTax = v.netProfit > 0 ? v.netProfit * taxRate : 0;
+  const perMonth = estTax / 12;
+  const reserve = e('div', { class: 'tax-reserve' }, [
+    e('div', { class: 'tax-reserve-row' }, [
+      e('div', {}, [
+        e('div', { class: 'tax-reserve-label', text: 'Set aside for tax' }),
+        e('div', { class: 'tax-reserve-sub', text: 'Estimated Income Tax at ' + Math.round(taxRate * 100) + '% of the profit' }),
+      ]),
+      e('div', { class: 'tax-reserve-amt', text: money(estTax) }),
+    ]),
+    estTax > 0
+      ? e('div', { class: 'tax-reserve-month' }, [
+          e('span', { text: '≈ ' }),
+          e('strong', { text: money(perMonth) }),
+          e('span', { text: ' a month to put by across the tax year' }),
+        ])
+      : e('div', { class: 'tax-reserve-month muted', text: 'No profit to set tax aside for yet.' }),
+    e('p', { class: 'tax-reserve-note muted', text: 'A guide only — the actual bill depends on each owner’s other income and allowances. Check with your accountant.' }),
+  ]);
+  body.appendChild(reserve);
+
+  // Rate selector in the card header.
+  const sel = e('select', { class: 'tax-rate-sel' }, TAX_RATES.map((r) =>
+    e('option', { value: String(r.v), text: r.label })));
+  sel.value = String(taxRate);
+  sel.addEventListener('change', () => onRateChange(parseFloat(sel.value)));
+  const head = e('label', { class: 'tax-rate-field' }, [e('span', { text: 'Tax band' }), sel]);
+
+  return card('Tax summary', '2026/27 tax year · 6 Apr 2026 – 5 Apr 2027', body, head);
 }
 
 // ---------- main ----------
@@ -816,6 +854,13 @@ export function initDashboard(root, data, opts = {}) {
   const api = opts.api || '/api/management';
   const code = opts.code || '';
   let view = 'all';
+  let taxRate = parseFloat(sessionStorage.getItem('lde-mgmt-taxrate'));
+  if (!(taxRate > 0)) taxRate = 0.2;
+  function setTaxRate(r) {
+    taxRate = r;
+    try { sessionStorage.setItem('lde-mgmt-taxrate', String(r)); } catch { /* ignore */ }
+    render();
+  }
 
   async function apiCall(action, payload) {
     const res = await fetch(api, {
@@ -952,11 +997,13 @@ export function initDashboard(root, data, opts = {}) {
     }
 
     // KPI row
+    const estTax = v.netProfit > 0 ? v.netProfit * taxRate : 0;
     body.appendChild(e('div', { class: 'dash-kpis' }, [
       kpi('Rental income', money(v.grossIncome), 'gross, before fees'),
       kpi('Channel fees', money(v.fees), 'Airbnb service fees'),
       kpi('Expenses', money(v.expensesTotal), v.vatReclaim ? money(v.vatReclaim) + ' VAT' : 'running costs'),
       kpi('Net profit', money(v.netProfit), 'income − fees − costs', v.netProfit >= 0 ? 'pos' : 'neg'),
+      kpi('Tax to set aside', money(estTax), '@ ' + Math.round(taxRate * 100) + '% · ~' + money(estTax / 12, true) + '/mo', 'tax'),
       kpi('Occupancy', pct(v.occupancy), 'nights booked / available'),
       kpi('Nights booked', String(v.nights), v.bookings.length + ' bookings'),
       kpi('Avg. nightly', money(v.avgNightly), 'per night booked'),
@@ -972,7 +1019,7 @@ export function initDashboard(root, data, opts = {}) {
     }
 
     // Tax + tables
-    body.appendChild(taxSummary(v));
+    body.appendChild(taxSummary(v, taxRate, setTaxRate));
 
     // Bookings table — with CSV export in its header.
     let bkgCsv = null;

@@ -93,7 +93,7 @@ import Footer from '../../components/Footer.astro';
       sessionStorage.setItem(STORAGE_KEY, code);
       gate.style.display = 'none';
       dashboardEl.classList.add('show');
-      initDashboard(dashboardEl, data);
+      initDashboard(dashboardEl, data, { api: API, code });
     } catch (err) {
       if (fromStorage) {
         sessionStorage.removeItem(STORAGE_KEY);

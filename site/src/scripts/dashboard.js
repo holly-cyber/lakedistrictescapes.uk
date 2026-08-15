@@ -98,13 +98,22 @@ function computeView(data, view) {
   const inView = (b) => view === 'all' || b.property === view;
   const bk = bookings.filter(inView);
 
-  // Expenses: combined counts everything in full; a single-property view counts
-  // that property's own expenses in full and 'shared' ones apportioned 50/50.
+  // Expenses: only the business-use % of each receipt is claimable. Combined
+  // counts everything in full; a single-property view counts that property's
+  // own expenses in full and 'shared' ones apportioned 50/50.
   const exp = expenses
     .filter((x) => view === 'all' || x.property === view || x.property === 'shared')
     .map((x) => {
+      const pctFrac = (x.businessPct == null ? 100 : x.businessPct) / 100;
       const share = view !== 'all' && x.property === 'shared' ? 0.5 : 1;
-      return { ...x, alloc: x.amount * share, allocVat: x.vat * share };
+      const claimed = x.amount * pctFrac; // business portion of the full bill
+      return {
+        ...x,
+        businessPct: x.businessPct == null ? 100 : x.businessPct,
+        claimed,
+        alloc: claimed * share,
+        allocVat: (x.vat || 0) * pctFrac * share,
+      };
     });
 
   const grossIncome = bk.reduce((a, b) => a + b.gross, 0);
@@ -287,21 +296,233 @@ function bookingsTable(bookings, properties) {
     scroller(e('table', { class: 'dash-table' }, [e('thead', {}, head), e('tbody', {}, rows)])));
 }
 
-function expensesTable(expenses, properties) {
-  if (!expenses.length) return null;
-  const head = e('tr', {}, ['Date', 'Vendor', 'Category', 'Property', 'Amount', 'VAT'].map((h) => e('th', { text: h })));
-  const rows = expenses.map((x) =>
-    e('tr', {}, [
+function propLabel(key, properties) {
+  return key === 'shared' ? 'Shared' : (properties[key] || {}).short || key;
+}
+
+function expensesTable(expenses, properties, handlers, headExtra) {
+  const cols = ['Date', 'Vendor', 'Category', 'Property', 'Amount', 'Biz %', 'Claimed', 'VAT', 'Receipt', ''];
+  const head = e('tr', {}, cols.map((h) => e('th', { text: h })));
+  const rows = expenses.map((x) => {
+    // Receipt cell
+    let receiptCell;
+    if (x.receiptId) {
+      const btn = e('button', { class: 'dash-linkbtn', type: 'button', text: 'View' });
+      btn.addEventListener('click', () => handlers.onView(x));
+      receiptCell = e('td', {}, btn);
+    } else {
+      receiptCell = e('td', { class: 'muted', text: '—' });
+    }
+    // Delete cell (owner-entered rows only)
+    let delCell;
+    if (x.source === 'owner') {
+      const del = e('button', { class: 'dash-del', type: 'button', title: 'Delete this receipt', 'aria-label': 'Delete receipt' }, '×');
+      del.addEventListener('click', () => handlers.onDelete(x));
+      delCell = e('td', {}, del);
+    } else {
+      delCell = e('td', {});
+    }
+    return e('tr', {}, [
       e('td', { text: x.date }),
-      e('td', { text: x.vendor }),
+      e('td', { text: x.vendor || '—' }),
       e('td', { text: x.category }),
-      e('td', { text: x.property === 'shared' ? 'Shared' : (properties[x.property] || {}).short || x.property }),
+      e('td', { text: propLabel(x.property, properties) }),
+      e('td', { class: 'num', text: money(x.amount) }),
+      e('td', { class: 'num' + (x.businessPct < 100 ? ' biz' : ' muted'), text: Math.round(x.businessPct) + '%' }),
       e('td', { class: 'num', text: money(x.alloc) }),
       e('td', { class: 'num muted', text: x.allocVat ? money(x.allocVat) : '—' }),
-    ])
-  );
-  return card('Expenses', expenses.length + ' item' + (expenses.length === 1 ? '' : 's'),
-    scroller(e('table', { class: 'dash-table' }, [e('thead', {}, head), e('tbody', {}, rows)])));
+      receiptCell,
+      delCell,
+    ]);
+  });
+  const body = expenses.length
+    ? scroller(e('table', { class: 'dash-table' }, [e('thead', {}, head), e('tbody', {}, rows)]))
+    : e('p', { class: 'dash-empty-sm muted', text: 'No expenses recorded yet — add your first receipt above.' });
+  return card('Expenses', expenses.length + ' item' + (expenses.length === 1 ? '' : 's'), body, headExtra);
+}
+
+// ---------- add-receipt form ----------
+const CATEGORIES = [
+  'Utilities (electric / gas / water)',
+  'Council tax / business rates',
+  'Broadband & TV',
+  'Cleaning',
+  'Laundry',
+  'Welcome Pack & Supplies',
+  'Maintenance & Repairs',
+  'Garden',
+  'Furnishings & Equipment',
+  'Insurance',
+  'Toiletries & Consumables',
+  'Marketing & Listing fees',
+  'Accountancy & Professional',
+  'Travel & Mileage',
+  'Other',
+];
+
+function field(labelText, control, hint) {
+  return e('label', { class: 'rf-field' }, [
+    e('span', { class: 'rf-label', text: labelText }),
+    control,
+    hint ? e('span', { class: 'rf-hint', text: hint }) : null,
+  ]);
+}
+
+function addReceiptForm(properties, onAdd) {
+  const details = e('details', { class: 'dash-card receipt-form' });
+  const summary = e('summary', { class: 'rf-summary' }, [
+    e('span', { class: 'rf-plus', text: '＋' }),
+    e('span', { text: 'Add a receipt / expense' }),
+  ]);
+  details.appendChild(summary);
+
+  const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
+
+  const propSel = e('select', { name: 'property', required: 'required' }, [
+    e('option', { value: 'primrose-cottage', text: 'Primrose Cottage' }),
+    e('option', { value: 'the-rockery', text: 'The Rockery' }),
+    e('option', { value: 'shared', text: 'Shared (both properties)' }),
+  ]);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const dateIn = e('input', { name: 'date', type: 'date', required: 'required', value: today, max: today });
+  const vendorIn = e('input', { name: 'vendor', type: 'text', placeholder: 'e.g. EDF Energy, Lidl, B&Q' });
+
+  const catList = e('datalist', { id: 'rf-cats' }, CATEGORIES.map((c) => e('option', { value: c })));
+  const catIn = e('input', { name: 'category', type: 'text', list: 'rf-cats', placeholder: 'Choose or type a category' });
+
+  const amountIn = e('input', { name: 'amount', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', required: 'required', placeholder: '0.00' });
+  const pctIn = e('input', { name: 'businessPct', type: 'number', step: '1', min: '0', max: '100', inputmode: 'numeric', value: '100' });
+  const vatIn = e('input', { name: 'vat', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', placeholder: '0.00' });
+  const methodIn = e('input', { name: 'method', type: 'text', placeholder: 'Card, Bank transfer, Cash…' });
+  const noteIn = e('input', { name: 'note', type: 'text', placeholder: 'Optional note' });
+  const fileIn = e('input', { name: 'receipt', type: 'file', accept: 'image/*,application/pdf,.pdf,.heic' });
+
+  // Live "claimed" preview for part-business bills.
+  const preview = e('p', { class: 'rf-preview muted' });
+  function updatePreview() {
+    const amt = parseFloat(amountIn.value) || 0;
+    const p = Math.max(0, Math.min(100, parseFloat(pctIn.value) || 0));
+    if (amt > 0 && p < 100) {
+      preview.textContent = 'Claimable as a business cost: ' + money(amt * (p / 100)) + ' (' + Math.round(p) + '% of ' + money(amt) + ')';
+      preview.style.display = '';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+  amountIn.addEventListener('input', updatePreview);
+  pctIn.addEventListener('input', updatePreview);
+  updatePreview();
+
+  const grid = e('div', { class: 'rf-grid' }, [
+    field('Attributed to', propSel),
+    field('Date', dateIn),
+    field('Supplier / vendor', vendorIn),
+    field('Category', catIn),
+    field('Amount (£)', amountIn, 'The full total on the receipt or bill.'),
+    field('Business use %', pctIn, 'For a shared bill like electricity, the % that relates to the let.'),
+    field('VAT (£)', vatIn, 'Reclaimable VAT within the amount — leave 0 if unsure.'),
+    field('Payment method', methodIn),
+  ]);
+
+  const status = e('p', { class: 'rf-status', role: 'status', 'aria-live': 'polite' });
+  const submit = e('button', { class: 'guest-btn rf-submit', type: 'submit', text: 'Save receipt' });
+
+  form.appendChild(grid);
+  form.appendChild(field('Note', noteIn));
+  form.appendChild(field('Receipt file (photo or PDF)', fileIn, 'Optional — up to 4MB. JPG, PNG, HEIC or PDF.'));
+  form.appendChild(preview);
+  form.appendChild(e('div', { class: 'rf-actions' }, [submit, status]));
+  details.appendChild(form);
+
+  function readFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Could not read the file.'));
+      reader.onload = () => {
+        const res = String(reader.result || '');
+        const comma = res.indexOf(',');
+        resolve({ data: comma >= 0 ? res.slice(comma + 1) : res, name: file.name, type: file.type || 'application/octet-stream' });
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const amt = parseFloat(amountIn.value);
+    if (!(amt > 0)) {
+      status.textContent = 'Please enter an amount greater than £0.';
+      status.className = 'rf-status err';
+      return;
+    }
+    submit.disabled = true;
+    submit.textContent = 'Saving…';
+    status.textContent = '';
+    status.className = 'rf-status';
+    try {
+      const payload = {
+        property: propSel.value,
+        date: dateIn.value,
+        vendor: vendorIn.value,
+        category: catIn.value,
+        amount: amt,
+        businessPct: pctIn.value === '' ? 100 : parseFloat(pctIn.value),
+        vat: parseFloat(vatIn.value) || 0,
+        method: methodIn.value,
+        note: noteIn.value,
+      };
+      const file = fileIn.files && fileIn.files[0];
+      if (file) {
+        if (file.size > 4.4 * 1024 * 1024) throw new Error('That file is over 4MB — please use a smaller photo or PDF.');
+        payload.receipt = await readFile(file);
+      }
+      await onAdd(payload);
+      // onAdd triggers a re-render which replaces this form, so no reset needed.
+    } catch (err) {
+      submit.disabled = false;
+      submit.textContent = 'Save receipt';
+      status.textContent = err.message || 'Sorry, that could not be saved.';
+      status.className = 'rf-status err';
+    }
+  });
+
+  details.appendChild(catList);
+  return details;
+}
+
+// ---------- CSV export ----------
+function exportExpensesCsv(expenses, properties, viewLabel) {
+  const header = ['Date', 'Supplier', 'Category', 'Property', 'Amount (full)', 'Business %', 'Claimed', 'VAT reclaim', 'Method', 'Note', 'Receipt'];
+  const esc = (v) => {
+    const s = v == null ? '' : String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  };
+  const lines = [header.join(',')];
+  expenses.forEach((x) => {
+    lines.push([
+      x.date,
+      x.vendor || '',
+      x.category || '',
+      propLabel(x.property, properties),
+      x.amount.toFixed(2),
+      Math.round(x.businessPct),
+      x.alloc.toFixed(2),
+      (x.allocVat || 0).toFixed(2),
+      x.method || '',
+      x.note || '',
+      x.receiptName || '',
+    ].map(esc).join(','));
+  });
+  const blob = new Blob([lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'lde-expenses-' + viewLabel.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '.csv';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
 function taxSummary(v) {
@@ -323,9 +544,66 @@ function taxSummary(v) {
 }
 
 // ---------- main ----------
-export function initDashboard(root, data) {
+export function initDashboard(root, data, opts = {}) {
   const { properties } = data;
+  const api = opts.api || '/api/management';
+  const code = opts.code || '';
   let view = 'all';
+
+  async function apiCall(action, payload) {
+    const res = await fetch(api, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, action, ...payload }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (!res.ok || out.error) throw new Error(out.error || 'Request failed.');
+    return out;
+  }
+
+  function toast(msg, kind) {
+    const t = e('div', { class: 'dash-toast' + (kind ? ' ' + kind : ''), role: 'status', text: msg });
+    root.appendChild(t);
+    requestAnimationFrame(() => t.classList.add('show'));
+    setTimeout(() => {
+      t.classList.remove('show');
+      setTimeout(() => t.remove(), 300);
+    }, 3200);
+  }
+
+  const handlers = {
+    async onAdd(payload) {
+      const out = await apiCall('addExpense', payload);
+      data.expenses.push(out.expense);
+      if (data.meta) data.meta.ownerCount = (data.meta.ownerCount || 0) + 1;
+      render();
+      toast('Receipt saved.', 'ok');
+    },
+    async onDelete(x) {
+      if (!window.confirm('Delete this receipt' + (x.vendor ? ' from ' + x.vendor : '') + '? This cannot be undone.')) return;
+      try {
+        await apiCall('deleteExpense', { id: x.id });
+        data.expenses = data.expenses.filter((it) => it.id !== x.id);
+        if (data.meta && data.meta.ownerCount) data.meta.ownerCount -= 1;
+        render();
+        toast('Receipt deleted.', 'ok');
+      } catch (err) {
+        toast(err.message || 'Could not delete.', 'err');
+      }
+    },
+    async onView(x) {
+      try {
+        const out = await apiCall('receipt', { id: x.receiptId });
+        const bytes = Uint8Array.from(atob(out.data), (c) => c.charCodeAt(0));
+        const blob = new Blob([bytes], { type: out.type || 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        window.open(url, '_blank', 'noopener');
+        setTimeout(() => URL.revokeObjectURL(url), 60000);
+      } catch (err) {
+        toast(err.message || 'Could not open the receipt.', 'err');
+      }
+    },
+  };
 
   const toggle = e('div', { class: 'dash-toggle', role: 'tablist' });
   const views = [
@@ -351,10 +629,13 @@ export function initDashboard(root, data) {
     const v = computeView(data, view);
     body.textContent = '';
 
+    // Add-receipt form is always available, in every view.
+    body.appendChild(addReceiptForm(properties, handlers.onAdd));
+
     if (!v.bookings.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [
         e('p', { text: 'No bookings or expenses recorded yet for ' + (view === 'the-rockery' ? 'The Rockery' : 'this property') + '.' }),
-        e('p', { class: 'muted', text: 'The Rockery isn’t taking bookings yet — its figures will appear here once it launches.' }),
+        e('p', { class: 'muted', text: 'The Rockery isn’t taking bookings yet — add a receipt above to start logging its costs, and its figures will appear here once it launches.' }),
       ]));
       return;
     }
@@ -383,8 +664,15 @@ export function initDashboard(root, data) {
     body.appendChild(taxSummary(v));
     const bt = bookingsTable(v.bookings, properties);
     if (bt) body.appendChild(bt);
-    const et = expensesTable(v.expenses, properties);
-    if (et) body.appendChild(et);
+
+    // Expenses table — with CSV export in its header.
+    let csvBtn = null;
+    if (v.expenses.length) {
+      csvBtn = e('button', { class: 'dash-linkbtn dash-csv', type: 'button', text: '⬇ Export CSV' });
+      csvBtn.addEventListener('click', () =>
+        exportExpensesCsv(v.expenses, properties, views.find((x) => x.id === view).label));
+    }
+    body.appendChild(expensesTable(v.expenses, properties, handlers, csvBtn));
   }
 
   root.textContent = '';

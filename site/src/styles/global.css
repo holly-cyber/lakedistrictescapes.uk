@@ -2046,6 +2046,28 @@
     .rf-status.err { color: #b23b3b; }
     @media (max-width: 560px) { .rf-grid { grid-template-columns: 1fr; } }
 
+    /* row actions + edit button */
+    .dash-table td.row-actions { white-space: nowrap; text-align: right; }
+    .row-actions .dash-edit { margin-right: 0.35rem; padding: 0.2rem 0.55rem; font-size: 0.75rem; }
+
+    /* edit dialog */
+    .rf-dialog {
+      border: none; border-radius: 14px; padding: 0; width: min(640px, 94vw);
+      background: #fff; color: var(--body-text); box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    }
+    .rf-dialog::backdrop { background: rgba(30,32,28,0.5); backdrop-filter: blur(2px); }
+    .rf-dialog .receipt-fields { padding: 1.3rem 1.4rem 1.5rem; max-height: 88vh; overflow-y: auto; }
+    .rf-dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .rf-dialog-head h3 { font-family: 'Playfair Display', serif; font-weight: 400; font-size: 1.25rem; color: var(--off-black); }
+    .rf-dialog-x {
+      appearance: none; border: none; background: none; cursor: pointer; color: var(--mid);
+      font-size: 1.6rem; line-height: 1; padding: 0 0.2rem; border-radius: 6px;
+    }
+    .rf-dialog-x:hover { color: var(--off-black); }
+    .rf-current { display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; flex-wrap: wrap; }
+    .rf-current-name { font-weight: 500; color: var(--gable-deep); }
+    .rf-current.removing .rf-current-name { text-decoration: line-through; color: var(--mid); }
+
     /* toast */
     .dash-toast {
       position: fixed; left: 50%; bottom: 1.5rem; transform: translate(-50%, 1rem);

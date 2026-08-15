@@ -445,12 +445,14 @@ function expensesTable(expenses, properties, handlers, headExtra) {
     } else {
       receiptCell = e('td', { class: 'muted', text: '—' });
     }
-    // Delete cell (owner-entered rows only)
+    // Actions cell — edit + delete (owner-entered rows only)
     let delCell;
     if (x.source === 'owner') {
+      const edit = e('button', { class: 'dash-linkbtn dash-edit', type: 'button', text: 'Edit' });
+      edit.addEventListener('click', () => handlers.onEdit(x));
       const del = e('button', { class: 'dash-del', type: 'button', title: 'Delete this receipt', 'aria-label': 'Delete receipt' }, '×');
       del.addEventListener('click', () => handlers.onDelete(x));
-      delCell = e('td', {}, del);
+      delCell = e('td', { class: 'row-actions' }, [edit, del]);
     } else {
       delCell = e('td', {});
     }
@@ -500,34 +502,50 @@ function field(labelText, control, hint) {
   ]);
 }
 
-function addReceiptForm(properties, onAdd) {
-  const details = e('details', { class: 'dash-card receipt-form' });
-  const summary = e('summary', { class: 'rf-summary' }, [
-    e('span', { class: 'rf-plus', text: '＋' }),
-    e('span', { text: 'Add a receipt / expense' }),
-  ]);
-  details.appendChild(summary);
+let rfSeq = 0;
+function readFileAsB64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not read the file.'));
+    reader.onload = () => {
+      const res = String(reader.result || '');
+      const comma = res.indexOf(',');
+      resolve({ data: comma >= 0 ? res.slice(comma + 1) : res, name: file.name, type: file.type || 'application/octet-stream' });
+    };
+    reader.readAsDataURL(file);
+  });
+}
 
-  const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
-
+// Builds the shared set of expense fields (used by both the add form and the
+// edit dialog). `initial` pre-fills values; returns the field nodes plus
+// `readPayload()` and `validate()` helpers so the caller drives submission.
+function receiptFieldset(properties, initial = {}, fileOpts = {}) {
   const propSel = e('select', { name: 'property', required: 'required' }, [
     e('option', { value: 'primrose-cottage', text: 'Primrose Cottage' }),
     e('option', { value: 'the-rockery', text: 'The Rockery' }),
     e('option', { value: 'shared', text: 'Shared (both properties)' }),
   ]);
+  if (initial.property) propSel.value = initial.property;
 
   const today = new Date().toISOString().slice(0, 10);
-  const dateIn = e('input', { name: 'date', type: 'date', required: 'required', value: today, max: today });
+  const dateIn = e('input', { name: 'date', type: 'date', required: 'required', value: initial.date || today, max: today });
   const vendorIn = e('input', { name: 'vendor', type: 'text', placeholder: 'e.g. EDF Energy, Lidl, B&Q' });
+  vendorIn.value = initial.vendor || '';
 
-  const catList = e('datalist', { id: 'rf-cats' }, CATEGORIES.map((c) => e('option', { value: c })));
-  const catIn = e('input', { name: 'category', type: 'text', list: 'rf-cats', placeholder: 'Choose or type a category' });
+  const catId = 'rf-cats-' + ++rfSeq;
+  const catList = e('datalist', { id: catId }, CATEGORIES.map((c) => e('option', { value: c })));
+  const catIn = e('input', { name: 'category', type: 'text', list: catId, placeholder: 'Choose or type a category' });
+  catIn.value = initial.category && initial.category !== 'Uncategorised' ? initial.category : '';
 
   const amountIn = e('input', { name: 'amount', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', required: 'required', placeholder: '0.00' });
-  const pctIn = e('input', { name: 'businessPct', type: 'number', step: '1', min: '0', max: '100', inputmode: 'numeric', value: '100' });
+  if (initial.amount != null) amountIn.value = String(initial.amount);
+  const pctIn = e('input', { name: 'businessPct', type: 'number', step: '1', min: '0', max: '100', inputmode: 'numeric', value: initial.businessPct != null ? String(initial.businessPct) : '100' });
   const vatIn = e('input', { name: 'vat', type: 'number', step: '0.01', min: '0', inputmode: 'decimal', placeholder: '0.00' });
+  if (initial.vat) vatIn.value = String(initial.vat);
   const methodIn = e('input', { name: 'method', type: 'text', placeholder: 'Card, Bank transfer, Cash…' });
+  methodIn.value = initial.method || '';
   const noteIn = e('input', { name: 'note', type: 'text', placeholder: 'Optional note' });
+  noteIn.value = initial.note || '';
   const fileIn = e('input', { name: 'receipt', type: 'file', accept: 'image/*,application/pdf,.pdf,.heic' });
 
   // Live "claimed" preview for part-business bills.
@@ -557,59 +575,66 @@ function addReceiptForm(properties, onAdd) {
     field('Payment method', methodIn),
   ]);
 
+  const frag = document.createDocumentFragment();
+  frag.appendChild(grid);
+  frag.appendChild(field('Note', noteIn));
+  frag.appendChild(field(fileOpts.label || 'Receipt file (photo or PDF)', fileIn, fileOpts.hint || 'Optional — up to 4MB. JPG, PNG, HEIC or PDF.'));
+  frag.appendChild(preview);
+  frag.appendChild(catList);
+
+  function validate() {
+    if (!(parseFloat(amountIn.value) > 0)) return 'Please enter an amount greater than £0.';
+    if (!dateIn.value) return 'Please choose a date for the receipt.';
+    return null;
+  }
+  async function readPayload() {
+    const payload = {
+      property: propSel.value,
+      date: dateIn.value,
+      vendor: vendorIn.value,
+      category: catIn.value,
+      amount: parseFloat(amountIn.value),
+      businessPct: pctIn.value === '' ? 100 : parseFloat(pctIn.value),
+      vat: parseFloat(vatIn.value) || 0,
+      method: methodIn.value,
+      note: noteIn.value,
+    };
+    const file = fileIn.files && fileIn.files[0];
+    if (file) {
+      if (file.size > 4.4 * 1024 * 1024) throw new Error('That file is over 4MB — please use a smaller photo or PDF.');
+      payload.receipt = await readFileAsB64(file);
+    }
+    return payload;
+  }
+  return { frag, fileIn, validate, readPayload };
+}
+
+function addReceiptForm(properties, onAdd) {
+  const details = e('details', { class: 'dash-card receipt-form' });
+  details.appendChild(e('summary', { class: 'rf-summary' }, [
+    e('span', { class: 'rf-plus', text: '＋' }),
+    e('span', { text: 'Add a receipt / expense' }),
+  ]));
+
+  const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
+  const fs = receiptFieldset(properties, {});
   const status = e('p', { class: 'rf-status', role: 'status', 'aria-live': 'polite' });
   const submit = e('button', { class: 'guest-btn rf-submit', type: 'submit', text: 'Save receipt' });
 
-  form.appendChild(grid);
-  form.appendChild(field('Note', noteIn));
-  form.appendChild(field('Receipt file (photo or PDF)', fileIn, 'Optional — up to 4MB. JPG, PNG, HEIC or PDF.'));
-  form.appendChild(preview);
+  form.appendChild(fs.frag);
   form.appendChild(e('div', { class: 'rf-actions' }, [submit, status]));
   details.appendChild(form);
 
-  function readFile(file) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('Could not read the file.'));
-      reader.onload = () => {
-        const res = String(reader.result || '');
-        const comma = res.indexOf(',');
-        resolve({ data: comma >= 0 ? res.slice(comma + 1) : res, name: file.name, type: file.type || 'application/octet-stream' });
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
   form.addEventListener('submit', async (ev) => {
     ev.preventDefault();
-    const amt = parseFloat(amountIn.value);
-    if (!(amt > 0)) {
-      status.textContent = 'Please enter an amount greater than £0.';
-      status.className = 'rf-status err';
-      return;
-    }
+    const errMsg = fs.validate();
+    if (errMsg) { status.textContent = errMsg; status.className = 'rf-status err'; return; }
     submit.disabled = true;
     submit.textContent = 'Saving…';
     status.textContent = '';
     status.className = 'rf-status';
     try {
-      const payload = {
-        property: propSel.value,
-        date: dateIn.value,
-        vendor: vendorIn.value,
-        category: catIn.value,
-        amount: amt,
-        businessPct: pctIn.value === '' ? 100 : parseFloat(pctIn.value),
-        vat: parseFloat(vatIn.value) || 0,
-        method: methodIn.value,
-        note: noteIn.value,
-      };
-      const file = fileIn.files && fileIn.files[0];
-      if (file) {
-        if (file.size > 4.4 * 1024 * 1024) throw new Error('That file is over 4MB — please use a smaller photo or PDF.');
-        payload.receipt = await readFile(file);
-      }
-      await onAdd(payload);
+      await onAdd(await fs.readPayload());
       // onAdd triggers a re-render which replaces this form, so no reset needed.
     } catch (err) {
       submit.disabled = false;
@@ -618,9 +643,72 @@ function addReceiptForm(properties, onAdd) {
       status.className = 'rf-status err';
     }
   });
-
-  details.appendChild(catList);
   return details;
+}
+
+// Modal editor for an existing owner-entered expense. Lets you change any field
+// and add, replace or remove the receipt file after the fact.
+function editReceiptDialog(properties, expense, onUpdate) {
+  const dlg = e('dialog', { class: 'rf-dialog' });
+  const closeX = e('button', { class: 'rf-dialog-x', type: 'button', 'aria-label': 'Close', title: 'Close' }, '×');
+  const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
+
+  const fs = receiptFieldset(properties, expense, {
+    label: expense.receiptId ? 'Replace receipt file' : 'Add a receipt file (photo or PDF)',
+    hint: 'Optional — up to 4MB. JPG, PNG, HEIC or PDF.',
+  });
+
+  // Current-receipt row with a remove toggle (only if one is attached).
+  let removeReceipt = false;
+  let currentRow = null;
+  if (expense.receiptId) {
+    const nameEl = e('span', { class: 'rf-current-name', text: expense.receiptName || 'receipt attached' });
+    const rm = e('button', { class: 'dash-linkbtn', type: 'button', text: 'Remove' });
+    currentRow = e('div', { class: 'rf-current' }, [e('span', { class: 'muted', text: 'Current receipt: ' }), nameEl, rm]);
+    rm.addEventListener('click', () => {
+      removeReceipt = !removeReceipt;
+      currentRow.classList.toggle('removing', removeReceipt);
+      rm.textContent = removeReceipt ? 'Keep it' : 'Remove';
+    });
+  }
+
+  const status = e('p', { class: 'rf-status', role: 'status', 'aria-live': 'polite' });
+  const save = e('button', { class: 'guest-btn rf-submit', type: 'submit', text: 'Save changes' });
+  const cancel = e('button', { class: 'dash-linkbtn', type: 'button', text: 'Cancel' });
+
+  form.appendChild(e('div', { class: 'rf-dialog-head' }, [e('h3', { text: 'Edit expense' }), closeX]));
+  form.appendChild(fs.frag);
+  if (currentRow) form.appendChild(currentRow);
+  form.appendChild(e('div', { class: 'rf-actions' }, [save, cancel, status]));
+  dlg.appendChild(form);
+
+  const close = () => dlg.close();
+  cancel.addEventListener('click', close);
+  closeX.addEventListener('click', close);
+  dlg.addEventListener('close', () => dlg.remove());
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const errMsg = fs.validate();
+    if (errMsg) { status.textContent = errMsg; status.className = 'rf-status err'; return; }
+    save.disabled = true;
+    save.textContent = 'Saving…';
+    status.textContent = '';
+    status.className = 'rf-status';
+    try {
+      const payload = await fs.readPayload();
+      payload.id = expense.id;
+      if (removeReceipt && !payload.receipt) payload.removeReceipt = true;
+      await onUpdate(payload);
+      dlg.close();
+    } catch (err) {
+      save.disabled = false;
+      save.textContent = 'Save changes';
+      status.textContent = err.message || 'Sorry, that could not be saved.';
+      status.className = 'rf-status err';
+    }
+  });
+  return dlg;
 }
 
 // ---------- CSV export ----------
@@ -737,6 +825,17 @@ export function initDashboard(root, data, opts = {}) {
       } catch (err) {
         toast(err.message || 'Could not delete.', 'err');
       }
+    },
+    onEdit(x) {
+      const dlg = editReceiptDialog(properties, x, async (payload) => {
+        const out = await apiCall('updateExpense', payload);
+        const i = data.expenses.findIndex((it) => it.id === x.id);
+        if (i >= 0) data.expenses[i] = out.expense;
+        render();
+        toast('Receipt updated.', 'ok');
+      });
+      root.appendChild(dlg);
+      dlg.showModal();
     },
     async onView(x) {
       try {

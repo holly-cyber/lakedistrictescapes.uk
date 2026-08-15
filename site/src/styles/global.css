@@ -2044,6 +2044,15 @@
     .rf-submit { width: auto; margin: 0; }
     .rf-status { font-size: 0.82rem; margin: 0; }
     .rf-status.err { color: #b23b3b; }
+    .rf-parsestatus { font-size: 0.8rem; margin: -0.4rem 0 0; color: var(--mid); min-height: 1em; }
+    .rf-parsestatus.busy { color: var(--gable-deep); }
+    .rf-parsestatus.busy::before {
+      content: ''; display: inline-block; width: 10px; height: 10px; margin-right: 0.4rem;
+      border: 2px solid var(--kendal-mint); border-top-color: var(--gable-deep); border-radius: 50%;
+      vertical-align: -1px; animation: rf-spin 0.7s linear infinite;
+    }
+    .rf-parsestatus.ok { color: var(--gable-deep); }
+    @keyframes rf-spin { to { transform: rotate(360deg); } }
     @media (max-width: 560px) { .rf-grid { grid-template-columns: 1fr; } }
 
     /* row actions + edit button */

@@ -579,6 +579,52 @@ function receiptFieldset(properties, initial = {}, fileOpts = {}) {
   frag.appendChild(grid);
   frag.appendChild(field('Note', noteIn));
   frag.appendChild(field(fileOpts.label || 'Receipt file (photo or PDF)', fileIn, fileOpts.hint || 'Optional — up to 4MB. JPG, PNG, HEIC or PDF.'));
+
+  // Auto-fill from an uploaded receipt (reads the image with the receipt reader).
+  const parseStatus = e('p', { class: 'rf-parsestatus', role: 'status', 'aria-live': 'polite' });
+  if (typeof fileOpts.onParse === 'function') {
+    const today0 = today;
+    let dateIsDefault = dateIn.value === today0;
+    dateIn.addEventListener('input', () => { dateIsDefault = false; });
+
+    function applyParsed(f) {
+      if (!f) return;
+      if (f.vendor && !vendorIn.value.trim()) vendorIn.value = f.vendor;
+      if (f.category && !catIn.value.trim()) catIn.value = f.category;
+      if (f.date && dateIsDefault) { dateIn.value = f.date; dateIsDefault = false; }
+      if (f.amount > 0 && !amountIn.value.trim()) amountIn.value = String(f.amount);
+      if (f.vat > 0 && !vatIn.value.trim()) vatIn.value = String(f.vat);
+      updatePreview();
+    }
+
+    fileIn.addEventListener('change', async () => {
+      const file = fileIn.files && fileIn.files[0];
+      if (!file) return;
+      const t = (file.type || '').toLowerCase();
+      const supported = /^image\/(jpeg|jpg|png|webp|gif)$/.test(t) || t === 'application/pdf';
+      if (!supported || file.size > 4.4 * 1024 * 1024) return; // HEIC/large: keep manual entry
+      parseStatus.textContent = 'Reading receipt…';
+      parseStatus.className = 'rf-parsestatus busy';
+      try {
+        const payload = await readFileAsB64(file);
+        const out = await fileOpts.onParse(payload);
+        if (!out || out.ok === false) {
+          // Not configured → stay silent; any other failure → gentle nudge.
+          parseStatus.textContent = out && out.configured === false ? '' : 'Couldn’t read it automatically — please fill the details in.';
+          parseStatus.className = 'rf-parsestatus';
+          return;
+        }
+        applyParsed(out.fields);
+        parseStatus.textContent = 'Filled in from your receipt — please check the details are right.';
+        parseStatus.className = 'rf-parsestatus ok';
+      } catch {
+        parseStatus.textContent = '';
+        parseStatus.className = 'rf-parsestatus';
+      }
+    });
+    frag.appendChild(parseStatus);
+  }
+
   frag.appendChild(preview);
   frag.appendChild(catList);
 
@@ -609,7 +655,7 @@ function receiptFieldset(properties, initial = {}, fileOpts = {}) {
   return { frag, fileIn, validate, readPayload };
 }
 
-function addReceiptForm(properties, onAdd) {
+function addReceiptForm(properties, onAdd, onParse) {
   const details = e('details', { class: 'dash-card receipt-form' });
   details.appendChild(e('summary', { class: 'rf-summary' }, [
     e('span', { class: 'rf-plus', text: '＋' }),
@@ -617,7 +663,7 @@ function addReceiptForm(properties, onAdd) {
   ]));
 
   const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
-  const fs = receiptFieldset(properties, {});
+  const fs = receiptFieldset(properties, {}, { onParse });
   const status = e('p', { class: 'rf-status', role: 'status', 'aria-live': 'polite' });
   const submit = e('button', { class: 'guest-btn rf-submit', type: 'submit', text: 'Save receipt' });
 
@@ -648,7 +694,7 @@ function addReceiptForm(properties, onAdd) {
 
 // Modal editor for an existing owner-entered expense. Lets you change any field
 // and add, replace or remove the receipt file after the fact.
-function editReceiptDialog(properties, expense, onUpdate) {
+function editReceiptDialog(properties, expense, onUpdate, onParse) {
   const dlg = e('dialog', { class: 'rf-dialog' });
   const closeX = e('button', { class: 'rf-dialog-x', type: 'button', 'aria-label': 'Close', title: 'Close' }, '×');
   const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
@@ -656,6 +702,7 @@ function editReceiptDialog(properties, expense, onUpdate) {
   const fs = receiptFieldset(properties, expense, {
     label: expense.receiptId ? 'Replace receipt file' : 'Add a receipt file (photo or PDF)',
     hint: 'Optional — up to 4MB. JPG, PNG, HEIC or PDF.',
+    onParse,
   });
 
   // Current-receipt row with a remove toggle (only if one is attached).
@@ -833,9 +880,24 @@ export function initDashboard(root, data, opts = {}) {
         if (i >= 0) data.expenses[i] = out.expense;
         render();
         toast('Receipt updated.', 'ok');
-      });
+      }, handlers.onParse);
       root.appendChild(dlg);
       dlg.showModal();
+    },
+    // Read a receipt image with the AI receipt reader and return its fields.
+    // Never throws — returns { ok:false } so the form quietly falls back to
+    // manual entry when the reader is off or a receipt can't be read.
+    async onParse(fileObj) {
+      try {
+        const res = await fetch(api, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, action: 'parseReceipt', receipt: fileObj }),
+        });
+        return await res.json().catch(() => ({ ok: false }));
+      } catch {
+        return { ok: false };
+      }
     },
     async onView(x) {
       try {
@@ -878,7 +940,7 @@ export function initDashboard(root, data, opts = {}) {
     // Add-booking and add-receipt forms are always available, in every view.
     body.appendChild(e('div', { class: 'dash-add-forms' }, [
       addBookingForm(properties, handlers.onAddBooking),
-      addReceiptForm(properties, handlers.onAdd),
+      addReceiptForm(properties, handlers.onAdd, handlers.onParse),
     ]));
 
     if (!v.bookings.length && !v.expenses.length) {

@@ -123,6 +123,7 @@ function mapExpense(f) {
     businessPct: pctRaw !== undefined && pctRaw !== '' ? clampPct(pctRaw) : 100,
     vat: num(pick(f, ['VAT'])),
     method: pick(f, ['Method'], ''),
+    startup: /^(true|yes|1|y)$/i.test(String(pick(f, ['Start-up', 'Startup', 'Start up', 'One-off', 'Oneoff'], ''))),
     source: 'airtable',
   };
 }
@@ -385,6 +386,7 @@ function ownerPublic(x) {
     businessPct: x.businessPct == null ? 100 : x.businessPct,
     vat: x.vat || 0,
     method: x.method || '',
+    startup: !!x.startup,
     source: 'owner',
     receiptId: x.receiptId || null,
     receiptName: x.receiptName || null,
@@ -442,6 +444,7 @@ export default async (req) => {
       businessPct: clampPct(body.businessPct == null ? 100 : body.businessPct),
       vat: num(body.vat),
       method: String(body.method || '').trim().slice(0, 60),
+      startup: Boolean(body.startup),
       source: 'owner',
       createdAt: new Date().toISOString(),
       ...receipt,
@@ -508,6 +511,7 @@ export default async (req) => {
       businessPct: clampPct(body.businessPct == null ? 100 : body.businessPct),
       vat: num(body.vat),
       method: String(body.method || '').trim().slice(0, 60),
+      startup: Boolean(body.startup),
       source: 'owner',
       updatedAt: new Date().toISOString(),
       ...receipt,
@@ -652,6 +656,7 @@ export default async (req) => {
   let baseExpenses = SEED_EXPENSES.map((x) => ({
     ...x,
     businessPct: x.businessPct == null ? 100 : x.businessPct,
+    startup: !!x.startup,
     source: 'seed',
   }));
   let source = 'seed';

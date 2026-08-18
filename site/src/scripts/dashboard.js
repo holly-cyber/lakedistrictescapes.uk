@@ -121,11 +121,16 @@ function computeView(data, view) {
   const cleaning = bk.reduce((a, b) => a + (b.cleaning || 0), 0);
   const netPayout = bk.reduce((a, b) => a + b.net, 0);
   const expensesTotal = exp.reduce((a, x) => a + x.alloc, 0);
+  const startupTotal = exp.reduce((a, x) => a + (x.startup ? x.alloc : 0), 0);
   const vatReclaim = exp.reduce((a, x) => a + x.allocVat, 0);
   const netProfit = grossIncome - fees - expensesTotal;
+  // "Ongoing" profit strips out one-off start-up costs (still tax-deductible,
+  // but not part of day-to-day running economics).
+  const ongoingProfit = netProfit + startupTotal;
   const nights = bk.reduce((a, b) => a + b.nights, 0);
   const avgNightly = nights ? grossIncome / nights : 0;
   const avgProfitNight = nights ? netProfit / nights : 0;
+  const ongoingProfitNight = nights ? ongoingProfit / nights : 0;
 
   // Monthly buckets.
   const incomeByMonth = {};
@@ -189,8 +194,8 @@ function computeView(data, view) {
   const occupancy = occTotalAvail ? (occTotalBooked / occTotalAvail) * 100 : 0;
 
   return {
-    grossIncome, fees, cleaning, netPayout, expensesTotal, vatReclaim, netProfit,
-    nights, avgNightly, avgProfitNight, occupancy, monthly,
+    grossIncome, fees, cleaning, netPayout, expensesTotal, startupTotal, vatReclaim, netProfit,
+    ongoingProfit, nights, avgNightly, avgProfitNight, ongoingProfitNight, occupancy, monthly,
     bookings: bk.slice().sort((a, b) => a.start.localeCompare(b.start)),
     expenses: exp.slice().sort((a, b) => a.date.localeCompare(b.date)),
   };
@@ -594,7 +599,10 @@ function expensesTable(expenses, properties, handlers, headExtra) {
     return e('tr', {}, [
       e('td', { text: x.date }),
       e('td', { text: x.vendor || '—' }),
-      e('td', { text: x.category }),
+      e('td', {}, [
+        x.category,
+        x.startup ? e('span', { class: 'exp-startup-tag', text: 'start-up' }) : null,
+      ]),
       e('td', { text: propLabel(x.property, properties) }),
       e('td', { class: 'num', text: money(x.amount) }),
       e('td', { class: 'num' + (x.businessPct < 100 ? ' biz' : ' muted'), text: Math.round(x.businessPct) + '%' }),
@@ -681,6 +689,8 @@ function receiptFieldset(properties, initial = {}, fileOpts = {}) {
   methodIn.value = initial.method || '';
   const noteIn = e('input', { name: 'note', type: 'text', placeholder: 'Optional note' });
   noteIn.value = initial.note || '';
+  const startupIn = e('input', { name: 'startup', type: 'checkbox' });
+  if (initial.startup) startupIn.checked = true;
   const fileIn = e('input', { name: 'receipt', type: 'file', accept: 'image/*,application/pdf,.pdf,.heic' });
 
   // Live "claimed" preview for part-business bills.
@@ -713,6 +723,13 @@ function receiptFieldset(properties, initial = {}, fileOpts = {}) {
   const frag = document.createDocumentFragment();
   frag.appendChild(grid);
   frag.appendChild(field('Note', noteIn));
+  frag.appendChild(e('label', { class: 'rf-check' }, [
+    startupIn,
+    e('span', {}, [
+      e('strong', { text: 'One-off start-up cost' }),
+      e('span', { class: 'rf-check-sub', text: ' — count it for tax, but leave it out of the “ongoing profit” figures.' }),
+    ]),
+  ]));
   frag.appendChild(field(fileOpts.label || 'Receipt file (photo or PDF)', fileIn, fileOpts.hint || 'Optional — up to 4MB. JPG, PNG, HEIC or PDF.'));
 
   // Auto-fill from an uploaded receipt (reads the image with the receipt reader).
@@ -779,6 +796,7 @@ function receiptFieldset(properties, initial = {}, fileOpts = {}) {
       vat: parseFloat(vatIn.value) || 0,
       method: methodIn.value,
       note: noteIn.value,
+      startup: startupIn.checked,
     };
     const file = fileIn.files && fileIn.files[0];
     if (file) {
@@ -950,6 +968,23 @@ function taxSummary(v, taxRate, onRateChange) {
       ])
     )),
   ]);
+
+  // Ongoing profit — with one-off start-up costs stripped out (shown only when
+  // some expenses are tagged as start-up). Start-up costs still reduce the
+  // taxable profit above; this is a management view of underlying performance.
+  if (v.startupTotal > 0) {
+    body.appendChild(e('div', { class: 'tax-ongoing' }, [
+      e('div', { class: 'tax-ongoing-row' }, [
+        e('span', { class: 'tax-k', text: 'Of which: one-off start-up costs' }),
+        e('span', { class: 'tax-v', text: money(v.startupTotal) }),
+      ]),
+      e('div', { class: 'tax-ongoing-row tax-ongoing-row--total' }, [
+        e('span', { class: 'tax-k', text: 'Ongoing profit (excl. start-up)' }),
+        e('span', { class: 'tax-v', text: money(v.ongoingProfit) }),
+      ]),
+      e('p', { class: 'tax-ongoing-note muted', text: 'Once the one-off start-up costs are behind you, this is roughly what the lets earn — about ' + money(v.ongoingProfitNight) + ' profit per night booked. (Start-up costs still count for tax above.)' }),
+    ]));
+  }
 
   // Estimated tax to set aside on the profit.
   const estTax = v.netProfit > 0 ? v.netProfit * taxRate : 0;
@@ -1149,11 +1184,13 @@ export function initDashboard(root, data, opts = {}) {
       kpi('Channel fees', money(v.fees), 'Airbnb service fees'),
       kpi('Expenses', money(v.expensesTotal), v.vatReclaim ? money(v.vatReclaim) + ' VAT' : 'running costs'),
       kpi('Net profit', money(v.netProfit), 'income − fees − costs', v.netProfit >= 0 ? 'pos' : 'neg'),
+      v.startupTotal > 0 ? kpi('Profit excl. start-up', money(v.ongoingProfit), money(v.startupTotal) + ' one-off costs removed', 'pos') : null,
       kpi('Tax to set aside', money(estTax), '@ ' + Math.round(taxRate * 100) + '% · ~' + money(estTax / 12, true) + '/mo', 'tax'),
       kpi('Occupancy', pct(v.occupancy), 'nights booked / available'),
       kpi('Nights booked', String(v.nights), v.bookings.length + ' bookings'),
       kpi('Avg. nightly', money(v.avgNightly), 'gross per night booked'),
       kpi('Avg. profit / night', money(v.avgProfitNight), 'net profit per night', v.avgProfitNight >= 0 ? 'pos' : 'neg'),
+      v.startupTotal > 0 ? kpi('Profit / night excl. start-up', money(v.ongoingProfitNight), 'ongoing, one-off costs removed', 'pos') : null,
       kpi('Net payout', money(v.netPayout), 'cash received'),
     ]));
 

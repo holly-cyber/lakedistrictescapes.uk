@@ -2066,6 +2066,19 @@
     .rf-submit { width: auto; margin: 0; }
     .rf-status { font-size: 0.82rem; margin: 0; }
     .rf-status.err { color: #b23b3b; }
+    .rf-check { display: flex; align-items: flex-start; gap: 0.55rem; font-size: 0.85rem; color: var(--body-text); cursor: pointer; }
+    .rf-check input { margin-top: 0.2rem; width: 16px; height: 16px; flex: none; accent-color: var(--gable-deep); }
+    .rf-check strong { color: var(--off-black); font-weight: 500; }
+    .rf-check-sub { color: var(--mid); font-weight: 300; }
+    .exp-startup-tag {
+      display: inline-block; margin-left: 0.4rem; font-size: 0.64rem; font-weight: 600; letter-spacing: 0.03em;
+      text-transform: uppercase; padding: 0.08rem 0.35rem; border-radius: 999px; background: #eadfc6; color: #8a5a12;
+    }
+    .tax-ongoing { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px dashed rgba(176,168,153,0.5); }
+    .tax-ongoing-row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.35rem 0; }
+    .tax-ongoing-row--total .tax-k { font-weight: 500; color: var(--off-black); }
+    .tax-ongoing-row--total .tax-v { font-family: 'Playfair Display', serif; font-size: 1.1rem; color: var(--gable-deep); }
+    .tax-ongoing-note { font-size: 0.76rem; margin: 0.5rem 0 0; line-height: 1.45; }
     .rf-parsestatus { font-size: 0.8rem; margin: -0.4rem 0 0; color: var(--mid); min-height: 1em; }
     .rf-parsestatus.busy { color: var(--gable-deep); }
     .rf-parsestatus.busy::before {

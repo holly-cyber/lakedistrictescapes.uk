@@ -1,0 +1,66 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+
+// Changeover schedule for the cleaner & gardener, served at
+// schedule.lakedistrictescapes.uk. Booking DATES only (no money, no surnames),
+// fetched live from the open `schedule` Netlify Function. Opened from a plain
+// link — no login — but noindex so it isn't found by search engines.
+---
+<Base
+  title="Changeover Schedule — Lake District Escapes"
+  description="Cleaning & garden dates for The Rockery and Primrose Cottage."
+  noindex={true}
+>
+  <Nav slot="nav" logoHref="/" ctaHref="/" ctaLabel="Home" />
+
+  <div class="guest-page">
+    <section class="guest-hero sched-hero">
+      <p class="eyebrow">Cleaning &amp; Garden</p>
+      <h1>Changeover<br /><em>Schedule</em></h1>
+      <p>
+        Upcoming booking dates for The Rockery and Primrose Cottage — when each guest arrives and
+        departs, so you know when to clean and prepare. This page updates automatically.
+      </p>
+    </section>
+
+    <div class="sched-wrap">
+      <div id="schedule" class="sched">
+        <p class="sched-loading" id="sched-loading">Loading the schedule…</p>
+      </div>
+    </div>
+  </div>
+
+  <Footer
+    slot="footer"
+    links={[
+      { href: '/', label: 'Home' },
+      { href: '/the-rockery/', label: 'The Rockery' },
+      { href: '/primrose-cottage/', label: 'Primrose Cottage' },
+    ]}
+  />
+</Base>
+
+<script>
+  import { initSchedule } from '../../scripts/schedule.js';
+
+  const root = document.getElementById('schedule');
+  const loading = document.getElementById('sched-loading');
+
+  async function load() {
+    try {
+      const res = await fetch('/api/schedule', { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error('Request failed');
+      const data = await res.json();
+      initSchedule(root, data);
+    } catch (err) {
+      if (loading) {
+        loading.textContent = 'Sorry — the schedule couldn’t be loaded. Please try again in a moment.';
+        loading.className = 'sched-loading err';
+      }
+    }
+  }
+
+  load();
+</script>

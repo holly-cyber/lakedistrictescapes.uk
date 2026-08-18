@@ -2126,3 +2126,76 @@
     .dash-toast.show { opacity: 1; transform: translate(-50%, 0); }
     .dash-toast.ok { background: var(--gable-deep); }
     .dash-toast.err { background: #b23b3b; }
+
+    /* ── CHANGEOVER SCHEDULE (cleaner / gardener) ── */
+    .sched-hero h1 { text-transform: none; }
+    .sched-wrap { max-width: 760px; margin: 0 auto; padding: clamp(1.6rem, 5vw, 3rem) clamp(1rem, 4vw, 2rem) 4rem; }
+    .sched-loading { text-align: center; color: var(--mid); padding: 2.5rem 1rem; font-size: 0.95rem; }
+    .sched-loading.err { color: #b23b3b; }
+
+    .sched-toggle {
+      display: inline-flex; gap: 2px; background: var(--kendal-mint); border-radius: 8px;
+      padding: 3px; margin-bottom: 1.4rem; flex-wrap: wrap;
+    }
+    .sched-tgl {
+      appearance: none; border: none; background: transparent; cursor: pointer;
+      font: inherit; font-size: 0.85rem; color: var(--gable-deep); font-weight: 500;
+      padding: 0.45rem 0.9rem; border-radius: 6px; transition: background 0.15s ease, color 0.15s ease;
+    }
+    .sched-tgl.active { background: #fff; color: var(--off-black); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+    .sched-next {
+      background: var(--gable-deep); color: #fff; border-radius: 14px;
+      padding: 1.1rem 1.3rem; margin-bottom: 1.6rem;
+    }
+    .sched-next-label { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--kendal-mint); }
+    .sched-next-date { font-family: 'Playfair Display', serif; font-size: 1.6rem; line-height: 1.15; margin-top: 0.2rem; }
+    .sched-next-rel { font-size: 1rem; color: var(--kendal-mint); font-family: 'DM Sans', sans-serif; }
+    .sched-next-sub { font-size: 0.86rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem; }
+
+    .sched-month {
+      font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mid);
+      font-weight: 600; margin: 1.4rem 0 0.6rem; padding-bottom: 0.3rem; border-bottom: 1px solid rgba(176,168,153,0.3);
+    }
+    .sched-month:first-child { margin-top: 0; }
+
+    .sched-card {
+      background: #fff; border: 1px solid rgba(176,168,153,0.28); border-radius: 12px;
+      padding: 0.95rem 1.1rem; margin-bottom: 0.7rem;
+    }
+    .sched-card--turn { border-color: #d9a441; box-shadow: 0 0 0 1px #d9a441 inset; }
+    .sched-card-top { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.7rem; }
+    .sched-prop {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; padding: 0.18rem 0.5rem;
+      border-radius: 999px; color: #fff;
+    }
+    .sched-prop--cottage { background: var(--gable-deep); }
+    .sched-prop--house { background: var(--scafell-sky); }
+    .sched-guest { font-size: 0.9rem; color: var(--off-black); font-weight: 500; }
+    .sched-nights { font-size: 0.78rem; color: var(--mid); }
+    .sched-badge {
+      margin-left: auto; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.03em;
+      padding: 0.18rem 0.55rem; border-radius: 999px; background: #f3e2c0; color: #8a5a12; white-space: nowrap;
+    }
+    .sched-badge--soon { background: var(--kendal-mint); color: var(--gable-deep); }
+
+    .sched-legs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .sched-leg {
+      background: var(--aira-white); border-radius: 9px; padding: 0.6rem 0.7rem;
+      display: flex; flex-direction: column; gap: 0.12rem;
+    }
+    .sched-leg--clean { background: var(--kendal-mint); }
+    .sched-leg-k { font-size: 0.66rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--mid); font-weight: 600; }
+    .sched-leg--clean .sched-leg-k { color: var(--gable-deep); }
+    .sched-leg-v { font-size: 0.95rem; color: var(--off-black); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .sched-leg-note { font-size: 0.72rem; color: var(--mid); }
+    .sched-leg--clean .sched-leg-note { color: var(--gable-deep); }
+
+    .sched-empty { background: #fff; border: 1px solid rgba(176,168,153,0.28); border-radius: 12px; padding: 2.5rem 1.5rem; text-align: center; }
+    .sched-empty .sched-muted { color: var(--mid); font-size: 0.85rem; margin-top: 0.5rem; }
+    .sched-updated { text-align: center; font-size: 0.75rem; color: var(--mid); margin-top: 1.6rem; }
+
+    @media (max-width: 440px) {
+      .sched-legs { grid-template-columns: 1fr; }
+      .sched-badge { margin-left: 0; }
+    }

@@ -2194,6 +2194,11 @@
     .sched-empty { background: #fff; border: 1px solid rgba(176,168,153,0.28); border-radius: 12px; padding: 2.5rem 1.5rem; text-align: center; }
     .sched-empty .sched-muted { color: var(--mid); font-size: 0.85rem; margin-top: 0.5rem; }
     .sched-updated { text-align: center; font-size: 0.75rem; color: var(--mid); margin-top: 1.6rem; }
+    .sched-updated.live { color: var(--gable-deep); }
+    .sched-live-dot {
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: #4a9d6a;
+      margin-right: 0.4rem; vertical-align: 0px;
+    }
 
     @media (max-width: 440px) {
       .sched-legs { grid-template-columns: 1fr; }

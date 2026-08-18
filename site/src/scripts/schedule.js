@@ -168,7 +168,12 @@ export function initSchedule(root, data) {
     const dt = new Date(data.generatedAt);
     const hh = String(dt.getHours()).padStart(2, '0');
     const mm = String(dt.getMinutes()).padStart(2, '0');
-    root.appendChild(e('p', { class: 'sched-updated', text: 'Updated ' + hh + ':' + mm + ' · refresh the page for the latest.' }));
+    const live = data.meta && data.meta.live;
+    const txt = (live ? 'Synced live with Airbnb · ' : '') + 'Updated ' + hh + ':' + mm + ' · refresh the page for the latest.';
+    root.appendChild(e('p', { class: 'sched-updated' + (live ? ' live' : '') }, [
+      live ? e('span', { class: 'sched-live-dot', 'aria-hidden': 'true' }) : null,
+      txt,
+    ]));
   }
 
   render();

@@ -7,8 +7,9 @@ import { PROPERTIES, BOOKINGS as SEED_BOOKINGS } from '../management-data.mjs';
 //     → 200 { properties, bookings, meta, generatedAt }
 //
 // Returns ONLY the non-sensitive booking dates (property, check-in, check-out,
-// nights, guest FIRST name, channel) — never any money, surnames, fees or
-// payouts. It merges three sources so it stays live with each new booking:
+// nights, channel) — no guest names, and never any money, fees or payouts.
+// The cleaner & gardener only need the changeover dates. It merges three
+// sources so it stays live with each new booking:
 //   1. seed bookings (management-data.mjs)
 //   2. owner-added / CSV-imported bookings (Netlify Blobs, same as the dashboard)
 //   3. LIVE Airbnb reservations from the iCal feeds (AIRBNB_ICAL_* env vars) —
@@ -34,10 +35,6 @@ function nightsBetween(a, b) {
   if (!a || !b) return 0;
   const d = (new Date(b + 'T00:00:00Z') - new Date(a + 'T00:00:00Z')) / 86400000;
   return d > 0 ? Math.round(d) : 0;
-}
-function firstName(v) {
-  const s = String(v || '').trim();
-  return s ? s.split(/\s+/)[0].slice(0, 40) : '';
 }
 // "20260409" or "20260409T110000Z" → "2026-04-09".
 function icalToIso(value) {
@@ -118,7 +115,6 @@ export default async () => {
       start,
       end,
       nights: b.nights > 0 ? Math.round(b.nights) : nightsBetween(start, end),
-      guest: firstName(b.guest),
       channel: String(b.channel || 'Airbnb').slice(0, 40),
     };
   });
@@ -140,7 +136,7 @@ export default async () => {
       const key = propKey + '|' + start + '|' + end;
       if (keys.has(key)) continue;
       keys.add(key);
-      list.push({ property: propKey, start, end, nights: nightsBetween(start, end), guest: '', channel: 'Airbnb' });
+      list.push({ property: propKey, start, end, nights: nightsBetween(start, end), channel: 'Airbnb' });
     }
   }
 

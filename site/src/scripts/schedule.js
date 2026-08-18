@@ -97,7 +97,6 @@ export function initSchedule(root, data) {
     const card = e('div', { class: 'sched-card' + (b.sameDayTurnaround ? ' sched-card--turn' : '') }, [
       e('div', { class: 'sched-card-top' }, [
         e('span', { class: 'sched-prop sched-prop--' + (b.property === 'the-rockery' ? 'house' : 'cottage'), text: propShort(b.property) }),
-        b.guest ? e('span', { class: 'sched-guest', text: b.guest }) : null,
         e('span', { class: 'sched-nights', text: b.nights + ' night' + (b.nights === 1 ? '' : 's') }),
       ]),
       e('div', { class: 'sched-legs' }, [

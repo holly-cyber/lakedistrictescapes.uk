@@ -125,6 +125,7 @@ function computeView(data, view) {
   const netProfit = grossIncome - fees - expensesTotal;
   const nights = bk.reduce((a, b) => a + b.nights, 0);
   const avgNightly = nights ? grossIncome / nights : 0;
+  const avgProfitNight = nights ? netProfit / nights : 0;
 
   // Monthly buckets.
   const incomeByMonth = {};
@@ -189,7 +190,7 @@ function computeView(data, view) {
 
   return {
     grossIncome, fees, cleaning, netPayout, expensesTotal, vatReclaim, netProfit,
-    nights, avgNightly, occupancy, monthly,
+    nights, avgNightly, avgProfitNight, occupancy, monthly,
     bookings: bk.slice().sort((a, b) => a.start.localeCompare(b.start)),
     expenses: exp.slice().sort((a, b) => a.date.localeCompare(b.date)),
   };
@@ -1151,7 +1152,8 @@ export function initDashboard(root, data, opts = {}) {
       kpi('Tax to set aside', money(estTax), '@ ' + Math.round(taxRate * 100) + '% · ~' + money(estTax / 12, true) + '/mo', 'tax'),
       kpi('Occupancy', pct(v.occupancy), 'nights booked / available'),
       kpi('Nights booked', String(v.nights), v.bookings.length + ' bookings'),
-      kpi('Avg. nightly', money(v.avgNightly), 'per night booked'),
+      kpi('Avg. nightly', money(v.avgNightly), 'gross per night booked'),
+      kpi('Avg. profit / night', money(v.avgProfitNight), 'net profit per night', v.avgProfitNight >= 0 ? 'pos' : 'neg'),
       kpi('Net payout', money(v.netPayout), 'cash received'),
     ]));
 

@@ -284,6 +284,23 @@ function scroller(node) {
   return e('div', { class: 'chart-scroll' }, node);
 }
 
+// A small coloured pill showing a direct (Stripe) booking's payment status.
+function directStatusPill(b) {
+  if (b.source !== 'direct' || !b.status) return null;
+  const map = {
+    deposit_paid: ['bk-status--deposit', 'Deposit paid'],
+    balance_scheduled: ['bk-status--scheduled', 'Charging balance'],
+    paid: ['bk-status--paid', 'Paid in full'],
+    balance_failed: ['bk-status--failed', 'Balance failed'],
+  };
+  const m = map[b.status];
+  if (!m) return null;
+  let title = '';
+  if (b.status === 'deposit_paid' && b.balanceDueDate) title = 'Balance of ' + money(b.balance) + ' auto-charges ' + b.balanceDueDate;
+  else if (b.status === 'balance_failed' && b.balanceError) title = b.balanceError;
+  return e('span', { class: 'bk-status ' + m[0], title }, m[1]);
+}
+
 function bookingsTable(bookings, properties, handlers, headExtra) {
   if (!bookings.length) return null;
   const head = e('tr', {}, ['Check-in', 'Nights', 'Guest', 'Property', 'Channel', 'Gross', 'Fee', 'Net', ''].map((h) => e('th', { text: h })));
@@ -293,15 +310,20 @@ function bookingsTable(bookings, properties, handlers, headExtra) {
       const del = e('button', { class: 'dash-del', type: 'button', title: 'Delete this booking', 'aria-label': 'Delete booking' }, '×');
       del.addEventListener('click', () => handlers.onDeleteBooking(b));
       delCell = e('td', {}, del);
+    } else if (b.source === 'direct' && b.status === 'balance_failed' && handlers.onRetryBalance) {
+      const retry = e('button', { class: 'bk-retry', type: 'button', title: b.balanceError || 'Retry the balance charge' }, 'Retry balance');
+      retry.addEventListener('click', () => handlers.onRetryBalance(b, retry));
+      delCell = e('td', {}, retry);
     } else {
       delCell = e('td', {});
     }
+    const channelCell = e('td', { class: 'muted' }, [b.channel || 'Airbnb', directStatusPill(b)]);
     return e('tr', {}, [
       e('td', { text: b.start }),
       e('td', { text: String(b.nights) }),
       e('td', { text: b.guest || '—' }),
       e('td', { text: propLabel(b.property, properties) }),
-      e('td', { class: 'muted', text: b.channel || 'Airbnb' }),
+      channelCell,
       e('td', { class: 'num', text: money(b.gross) }),
       e('td', { class: 'num muted', text: money(b.fee) }),
       e('td', { class: 'num', text: money(b.net) }),
@@ -1097,6 +1119,22 @@ export function initDashboard(root, data, opts = {}) {
         toast('Booking deleted.', 'ok');
       } catch (err) {
         toast(err.message || 'Could not delete.', 'err');
+      }
+    },
+    async onRetryBalance(b, btn) {
+      if (!window.confirm('Retry charging the ' + money(b.balance) + ' balance to the card on file for ' + (b.guest || 'this guest') + '?')) return;
+      if (btn) { btn.disabled = true; btn.textContent = 'Charging…'; }
+      try {
+        const out = await apiCall('retryBalance', { id: b.id });
+        if (out.booking) {
+          const idx = data.bookings.findIndex((it) => it.id === b.id);
+          if (idx >= 0) data.bookings[idx] = out.booking;
+        }
+        render();
+        toast(out.paid ? 'Balance charged — paid in full.' : 'Balance charge attempted.', out.paid ? 'ok' : 'err');
+      } catch (err) {
+        toast(err.message || 'Could not charge the balance.', 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Retry balance'; }
       }
     },
     onEdit(x) {

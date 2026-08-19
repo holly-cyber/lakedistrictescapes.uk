@@ -1,5 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import { PROPERTIES, BOOKINGS as SEED_BOOKINGS } from '../management-data.mjs';
+import { loadDirectBookings, directToSchedule, ACTIVE_STATUSES } from '../direct-bookings.mjs';
 
 // Netlify Function (v2) — OPEN changeover schedule for the cleaner & gardener.
 //
@@ -105,9 +106,11 @@ async function fetchIcalReservations(url) {
 }
 
 export default async () => {
-  // 1 + 2: seed + owner bookings (full records), mapped to safe fields.
+  // 1 + 2: seed + owner bookings + confirmed direct (Stripe) bookings, mapped to
+  // safe fields (dates only — no guest names, no money).
   const owner = await loadOwnerBookings();
-  const list = [...SEED_BOOKINGS, ...owner].map((b) => {
+  const direct = (await loadDirectBookings()).filter((b) => ACTIVE_STATUSES.has(b.status)).map(directToSchedule);
+  const list = [...SEED_BOOKINGS, ...owner, ...direct].map((b) => {
     const start = isoDate(b.start);
     const end = isoDate(b.end);
     return {

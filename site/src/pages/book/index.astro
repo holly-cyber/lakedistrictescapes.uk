@@ -1,0 +1,58 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+
+// Public direct-booking page. Takes a 30% deposit now via Stripe Checkout and
+// saves the card; the balance is auto-charged a few days before arrival. The
+// whole widget is built client-side from /api/book (config + live quotes), so
+// no prices live in the page source.
+---
+<Base
+  title="Book Direct — Lake District Escapes"
+  description="Book The Rockery or Primrose Cottage directly — secure your dates with a deposit today and pay the balance automatically before you arrive. No booking fees."
+>
+  <Nav slot="nav" logoHref="/" ctaHref="/#enquire" ctaLabel="Enquire" />
+
+  <section class="book-hero">
+    <div class="book-hero-inner">
+      <p class="eyebrow">Book Direct · No Booking Fees</p>
+      <h1>Reserve your<br /><em>Lakeland escape</em></h1>
+      <p class="book-hero-lead">
+        Secure your dates with a deposit today. We’ll automatically take the balance from the same
+        card a few days before you arrive — nothing more to remember.
+      </p>
+    </div>
+  </section>
+
+  <section class="book-section">
+    <div id="book-app" class="book-app">
+      <p class="book-msg" id="book-loading">Loading availability…</p>
+    </div>
+    <p class="book-foot">
+      Prefer to talk it through first? <a href="/primrose-cottage/#enquire">Send an enquiry</a> and we’ll help.
+    </p>
+  </section>
+
+  <Footer
+    slot="footer"
+    links={[
+      { href: '/', label: 'Home' },
+      { href: '/the-rockery/', label: 'The Rockery' },
+      { href: '/primrose-cottage/', label: 'Primrose Cottage' },
+    ]}
+  />
+</Base>
+
+<script>
+  import { initBook } from '../../scripts/book.js';
+
+  const root = document.getElementById('book-app');
+  const params = new URLSearchParams(window.location.search);
+  const property = params.get('property') || '';
+
+  const loading = document.getElementById('book-loading');
+  if (loading) loading.remove();
+
+  initBook(root, { property });
+</script>

@@ -1,0 +1,100 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+
+// Guest lands here after paying the deposit on Stripe Checkout. We look the
+// booking up by its Stripe session id (via /api/book) to show the reference and
+// the balance date. noindex — it's a personal confirmation, not a public page.
+---
+<Base title="Booking Confirmed — Lake District Escapes" description="Your booking is confirmed." noindex={true}>
+  <Nav slot="nav" logoHref="/" ctaHref="/" ctaLabel="Home" />
+
+  <section class="book-hero book-hero-slim">
+    <div class="book-hero-inner">
+      <p class="eyebrow">You’re booked in</p>
+      <h1>Thank you<em>!</em></h1>
+    </div>
+  </section>
+
+  <section class="book-section">
+    <div id="confirm" class="confirm-card">
+      <p class="book-msg" id="confirm-loading">Confirming your booking…</p>
+    </div>
+    <p class="book-foot">
+      Questions about your stay? <a href="/primrose-cottage/#enquire">Get in touch</a> any time.
+    </p>
+  </section>
+
+  <Footer
+    slot="footer"
+    links={[
+      { href: '/', label: 'Home' },
+      { href: '/the-rockery/', label: 'The Rockery' },
+      { href: '/primrose-cottage/', label: 'Primrose Cottage' },
+    ]}
+  />
+</Base>
+
+<script>
+  const el = document.getElementById('confirm');
+  const money = (n, ccy = 'GBP') =>
+    new Intl.NumberFormat('en-GB', { style: 'currency', currency: ccy }).format(Number(n) || 0);
+  const esc = (s) =>
+    String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const fmt = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso + 'T00:00:00Z');
+    return d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  };
+
+  function render(b) {
+    el.innerHTML = `
+      <div class="confirm-tick" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12.5l5 5L20 6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2>Your stay at ${esc(b.propertyName)} is confirmed</h2>
+      <p class="confirm-ref">Booking reference <strong>${esc(b.ref)}</strong></p>
+      <dl class="confirm-list">
+        <div><dt>Arrive</dt><dd>${esc(fmt(b.start))}</dd></div>
+        <div><dt>Depart</dt><dd>${esc(fmt(b.end))}</dd></div>
+        <div><dt>Guests</dt><dd>${esc(String(b.guests))}</dd></div>
+        <div><dt>Deposit paid</dt><dd>${money(b.deposit, b.currency)}</dd></div>
+        <div><dt>Balance</dt><dd>${money(b.balance, b.currency)} — auto-charged ${esc(fmt(b.balanceDueDate))}</dd></div>
+        <div class="confirm-total"><dt>Total</dt><dd>${money(b.total, b.currency)}</dd></div>
+      </dl>
+      <p class="confirm-note">
+        We’ll email your receipt and full arrival details. The balance will be charged automatically to the
+        same card on <strong>${esc(fmt(b.balanceDueDate))}</strong> — you don’t need to do anything.
+      </p>
+      <a class="btn btn-green" href="/">Back to home</a>`;
+  }
+
+  function fallback() {
+    el.innerHTML = `
+      <div class="confirm-tick" aria-hidden="true">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M4 12.5l5 5L20 6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2>Thank you — your deposit has been received</h2>
+      <p class="confirm-note">We’re confirming the details now and will email your receipt and arrival
+      information shortly. The balance will be charged automatically before you arrive.</p>
+      <a class="btn btn-green" href="/">Back to home</a>`;
+  }
+
+  const sessionId = new URLSearchParams(window.location.search).get('session_id');
+  if (!sessionId) {
+    fallback();
+  } else {
+    fetch('/api/book', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ action: 'lookup', session_id: sessionId }),
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        if (d && d.ok && d.booking) render(d.booking);
+        else fallback();
+      })
+      .catch(fallback);
+  }
+</script>

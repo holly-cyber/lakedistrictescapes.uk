@@ -1,0 +1,24 @@
+---
+// A "mailto" button whose address is assembled in the browser, so the real
+// inbox (holly@weareactiveai.com) never appears in the page text or the static
+// HTML source — only in the visitor's own compose window when they click.
+// Update the address parts in the <script> below if the inbox ever changes.
+const { subject = 'Enquiry — Lake District Escapes', label = 'Email us' } = Astro.props;
+---
+<a class="email-btn js-email" href="#" rel="nofollow" data-subject={subject} aria-label="Email us">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">
+    <rect x="3" y="5" width="18" height="14" rx="2" />
+    <path d="M3 7l9 6 9-6" />
+  </svg>
+  <span>{label}</span>
+</a>
+
+<script>
+  // Address held as separate parts so it isn't a harvestable string in the HTML.
+  const parts = ['holly', 'weareactiveai.com'];
+  document.querySelectorAll('a.js-email').forEach((a) => {
+    const el = a as HTMLAnchorElement;
+    const subject = el.dataset.subject ? '?subject=' + encodeURIComponent(el.dataset.subject) : '';
+    el.href = 'mailto:' + parts[0] + '@' + parts[1] + subject;
+  });
+</script>

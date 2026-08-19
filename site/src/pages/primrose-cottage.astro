@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import AvailabilityCalendar from '../components/AvailabilityCalendar.astro';
+import EmailButton from '../components/EmailButton.astro';
 
 // Getting-around distances from Shap (drive times).
 const distances = [
@@ -277,8 +278,9 @@ const distances = [
           arrive — and let us know if you'll need luggage transfer or bike storage arranged.
         </p>
         <p class="enquire-desc" style="margin-top:1rem;">
-          Or reach us directly at<br /><strong style="color:#fff;">hello@lakedistrictescapes.uk</strong>
+          Prefer to email? Drop us a line and we'll reply personally.
         </p>
+        <EmailButton subject="Enquiry — Primrose Cottage" />
       </div>
       <div class="enquire-form-wrap reveal" style="transition-delay:.15s;">
         <form name="enquiry-primrose" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/thank-you/">

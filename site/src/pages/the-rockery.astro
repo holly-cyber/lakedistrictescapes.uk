@@ -3,6 +3,7 @@ import Base from '../layouts/Base.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import AvailabilityCalendar from '../components/AvailabilityCalendar.astro';
+import EmailButton from '../components/EmailButton.astro';
 
 ---
 <Base
@@ -299,8 +300,9 @@ import AvailabilityCalendar from '../components/AvailabilityCalendar.astro';
           sleeps up to 9, or book together with Primrose Cottage for groups of up to 11.
         </p>
         <p class="enquire-desc" style="margin-top:1rem;">
-          Or reach us directly at<br /><strong style="color:#fff;">hello@lakedistrictescapes.uk</strong>
+          Prefer to email? Drop us a line and we'll reply personally.
         </p>
+        <EmailButton subject="Enquiry — The Rockery" />
       </div>
       <div class="enquire-form-wrap reveal" style="transition-delay:.15s;">
         <form name="enquiry-rockery" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/thank-you/">

@@ -301,6 +301,42 @@ function directStatusPill(b) {
   return e('span', { class: 'bk-status ' + m[0], title }, m[1]);
 }
 
+// Calendar-sync helper: direct/manual bookings block our own site + the cleaner
+// schedule instantly, but they are NOT pushed to Airbnb automatically. This card
+// gives the owner the iCal URL to IMPORT into each Airbnb listing so Airbnb
+// blocks those nights too, preventing a double-booking from the Airbnb side.
+function syncNote(properties) {
+  const origin = 'https://lakedistrictescapes.uk';
+  const rows = Object.keys(properties).map((key) => {
+    const urlStr = origin + '/api/calendar/' + key + '.ics';
+    const input = e('input', { class: 'sync-url', type: 'text', readonly: 'readonly', value: urlStr, 'aria-label': properties[key].name + ' calendar URL' });
+    const copy = e('button', { class: 'dash-linkbtn sync-copy', type: 'button', text: 'Copy' });
+    copy.addEventListener('click', async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(urlStr);
+        else { input.select(); document.execCommand('copy'); }
+        copy.textContent = 'Copied ✓';
+      } catch {
+        input.select();
+        copy.textContent = 'Select & copy';
+      }
+      setTimeout(() => { copy.textContent = 'Copy'; }, 2200);
+    });
+    return e('div', { class: 'sync-row' }, [
+      e('span', { class: 'sync-prop', text: properties[key].name }),
+      input,
+      copy,
+    ]);
+  });
+
+  const body = e('div', { class: 'sync-note' }, [
+    e('p', { class: 'sync-lead', text: 'Direct bookings block your own site and the cleaner schedule straight away — but Airbnb won’t know about them unless you import the calendar below. Add each URL to the matching Airbnb listing so Airbnb blocks those dates too.' }),
+    ...rows,
+    e('p', { class: 'sync-steps muted', text: 'In Airbnb: Listing → Availability → Connect calendars → Import calendar → paste the URL. Airbnb refreshes it every few hours. Direct-booking availability already checks your Airbnb calendar the other way, so this closes the loop.' }),
+  ]);
+  return card('Block Airbnb for direct bookings', 'one-time setup per listing', body);
+}
+
 function bookingsTable(bookings, properties, handlers, headExtra) {
   if (!bookings.length) return null;
   const head = e('tr', {}, ['Check-in', 'Nights', 'Guest', 'Property', 'Channel', 'Gross', 'Fee', 'Net', ''].map((h) => e('th', { text: h })));
@@ -1206,6 +1242,9 @@ export function initDashboard(root, data, opts = {}) {
       addBookingForm(properties, handlers.onAddBooking, handlers.onImportBookings),
       addReceiptForm(properties, handlers.onAdd, handlers.onParse),
     ]));
+
+    // Calendar-sync setup: import URL(s) to block Airbnb for direct bookings.
+    body.appendChild(syncNote(properties));
 
     if (!v.bookings.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [

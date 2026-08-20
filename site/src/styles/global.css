@@ -2337,3 +2337,16 @@
     .bk-status--scheduled { background: rgba(111,115,87,0.16); color: var(--gable-deep); }
     .bk-retry { border: 1px solid #a4362f; color: #a4362f; background: #fff; border-radius: 7px; font-size: 0.72rem; font-weight: 600; padding: 0.22rem 0.5rem; cursor: pointer; margin-left: 0.4rem; }
     .bk-retry:hover { background: #a4362f; color: #fff; }
+
+    /* Calendar-sync note in the owner dashboard */
+    .sync-note { display: grid; gap: 0.7rem; }
+    .sync-lead { margin: 0; color: var(--body-text); font-size: 0.9rem; line-height: 1.5; }
+    .sync-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .sync-prop { font-weight: 700; color: var(--gable-deep); min-width: 130px; font-size: 0.9rem; }
+    .sync-url {
+      flex: 1 1 260px; min-width: 0; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem; padding: 0.45rem 0.6rem; border: 1px solid rgba(176,168,153,0.5);
+      border-radius: 8px; background: var(--aira-white); color: var(--body-text);
+    }
+    .sync-copy { flex: 0 0 auto; }
+    .sync-steps { margin: 0.3rem 0 0; font-size: 0.8rem; line-height: 1.5; }

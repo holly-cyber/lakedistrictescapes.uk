@@ -29,6 +29,46 @@ export const PROPERTIES = {
   'primrose-cottage': { name: 'Primrose Cottage', short: 'Cottage', liveFrom: '2026-08-01' },
 };
 
+// ─────────────────────────────────────────────────────────────────────────
+// DIRECT-BOOKING PRICING (Stripe). Powers the public /book page and the
+// deposit → balance flow: a 30% deposit is taken at booking and the card is
+// saved; the remaining balance is auto-charged `balanceDueDays` before arrival.
+//
+//   • nightly       — £ per night (flat rate for now; edit to change price)
+//   • cleaningFee    — £ added once per stay (0 = none)
+//   • minNights      — shortest bookable stay
+//   • maxGuests      — capacity used to validate the guest count
+//   • depositPct     — % taken up front (rest auto-charged before arrival)
+//   • balanceDueDays — how many days before check-in the balance is charged
+//   • bookable       — false hides the property from /book (e.g. not open yet)
+//
+// TODO (owner): confirm the real nightly rates below before going live —
+// these are starting figures (Primrose ≈ its recent Airbnb average; The
+// Rockery is a placeholder while it stays "Coming Soon 2027", bookable:false).
+// ─────────────────────────────────────────────────────────────────────────
+export const PRICING = {
+  'primrose-cottage': {
+    bookable: true,
+    nightly: 125,
+    cleaningFee: 0,
+    minNights: 2,
+    maxGuests: 2,
+    depositPct: 30,
+    balanceDueDays: 7,
+    currency: 'GBP',
+  },
+  'the-rockery': {
+    bookable: false, // Coming Soon 2027 — set true (and confirm nightly) to open
+    nightly: 495,
+    cleaningFee: 0,
+    minNights: 3,
+    maxGuests: 9,
+    depositPct: 30,
+    balanceDueDays: 7,
+    currency: 'GBP',
+  },
+};
+
 export const BOOKINGS = [
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMS2EDZYPF', guest: 'Jonathan Guite', booked: '2026-08-07', start: '2026-08-14', end: '2026-08-16', nights: 2, gross: 250.0, fee: 38.75, cleaning: 0, net: 211.25, payout: '2026-08-16', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMBBMB49FW', guest: 'Chloe Hayes', booked: '2026-08-16', start: '2026-08-16', end: '2026-08-18', nights: 2, gross: 242.25, fee: 46.5, cleaning: 0, net: 203.5, payout: '2026-08-18', currency: 'GBP' },

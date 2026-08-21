@@ -284,6 +284,59 @@ function scroller(node) {
   return e('div', { class: 'chart-scroll' }, node);
 }
 
+// A small coloured pill showing a direct (Stripe) booking's payment status.
+function directStatusPill(b) {
+  if (b.source !== 'direct' || !b.status) return null;
+  const map = {
+    deposit_paid: ['bk-status--deposit', 'Deposit paid'],
+    balance_scheduled: ['bk-status--scheduled', 'Charging balance'],
+    paid: ['bk-status--paid', 'Paid in full'],
+    balance_failed: ['bk-status--failed', 'Balance failed'],
+  };
+  const m = map[b.status];
+  if (!m) return null;
+  let title = '';
+  if (b.status === 'deposit_paid' && b.balanceDueDate) title = 'Balance of ' + money(b.balance) + ' auto-charges ' + b.balanceDueDate;
+  else if (b.status === 'balance_failed' && b.balanceError) title = b.balanceError;
+  return e('span', { class: 'bk-status ' + m[0], title }, m[1]);
+}
+
+// Calendar-sync helper: direct/manual bookings block our own site + the cleaner
+// schedule instantly, but they are NOT pushed to Airbnb automatically. This card
+// gives the owner the iCal URL to IMPORT into each Airbnb listing so Airbnb
+// blocks those nights too, preventing a double-booking from the Airbnb side.
+function syncNote(properties) {
+  const origin = 'https://lakedistrictescapes.uk';
+  const rows = Object.keys(properties).map((key) => {
+    const urlStr = origin + '/api/calendar/' + key + '.ics';
+    const input = e('input', { class: 'sync-url', type: 'text', readonly: 'readonly', value: urlStr, 'aria-label': properties[key].name + ' calendar URL' });
+    const copy = e('button', { class: 'dash-linkbtn sync-copy', type: 'button', text: 'Copy' });
+    copy.addEventListener('click', async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) await navigator.clipboard.writeText(urlStr);
+        else { input.select(); document.execCommand('copy'); }
+        copy.textContent = 'Copied ✓';
+      } catch {
+        input.select();
+        copy.textContent = 'Select & copy';
+      }
+      setTimeout(() => { copy.textContent = 'Copy'; }, 2200);
+    });
+    return e('div', { class: 'sync-row' }, [
+      e('span', { class: 'sync-prop', text: properties[key].name }),
+      input,
+      copy,
+    ]);
+  });
+
+  const body = e('div', { class: 'sync-note' }, [
+    e('p', { class: 'sync-lead', text: 'Direct bookings block your own site and the cleaner schedule straight away — but Airbnb won’t know about them unless you import the calendar below. Add each URL to the matching Airbnb listing so Airbnb blocks those dates too.' }),
+    ...rows,
+    e('p', { class: 'sync-steps muted', text: 'In Airbnb: Listing → Availability → Connect calendars → Import calendar → paste the URL. Airbnb refreshes it every few hours. Direct-booking availability already checks your Airbnb calendar the other way, so this closes the loop.' }),
+  ]);
+  return card('Block Airbnb for direct bookings', 'one-time setup per listing', body);
+}
+
 function bookingsTable(bookings, properties, handlers, headExtra) {
   if (!bookings.length) return null;
   const head = e('tr', {}, ['Check-in', 'Nights', 'Guest', 'Property', 'Channel', 'Gross', 'Fee', 'Net', ''].map((h) => e('th', { text: h })));
@@ -293,15 +346,20 @@ function bookingsTable(bookings, properties, handlers, headExtra) {
       const del = e('button', { class: 'dash-del', type: 'button', title: 'Delete this booking', 'aria-label': 'Delete booking' }, '×');
       del.addEventListener('click', () => handlers.onDeleteBooking(b));
       delCell = e('td', {}, del);
+    } else if (b.source === 'direct' && b.status === 'balance_failed' && handlers.onRetryBalance) {
+      const retry = e('button', { class: 'bk-retry', type: 'button', title: b.balanceError || 'Retry the balance charge' }, 'Retry balance');
+      retry.addEventListener('click', () => handlers.onRetryBalance(b, retry));
+      delCell = e('td', {}, retry);
     } else {
       delCell = e('td', {});
     }
+    const channelCell = e('td', { class: 'muted' }, [b.channel || 'Airbnb', directStatusPill(b)]);
     return e('tr', {}, [
       e('td', { text: b.start }),
       e('td', { text: String(b.nights) }),
       e('td', { text: b.guest || '—' }),
       e('td', { text: propLabel(b.property, properties) }),
-      e('td', { class: 'muted', text: b.channel || 'Airbnb' }),
+      channelCell,
       e('td', { class: 'num', text: money(b.gross) }),
       e('td', { class: 'num muted', text: money(b.fee) }),
       e('td', { class: 'num', text: money(b.net) }),
@@ -1099,6 +1157,22 @@ export function initDashboard(root, data, opts = {}) {
         toast(err.message || 'Could not delete.', 'err');
       }
     },
+    async onRetryBalance(b, btn) {
+      if (!window.confirm('Retry charging the ' + money(b.balance) + ' balance to the card on file for ' + (b.guest || 'this guest') + '?')) return;
+      if (btn) { btn.disabled = true; btn.textContent = 'Charging…'; }
+      try {
+        const out = await apiCall('retryBalance', { id: b.id });
+        if (out.booking) {
+          const idx = data.bookings.findIndex((it) => it.id === b.id);
+          if (idx >= 0) data.bookings[idx] = out.booking;
+        }
+        render();
+        toast(out.paid ? 'Balance charged — paid in full.' : 'Balance charge attempted.', out.paid ? 'ok' : 'err');
+      } catch (err) {
+        toast(err.message || 'Could not charge the balance.', 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Retry balance'; }
+      }
+    },
     onEdit(x) {
       const dlg = editReceiptDialog(properties, x, async (payload) => {
         const out = await apiCall('updateExpense', payload);
@@ -1168,6 +1242,9 @@ export function initDashboard(root, data, opts = {}) {
       addBookingForm(properties, handlers.onAddBooking, handlers.onImportBookings),
       addReceiptForm(properties, handlers.onAdd, handlers.onParse),
     ]));
+
+    // Calendar-sync setup: import URL(s) to block Airbnb for direct bookings.
+    body.appendChild(syncNote(properties));
 
     if (!v.bookings.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [

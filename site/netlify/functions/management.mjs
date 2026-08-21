@@ -1,5 +1,6 @@
 import { getStore } from '@netlify/blobs';
 import { PROPERTIES, BOOKINGS as SEED_BOOKINGS, EXPENSES as SEED_EXPENSES } from '../management-data.mjs';
+import { loadDirectBookings, directToBooking, retryBalance } from '../direct-bookings.mjs';
 
 // Netlify Function (v2) — gated data feed + write API for the private owner
 // dashboard (management.lakedistrictescapes.uk).
@@ -623,6 +624,20 @@ export default async (req) => {
     return json({ ok: true, id });
   }
 
+  // ---- WRITE: retry a failed direct-booking balance charge ----
+  if (action === 'retryBalance') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    let r;
+    try {
+      r = await retryBalance(id);
+    } catch (err) {
+      return json({ error: 'Could not charge the balance. ' + err.message }, 500);
+    }
+    if (r.error) return json({ error: r.error }, 400);
+    return json({ ok: true, booking: r.booking ? directToBooking(r.booking) : null, paid: !!r.ok });
+  }
+
   // ---- READ: a single receipt file (base64) ----
   if (action === 'receipt') {
     const id = String(body.id || '');
@@ -681,7 +696,12 @@ export default async (req) => {
   // are owner-editable, then merge in owner-entered bookings from Blobs.
   const baseBookings = bookings.map((b) => ({ ...b, source: b.source || source }));
   const ownerBookings = (await loadOwnerBookings()).map(bookingPublic);
-  const allBookings = [...baseBookings, ...ownerBookings];
+  // Direct (Stripe) bookings — include every non-cancelled one so their deposit
+  // shows immediately and the owner can track the balance status.
+  const directBookings = (await loadDirectBookings())
+    .filter((b) => b.status && b.status !== 'cancelled' && b.status !== 'pending')
+    .map(directToBooking);
+  const allBookings = [...baseBookings, ...ownerBookings, ...directBookings];
 
   const owner = (await loadOwnerExpenses()).map(ownerPublic);
   const expenses = [...baseExpenses, ...owner];
@@ -695,6 +715,7 @@ export default async (req) => {
       warning,
       ownerExpenseCount: owner.length,
       ownerBookingCount: ownerBookings.length,
+      directBookingCount: directBookings.length,
     },
   });
 };

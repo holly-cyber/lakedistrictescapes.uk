@@ -1237,6 +1237,11 @@ export function initDashboard(root, data, opts = {}) {
     const v = computeView(data, view);
     body.textContent = '';
 
+    // Quick link to the dedicated direct-bookings manager.
+    body.appendChild(e('div', { class: 'dash-toplinks' }, [
+      e('a', { class: 'dash-managelink', href: '/management/bookings/' }, 'Manage direct bookings →'),
+    ]));
+
     // Add-booking and add-receipt forms are always available, in every view.
     body.appendChild(e('div', { class: 'dash-add-forms' }, [
       addBookingForm(properties, handlers.onAddBooking, handlers.onImportBookings),

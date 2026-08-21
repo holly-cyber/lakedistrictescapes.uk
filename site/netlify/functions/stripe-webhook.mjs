@@ -1,5 +1,5 @@
 import { constructWebhookEvent } from '../stripe.mjs';
-import { applyCheckoutCompleted, loadDirectBookings, saveDirectBookings } from '../direct-bookings.mjs';
+import { applyCheckoutCompleted, loadDirectBookings, saveDirectBookings, maybeEmail } from '../direct-bookings.mjs';
 
 // Netlify Function (v2) — Stripe webhook endpoint.
 //
@@ -83,6 +83,7 @@ async function markBalancePaid(id, piId) {
     history: [...(list[idx].history || []), { at: now, event: 'paid_in_full', via: 'webhook' }],
   };
   await saveDirectBookings(list);
+  await maybeEmail(id, 'balanceReceipt');
 }
 
 async function flagBalanceFailed(id, message) {

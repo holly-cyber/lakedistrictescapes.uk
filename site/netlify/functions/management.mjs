@@ -1,6 +1,14 @@
 import { getStore } from '@netlify/blobs';
 import { PROPERTIES, BOOKINGS as SEED_BOOKINGS, EXPENSES as SEED_EXPENSES } from '../management-data.mjs';
-import { loadDirectBookings, directToBooking, retryBalance } from '../direct-bookings.mjs';
+import {
+  loadDirectBookings,
+  directToBooking,
+  retryBalance,
+  listDirectBookingsAdmin,
+  updateDirectBooking,
+  cancelDirectBooking,
+  maybeEmail,
+} from '../direct-bookings.mjs';
 
 // Netlify Function (v2) — gated data feed + write API for the private owner
 // dashboard (management.lakedistrictescapes.uk).
@@ -636,6 +644,58 @@ export default async (req) => {
     }
     if (r.error) return json({ error: r.error }, 400);
     return json({ ok: true, booking: r.booking ? directToBooking(r.booking) : null, paid: !!r.ok });
+  }
+
+  // ---- READ: full direct-booking list for the bookings admin page ----
+  if (action === 'directBookings') {
+    try {
+      return json({ ok: true, bookings: await listDirectBookingsAdmin() });
+    } catch (err) {
+      return json({ error: 'Could not load bookings. ' + err.message }, 500);
+    }
+  }
+
+  // ---- WRITE: edit a direct booking's details ----
+  if (action === 'updateDirectBooking') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    let r;
+    try {
+      r = await updateDirectBooking(id, body);
+    } catch (err) {
+      return json({ error: 'Could not save the booking. ' + err.message }, 500);
+    }
+    if (r.error) return json({ error: r.error }, 400);
+    return json({ ok: true, booking: r.booking });
+  }
+
+  // ---- WRITE: cancel a direct booking (frees the dates; no refund) ----
+  if (action === 'cancelDirectBooking') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    let r;
+    try {
+      r = await cancelDirectBooking(id);
+    } catch (err) {
+      return json({ error: 'Could not cancel the booking. ' + err.message }, 500);
+    }
+    if (r.error) return json({ error: r.error }, 400);
+    return json({ ok: true, booking: r.booking });
+  }
+
+  // ---- WRITE: resend the guest confirmation email ----
+  if (action === 'resendConfirmation') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    let r;
+    try {
+      r = await maybeEmail(id, 'confirmation', { force: true });
+    } catch (err) {
+      return json({ error: 'Could not send the email. ' + err.message }, 500);
+    }
+    if (r && r.error) return json({ error: r.error }, 400);
+    if (r && r.skipped) return json({ ok: false, skipped: r.skipped });
+    return json({ ok: true });
   }
 
   // ---- READ: a single receipt file (base64) ----

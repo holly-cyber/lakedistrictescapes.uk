@@ -1,0 +1,118 @@
+---
+import Base from '../../layouts/Base.astro';
+import Nav from '../../components/Nav.astro';
+import Footer from '../../components/Footer.astro';
+
+// Private direct-bookings manager, served at
+// management.lakedistrictescapes.uk/management/bookings/ (same access code as
+// the dashboard). Lists every Stripe/direct booking with full guest + date +
+// payment detail and inline editing. Gated by the `management` Function; nothing
+// appears in the page source, and the page is noindex.
+---
+<Base
+  title="Direct Bookings — Lake District Escapes"
+  description="Private direct-bookings manager for Lake District Escapes."
+  noindex={true}
+>
+  <Nav slot="nav" logoHref="/" ctaHref="/management/" ctaLabel="Dashboard" />
+
+  <div class="guest-page">
+    <section class="guest-hero mgmt-hero">
+      <p class="eyebrow">Management</p>
+      <h1>Direct<br /><em>Bookings</em></h1>
+      <p>
+        Every booking taken directly on the site — guest and contact details, check-in and check-out
+        dates, and payment status. Edit any detail, resend a confirmation, retry a failed balance, or
+        cancel. Private to the owners.
+      </p>
+    </section>
+
+    <div class="mgmt-wrap">
+      <!-- GATE -->
+      <div class="guest-form-card gate-card" id="gate">
+        <div class="gate-icon" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+            <rect x="4" y="10" width="16" height="10" rx="2" />
+            <path d="M8 10V7a4 4 0 018 0v3" />
+          </svg>
+        </div>
+        <h2>Owner Access</h2>
+        <form class="guest-form" id="gate-form" novalidate>
+          <div class="form-field">
+            <label for="m-code">Management Code</label>
+            <input id="m-code" name="code" type="password" autocomplete="off" autocapitalize="none"
+              spellcheck="false" placeholder="Owner access code" required />
+          </div>
+          <button type="submit" class="guest-btn" id="m-unlock">Open Bookings</button>
+          <p class="guest-status" id="m-status" role="status" aria-live="polite"></p>
+        </form>
+      </div>
+
+      <div id="bookings" class="mb-wrap"></div>
+    </div>
+  </div>
+
+  <Footer
+    slot="footer"
+    links={[
+      { href: '/management/', label: 'Dashboard' },
+      { href: '/', label: 'Home' },
+    ]}
+  />
+</Base>
+
+<script>
+  import { initBookingsAdmin } from '../../scripts/manage-bookings.js';
+
+  const API = '/api/management';
+  const STORAGE_KEY = 'lde-mgmt-code';
+
+  const gate = document.getElementById('gate');
+  const gateForm = document.getElementById('gate-form');
+  const codeInput = document.getElementById('m-code');
+  const unlockBtn = document.getElementById('m-unlock');
+  const statusEl = document.getElementById('m-status');
+  const wrap = document.getElementById('bookings');
+
+  function showStatus(msg) {
+    statusEl.textContent = msg;
+    statusEl.className = 'guest-status show err';
+  }
+
+  async function unlock(code, { fromStorage } = {}) {
+    unlockBtn.disabled = true;
+    unlockBtn.textContent = 'Opening…';
+    try {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, action: 'directBookings' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Something went wrong.');
+      sessionStorage.setItem(STORAGE_KEY, code);
+      gate.style.display = 'none';
+      wrap.classList.add('show');
+      initBookingsAdmin(wrap, data, { api: API, code });
+    } catch (err) {
+      if (fromStorage) {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } else {
+        showStatus(err.message || 'Sorry, we could not open the bookings.');
+      }
+    } finally {
+      unlockBtn.disabled = false;
+      unlockBtn.textContent = 'Open Bookings';
+    }
+  }
+
+  gateForm.addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    const code = codeInput.value.trim();
+    if (!code) return showStatus('Please enter your access code.');
+    unlock(code);
+  });
+
+  const saved = sessionStorage.getItem(STORAGE_KEY);
+  if (saved) unlock(saved, { fromStorage: true });
+</script>

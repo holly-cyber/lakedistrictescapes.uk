@@ -20,6 +20,7 @@ import { getStore } from '@netlify/blobs';
 import { PRICING, PROPERTIES, BOOKINGS as SEED_BOOKINGS } from './management-data.mjs';
 import { stripe } from './stripe.mjs';
 import { parseICal } from './functions/availability.mjs';
+import { sendEmail, bookingConfirmationEmail, balanceReceiptEmail } from './email.mjs';
 
 export const DIRECT_STORE = 'direct-bookings';
 // Statuses that occupy the calendar / count as real income.
@@ -340,7 +341,39 @@ export async function applyCheckoutCompleted(session) {
   rec.history = [...(rec.history || []), { at: rec.depositPaidAt, event: 'deposit_paid', amount: rec.deposit }];
   list[idx] = rec;
   await saveDirectBookings(list);
+  await maybeEmail(rec.id, 'confirmation');
   return { ok: true, booking: rec };
+}
+
+// Send one of the guest emails, at most once per kind, tracked by a flag on the
+// record so the webhook and the scheduler can both call it without duplicating.
+// Never throws — email problems must not break the booking flow.
+export async function maybeEmail(id, kind, { force } = {}) {
+  try {
+    const list = await loadDirectBookings();
+    const idx = list.findIndex((b) => b.id === id);
+    if (idx < 0) return { skipped: 'unknown booking' };
+    const rec = list[idx];
+    if (!force && rec.emailed && rec.emailed[kind]) return { skipped: 'already sent' };
+    const to = rec.guest && rec.guest.email;
+    if (!to) return { skipped: 'no email' };
+
+    const emailRec = { ...rec, propertyName: (PROPERTIES[rec.property] && PROPERTIES[rec.property].name) || rec.property };
+    const tpl = kind === 'balanceReceipt' ? balanceReceiptEmail(emailRec) : bookingConfirmationEmail(emailRec);
+    const res = await sendEmail({ to, subject: tpl.subject, html: tpl.html });
+    if (res.ok) {
+      // Re-load to avoid clobbering a concurrent update, then set the flag.
+      const fresh = await loadDirectBookings();
+      const i = fresh.findIndex((b) => b.id === id);
+      if (i >= 0) {
+        fresh[i] = { ...fresh[i], emailed: { ...(fresh[i].emailed || {}), [kind]: true } };
+        await saveDirectBookings(fresh);
+      }
+    }
+    return res;
+  } catch (err) {
+    return { error: err.message };
+  }
 }
 
 // ---- charge the balance (off-session) --------------------------------------
@@ -410,6 +443,7 @@ async function markPaid(id, paymentIntentId) {
     stripePatch: paymentIntentId ? { balancePaymentIntent: paymentIntentId } : undefined,
     pushHistory: { at: now, event: 'paid_in_full' },
   });
+  await maybeEmail(id, 'balanceReceipt');
   return { ok: true, booking: updated };
 }
 
@@ -488,6 +522,117 @@ export function directToBooking(b) {
 // Full record → the dates-only shape the cleaner/gardener schedule expects.
 export function directToSchedule(b) {
   return { property: b.property, start: b.start, end: b.end, nights: b.nights, channel: 'Direct' };
+}
+
+// Full record → the admin projection for the direct-bookings management page.
+// This IS gated behind the management code, so it may include contact details.
+export function directToAdmin(b) {
+  return {
+    id: b.id,
+    ref: b.ref,
+    property: b.property,
+    propertyName: (PROPERTIES[b.property] && PROPERTIES[b.property].name) || b.property,
+    status: b.status,
+    guest: { name: (b.guest && b.guest.name) || '', email: (b.guest && b.guest.email) || '', phone: (b.guest && b.guest.phone) || '' },
+    guests: b.guests,
+    start: b.start,
+    end: b.end,
+    nights: b.nights,
+    nightly: b.nightly,
+    subtotal: b.subtotal,
+    cleaning: b.cleaning || 0,
+    total: b.total,
+    depositPct: b.depositPct,
+    deposit: b.deposit,
+    balance: b.balance,
+    balanceDueDate: b.balanceDueDate,
+    balanceError: b.balanceError || null,
+    note: b.note || '',
+    currency: b.currency || 'GBP',
+    createdAt: b.createdAt || '',
+    depositPaidAt: b.depositPaidAt || '',
+    balancePaidAt: b.balancePaidAt || '',
+    emailed: b.emailed || {},
+  };
+}
+
+// List all direct bookings for the admin page (newest first).
+export async function listDirectBookingsAdmin() {
+  const list = await loadDirectBookings();
+  return list
+    .slice()
+    .sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')))
+    .map(directToAdmin);
+}
+
+// Owner edit of a booking's details. Money fields are optional manual overrides
+// (e.g. a bespoke rate or an added charge); if the balance hasn't been taken
+// yet, a changed balance is what the auto-charge will collect. Editing here does
+// NOT move money by itself. Returns { booking } (admin projection) or { error }.
+export async function updateDirectBooking(id, input) {
+  const list = await loadDirectBookings();
+  const idx = list.findIndex((b) => b.id === id);
+  if (idx < 0) return { error: 'Booking not found.' };
+  const rec = { ...list[idx] };
+
+  if (input.name !== undefined || input.email !== undefined || input.phone !== undefined) {
+    rec.guest = {
+      name: input.name !== undefined ? String(input.name).trim().slice(0, 120) : rec.guest?.name || '',
+      email: input.email !== undefined ? String(input.email).trim().slice(0, 200) : rec.guest?.email || '',
+      phone: input.phone !== undefined ? String(input.phone).trim().slice(0, 40) : rec.guest?.phone || '',
+    };
+    if (rec.guest.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(rec.guest.email)) {
+      return { error: 'That email address doesn’t look right.' };
+    }
+  }
+
+  let start = rec.start;
+  let end = rec.end;
+  if (input.start !== undefined) start = isoDate(input.start);
+  if (input.end !== undefined) end = isoDate(input.end);
+  if (!start || !end || nightsBetween(start, end) < 1) return { error: 'Check-out must be after check-in.' };
+  rec.start = start;
+  rec.end = end;
+  rec.nights = nightsBetween(start, end);
+
+  if (input.guests !== undefined) rec.guests = Math.max(1, Math.round(Number(input.guests) || 1));
+  if (input.note !== undefined) rec.note = String(input.note).slice(0, 1000);
+
+  const cfg = PRICING[rec.property] || {};
+  const balanceDueDays = cfg.balanceDueDays != null ? cfg.balanceDueDays : rec.balanceDueDays || 7;
+  // Recompute the balance-due date from the (possibly new) check-in, unless the
+  // owner set one explicitly.
+  rec.balanceDueDate = input.balanceDueDate ? isoDate(input.balanceDueDate) : addDays(rec.start, -balanceDueDays);
+
+  if (input.total !== undefined && input.total !== '') rec.total = round2(input.total);
+  if (input.deposit !== undefined && input.deposit !== '') rec.deposit = round2(input.deposit);
+  if (input.balance !== undefined && input.balance !== '') rec.balance = round2(input.balance);
+  // Keep the fee estimate roughly in step if the total changed.
+  rec.feeEstimate = feeEstimate(rec.total);
+
+  rec.updatedAt = new Date().toISOString();
+  rec.history = [...(rec.history || []), { at: rec.updatedAt, event: 'edited' }];
+  list[idx] = rec;
+  await saveDirectBookings(list);
+  return { booking: directToAdmin(rec) };
+}
+
+// Cancel a booking — frees the dates on the site + schedule. Does NOT refund;
+// refunds are handled in Stripe. Returns { booking } or { error }.
+export async function cancelDirectBooking(id) {
+  const list = await loadDirectBookings();
+  const idx = list.findIndex((b) => b.id === id);
+  if (idx < 0) return { error: 'Booking not found.' };
+  const now = new Date().toISOString();
+  list[idx] = {
+    ...list[idx],
+    status: 'cancelled',
+    cancelledAt: now,
+    updatedAt: now,
+    history: [...(list[idx].history || []), { at: now, event: 'cancelled' }],
+  };
+  await saveDirectBookings(list);
+  return { booking: directToAdmin(list[idx]) };
 }
 
 // Guest-facing lookup for the confirmation page (by Stripe Checkout session id).

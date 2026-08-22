@@ -90,6 +90,16 @@ export async function initBook(root, opts = {}) {
             <input id="bk-guests" name="guests" type="number" min="1" step="1" value="2" required />
             <span class="bf-hint" id="bk-cap"></span>
           </div>
+          <div class="bf-row">
+            <div class="bf-field" id="bk-infants-field" hidden>
+              <label for="bk-infants">Children under 2</label>
+              <input id="bk-infants" name="infants" type="number" min="0" step="1" value="0" />
+            </div>
+            <div class="bf-field" id="bk-dogs-field" hidden>
+              <label for="bk-dogs">Dogs</label>
+              <input id="bk-dogs" name="dogs" type="number" min="0" step="1" value="0" />
+            </div>
+          </div>
 
           <h2 class="book-h book-h-2">Your details</h2>
           <div class="bf-field">
@@ -129,6 +139,10 @@ export async function initBook(root, opts = {}) {
   const depart = root.querySelector('#bk-depart');
   const guests = root.querySelector('#bk-guests');
   const cap = root.querySelector('#bk-cap');
+  const dogsField = root.querySelector('#bk-dogs-field');
+  const dogs = root.querySelector('#bk-dogs');
+  const infantsField = root.querySelector('#bk-infants-field');
+  const infants = root.querySelector('#bk-infants');
   const quoteBox = root.querySelector('#bk-quote');
   const terms = root.querySelector('#bk-terms');
   const submit = root.querySelector('#bk-submit');
@@ -146,6 +160,20 @@ export async function initBook(root, opts = {}) {
     guests.max = String(cfg.maxGuests);
     if (Number(guests.value) > cfg.maxGuests) guests.value = String(cfg.maxGuests);
     cap.textContent = `Sleeps up to ${cfg.maxGuests} · minimum ${cfg.minNights} nights`;
+
+    // Dogs + under-2s: only offer them where the property allows.
+    const maxDogs = Number(cfg.maxDogs) || 0;
+    const maxInfants = Number(cfg.maxInfants) || 0;
+    dogsField.hidden = maxDogs <= 0;
+    infantsField.hidden = maxInfants <= 0;
+    if (maxDogs > 0) {
+      dogs.max = String(maxDogs);
+      if (Number(dogs.value) > maxDogs) dogs.value = String(maxDogs);
+    } else dogs.value = '0';
+    if (maxInfants > 0) {
+      infants.max = String(maxInfants);
+      if (Number(infants.value) > maxInfants) infants.value = String(maxInfants);
+    } else infants.value = '0';
     if (termsLabel) {
       termsLabel.textContent = `I agree to pay the deposit now and authorise the balance to be charged to this card ${cfg.balanceDueDays} days before arrival.`;
     }
@@ -205,7 +233,7 @@ export async function initBook(root, opts = {}) {
     if (d <= a) return clearQuote('Departure must be after arrival.');
     const seq = ++quoteSeq;
     quoteBox.classList.add('is-loading');
-    post({ action: 'quote', property: propOf(), start: a, end: d, guests: Number(guests.value) || 1 })
+    post({ action: 'quote', property: propOf(), start: a, end: d, guests: Number(guests.value) || 1, dogs: Number(dogs.value) || 0, infants: Number(infants.value) || 0 })
       .then((res) => {
         if (seq !== quoteSeq) return; // a newer request superseded this one
         quoteBox.classList.remove('is-loading');
@@ -227,6 +255,8 @@ export async function initBook(root, opts = {}) {
   arrive.addEventListener('change', () => { applyRules(); debouncedQuote(); });
   depart.addEventListener('change', debouncedQuote);
   guests.addEventListener('change', debouncedQuote);
+  dogs.addEventListener('change', debouncedQuote);
+  infants.addEventListener('change', debouncedQuote);
   terms.addEventListener('change', updateSubmit);
 
   form.addEventListener('submit', async (e) => {
@@ -249,6 +279,8 @@ export async function initBook(root, opts = {}) {
         start: arrive.value,
         end: depart.value,
         guests: Number(guests.value) || 1,
+        dogs: Number(dogs.value) || 0,
+        infants: Number(infants.value) || 0,
         name,
         email,
         phone,

@@ -29,6 +29,8 @@ function publicConfig() {
       cleaningFee: cfg.cleaningFee || 0,
       minNights: cfg.minNights,
       maxGuests: cfg.maxGuests,
+      maxInfants: cfg.maxInfants == null ? 0 : cfg.maxInfants,
+      maxDogs: cfg.maxDogs == null ? 0 : cfg.maxDogs,
       depositPct: cfg.depositPct,
       balanceDueDays: cfg.balanceDueDays,
       currency: cfg.currency || 'GBP',

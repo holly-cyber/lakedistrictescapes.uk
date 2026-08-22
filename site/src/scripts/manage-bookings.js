@@ -140,6 +140,34 @@ export function initBookingsAdmin(root, data, ctx) {
       ]));
     };
 
+    // Flexible-policy suggestion + one-click refund.
+    const suggested = Number(b.policySuggestedRefund) || 0;
+    const remainingToRefund = Math.max(0, Math.round(((b.amountPaid || 0)) * 100) / 100);
+    if (remainingToRefund > 0) {
+      const policyBtn = el('button', {
+        class: 'mb-btn mb-btn-warn', type: 'button', text: 'Refund per policy (' + money(suggested, ccy) + ')',
+        onclick: async () => {
+          if (suggested <= 0) return toast('Policy allows no refund at this point.', 'err');
+          if (!window.confirm('Refund ' + money(suggested, ccy) + ' to ' + (b.guest.name || 'the guest') + ' per the ' + (b.policyTier || 'cancellation') + ' policy? Processed in Stripe, cannot be undone.')) return;
+          policyBtn.disabled = true;
+          policyBtn.textContent = 'Refunding…';
+          try {
+            const r = await api('refundBooking', { id: b.id, target: 'auto', amount: suggested, reason: (b.policyTier || '') + ' policy' });
+            if (r.booking) replace(r.booking);
+            toast('Refunded ' + money(r.refund ? r.refund.amount : suggested, ccy) + '.', 'ok');
+          } catch (err) {
+            toast(err.message, 'err');
+            policyBtn.disabled = false;
+            policyBtn.textContent = 'Refund per policy (' + money(suggested, ccy) + ')';
+          }
+        },
+      });
+      rows.push(el('div', { class: 'mb-policyrow' }, [
+        el('span', { class: 'mb-reflabel', text: (b.policyTier || 'Policy') + ': ' + (b.policyRefundReason || '') }),
+        suggested > 0 ? policyBtn : el('span', { class: 'mb-reflabel', text: 'No refund due.' }),
+      ]));
+    }
+
     makeRow('deposit', 'Deposit', b.deposit, b.depositRefunded, b.canRefundDeposit);
     makeRow('balance', 'Balance', b.balance, b.balanceRefunded, b.canRefundBalance);
 
@@ -221,7 +249,12 @@ export function initBookingsAdmin(root, data, ctx) {
       actions.appendChild(el('button', {
         class: 'mb-btn mb-btn-danger', type: 'button', text: 'Cancel booking',
         onclick: async (e) => {
-          if (!window.confirm('Cancel ' + b.ref + '? This frees the dates but does NOT refund — do any refund in Stripe.')) return;
+          const sug = Number(b.policySuggestedRefund) || 0;
+          const msg = 'Cancel ' + b.ref + '? This frees the dates and stops any balance charge.\n\n' +
+            (b.amountPaid > 0
+              ? (b.policyTier || 'Policy') + ' suggests a refund of ' + money(sug, ccy) + '. Cancelling does NOT refund — use the "Refund per policy" button afterwards (or refund manually in Stripe).'
+              : 'Nothing has been paid, so there is nothing to refund.');
+          if (!window.confirm(msg)) return;
           e.target.disabled = true;
           try { const r = await api('cancelDirectBooking', { id: b.id }); if (r.booking) replace(r.booking); toast('Booking cancelled.', 'ok'); }
           catch (err) { toast(err.message, 'err'); e.target.disabled = false; }

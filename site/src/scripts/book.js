@@ -128,6 +128,13 @@ export async function initBook(root, opts = {}) {
           </label>
           <button type="submit" class="bk-submit" id="bk-submit" disabled>Choose your dates</button>
           <p class="bk-secure">Secure payment by Stripe · your card details never touch our servers.</p>
+          ${
+            config.policy
+              ? `<div class="bk-policy"><strong>${esc(config.policy.tier)} cancellation</strong><ul>${(config.policy.bullets || [])
+                  .map((b) => `<li>${esc(b)}</li>`)
+                  .join('')}</ul></div>`
+              : ''
+          }
           <p class="book-msg err" id="bk-error" hidden></p>
         </aside>
       </div>

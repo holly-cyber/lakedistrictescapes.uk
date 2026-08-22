@@ -18,6 +18,8 @@
 // (DKIM/SPF DNS records) so mail sends from the brand, not a personal address.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { CANCELLATION_POLICY } from './management-data.mjs';
+
 const BRAND = '#6f7357';
 const MINT = '#d8eae5';
 const INK = '#2e3028';
@@ -134,6 +136,7 @@ export function bookingConfirmationEmail(rec) {
     </table>
     ${breakdown(rec)}
     <p style="margin:16px 0 14px;">The remaining balance of <strong>${esc(money(rec.balance, rec.currency))}</strong> will be charged automatically to the same card on <strong>${esc(longDate(rec.balanceDueDate))}</strong> — you don't need to do anything.</p>
+    <p style="margin:16px 0 6px;font-size:13px;color:#7a7d70;"><strong>${esc(CANCELLATION_POLICY.tier)} cancellation:</strong> ${esc(CANCELLATION_POLICY.summary)}</p>
     <p style="margin:0 0 6px;">We'll send full directions and arrival details closer to the time. If anything changes or you have a question, just reply to this email.</p>
     <p style="margin:16px 0 0;">We look forward to welcoming you.<br/>— The Lake District Escapes team</p>`;
   return {

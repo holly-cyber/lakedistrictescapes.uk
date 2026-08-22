@@ -128,6 +128,8 @@ export function bookingConfirmationEmail(rec) {
         <div style="margin-top:10px;"><strong>Arrive:</strong> ${esc(longDate(rec.start))}</div>
         <div><strong>Depart:</strong> ${esc(longDate(rec.end))}</div>
         <div><strong>Guests:</strong> ${esc(String(rec.guests))}</div>
+        ${rec.infants ? `<div><strong>Children under 2:</strong> ${esc(String(rec.infants))}</div>` : ''}
+        ${rec.dogs ? `<div><strong>Dogs:</strong> ${esc(String(rec.dogs))}</div>` : ''}
       </td></tr>
     </table>
     ${breakdown(rec)}

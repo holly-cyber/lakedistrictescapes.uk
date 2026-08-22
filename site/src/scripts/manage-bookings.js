@@ -170,7 +170,12 @@ export function initBookingsAdmin(root, data, ctx) {
 
     const grid = el('div', { class: 'mb-grid' }, [
       fieldRow('Guest', el('div', { class: 'mb-guest' }, guestBits)),
-      fieldRow('Guests', el('span', { text: String(b.guests) })),
+      fieldRow('Party', el('span', {
+        text:
+          String(b.guests) +
+          (b.infants ? ' · ' + b.infants + ' under 2' : '') +
+          (b.dogs ? ' · ' + b.dogs + ' dog' + (b.dogs === 1 ? '' : 's') : ''),
+      })),
       fieldRow('Check-in', el('span', { text: fmtDate(b.start) })),
       fieldRow('Check-out', el('span', { text: fmtDate(b.end) + ' · ' + b.nights + ' night' + (b.nights === 1 ? '' : 's') })),
       fieldRow('Total', el('span', { text: money(b.total, ccy) })),
@@ -250,6 +255,8 @@ export function initBookingsAdmin(root, data, ctx) {
       fieldRow('Email', mk('email', b.guest.email, 'email')),
       fieldRow('Phone', mk('phone', b.guest.phone, 'tel')),
       fieldRow('Guests', mk('guests', b.guests, 'number')),
+      fieldRow('Children under 2', mk('infants', b.infants || 0, 'number')),
+      fieldRow('Dogs', mk('dogs', b.dogs || 0, 'number')),
       fieldRow('Check-in', mk('start', b.start, 'date')),
       fieldRow('Check-out', mk('end', b.end, 'date')),
       fieldRow('Balance due', mk('balanceDueDate', b.balanceDueDate, 'date')),

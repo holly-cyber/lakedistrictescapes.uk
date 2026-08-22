@@ -52,7 +52,9 @@ export const PRICING = {
     nightly: 125,
     cleaningFee: 0,
     minNights: 2,
-    maxGuests: 2,
+    maxGuests: 2, // adults / over-2s
+    maxInfants: 1, // children under 2 (don't count toward the sleeps total)
+    maxDogs: 2,
     depositPct: 30,
     balanceDueDays: 7,
     currency: 'GBP',
@@ -63,6 +65,8 @@ export const PRICING = {
     cleaningFee: 0,
     minNights: 3,
     maxGuests: 9,
+    maxInfants: 2,
+    maxDogs: 3,
     depositPct: 30,
     balanceDueDays: 7,
     currency: 'GBP',

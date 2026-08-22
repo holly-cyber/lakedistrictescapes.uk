@@ -96,7 +96,7 @@ function bookableProperty(key) {
 
 // ---- quoting (pure) ---------------------------------------------------------
 // Validate a requested stay and compute the price breakdown. No I/O.
-export function quoteStay({ property, start, end, guests }) {
+export function quoteStay({ property, start, end, guests, dogs, infants }) {
   const key = String(property || '').toLowerCase();
   const cfg = PRICING[key];
   if (!cfg) return { error: 'Unknown property.' };
@@ -115,6 +115,13 @@ export function quoteStay({ property, start, end, guests }) {
   const g = Math.max(1, Math.round(Number(guests) || 1));
   if (g > cfg.maxGuests) return { error: `This property sleeps up to ${cfg.maxGuests}.` };
 
+  const dg = Math.max(0, Math.round(Number(dogs) || 0));
+  const inf = Math.max(0, Math.round(Number(infants) || 0));
+  const maxDogs = cfg.maxDogs == null ? Infinity : cfg.maxDogs;
+  const maxInfants = cfg.maxInfants == null ? Infinity : cfg.maxInfants;
+  if (dg > maxDogs) return { error: maxDogs === 0 ? 'Sorry, dogs can’t be accommodated here.' : `Up to ${maxDogs} dog${maxDogs === 1 ? '' : 's'} can be accommodated.` };
+  if (inf > maxInfants) return { error: maxInfants === 0 ? 'No cot space for under-2s here.' : `Up to ${maxInfants} child${maxInfants === 1 ? '' : 'ren'} under 2.` };
+
   const subtotal = round2(nights * cfg.nightly);
   const cleaning = round2(cfg.cleaningFee || 0);
   const total = round2(subtotal + cleaning);
@@ -130,6 +137,8 @@ export function quoteStay({ property, start, end, guests }) {
       end: e,
       nights,
       guests: g,
+      dogs: dg,
+      infants: inf,
       nightly: cfg.nightly,
       subtotal,
       cleaning,
@@ -239,6 +248,8 @@ export async function createCheckout(input, origin) {
     property: quote.property,
     guest: { name, email, phone },
     guests: quote.guests,
+    dogs: quote.dogs,
+    infants: quote.infants,
     start: quote.start,
     end: quote.end,
     nights: quote.nights,
@@ -503,6 +514,9 @@ export function directToBooking(b) {
     start: b.start,
     end: b.end,
     nights: b.nights,
+    guests: b.guests,
+    dogs: b.dogs || 0,
+    infants: b.infants || 0,
     gross: b.total,
     fee: b.feeEstimate || 0,
     cleaning: b.cleaning || 0,
@@ -535,6 +549,8 @@ export function directToAdmin(b) {
     status: b.status,
     guest: { name: (b.guest && b.guest.name) || '', email: (b.guest && b.guest.email) || '', phone: (b.guest && b.guest.phone) || '' },
     guests: b.guests,
+    dogs: b.dogs || 0,
+    infants: b.infants || 0,
     start: b.start,
     end: b.end,
     nights: b.nights,
@@ -603,6 +619,8 @@ export async function updateDirectBooking(id, input) {
   rec.nights = nightsBetween(start, end);
 
   if (input.guests !== undefined) rec.guests = Math.max(1, Math.round(Number(input.guests) || 1));
+  if (input.dogs !== undefined) rec.dogs = Math.max(0, Math.round(Number(input.dogs) || 0));
+  if (input.infants !== undefined) rec.infants = Math.max(0, Math.round(Number(input.infants) || 0));
   if (input.note !== undefined) rec.note = String(input.note).slice(0, 1000);
 
   const cfg = PRICING[rec.property] || {};
@@ -707,6 +725,8 @@ export async function findBySessionPublic(sessionId) {
     end: rec.end,
     nights: rec.nights,
     guests: rec.guests,
+    dogs: rec.dogs || 0,
+    infants: rec.infants || 0,
     total: rec.total,
     deposit: rec.deposit,
     balance: rec.balance,

@@ -59,6 +59,8 @@ import Footer from '../components/Footer.astro';
         <div><dt>Arrive</dt><dd>${esc(fmt(b.start))}</dd></div>
         <div><dt>Depart</dt><dd>${esc(fmt(b.end))}</dd></div>
         <div><dt>Guests</dt><dd>${esc(String(b.guests))}</dd></div>
+        ${b.infants ? `<div><dt>Children under 2</dt><dd>${esc(String(b.infants))}</dd></div>` : ''}
+        ${b.dogs ? `<div><dt>Dogs</dt><dd>${esc(String(b.dogs))}</dd></div>` : ''}
         <div><dt>Deposit paid</dt><dd>${money(b.deposit, b.currency)}</dd></div>
         <div><dt>Balance</dt><dd>${money(b.balance, b.currency)} — auto-charged ${esc(fmt(b.balanceDueDate))}</dd></div>
         <div class="confirm-total"><dt>Total</dt><dd>${money(b.total, b.currency)}</dd></div>

@@ -2410,3 +2410,12 @@
     @media (max-width: 560px) {
       .mb-grid, .mb-editgrid { grid-template-columns: 1fr; }
     }
+
+    /* Refunds panel in the direct-bookings manager */
+    .mb-refunds { margin-top: 0.9rem; padding-top: 0.85rem; border-top: 1px dashed rgba(176,168,153,0.5); display: grid; gap: 0.5rem; }
+    .mb-refhead { margin-bottom: 0.1rem; }
+    .mb-refrow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; }
+    .mb-reflabel { font-size: 0.8rem; color: var(--mid); font-weight: 600; }
+    .mb-refrow .mb-reflabel { min-width: 190px; flex: 1 1 190px; }
+    .mb-refamt { max-width: 170px; flex: 0 0 auto; }
+    .mb-reftotal { font-size: 0.82rem; font-weight: 700; color: var(--gable-deep); }

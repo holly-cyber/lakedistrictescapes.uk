@@ -102,6 +102,58 @@ export function initBookingsAdmin(root, data, ctx) {
     return el('div', { class: 'mb-frow' }, [el('span', { class: 'mb-flabel', text: label }), valueNode]);
   }
 
+  function refundPanel(b) {
+    const ccy = b.currency || 'GBP';
+    const rows = [];
+
+    const makeRow = (target, label, paid, refunded, canRefund) => {
+      const refundable = Math.max(0, Math.round((paid - refunded) * 100) / 100);
+      if (!canRefund || refundable <= 0) return;
+      const amt = el('input', { class: 'mb-in mb-refamt', type: 'number', min: '0', step: '0.01', placeholder: 'Full (' + money(refundable, ccy) + ')' });
+      const btn = el('button', {
+        class: 'mb-btn mb-btn-warn', type: 'button', text: 'Refund',
+        onclick: async () => {
+          const raw = amt.value.trim();
+          const partial = raw !== '' ? Number(raw) : null;
+          if (partial !== null && (!(partial > 0) || partial > refundable)) {
+            return toast('Enter an amount between £0 and ' + money(refundable, ccy) + '.', 'err');
+          }
+          const shown = partial !== null ? money(partial, ccy) : money(refundable, ccy) + ' (full remaining)';
+          if (!window.confirm('Refund ' + shown + ' of the ' + target + ' to ' + (b.guest.name || 'the guest') + '? This is processed in Stripe and cannot be undone.')) return;
+          btn.disabled = true;
+          btn.textContent = 'Refunding…';
+          try {
+            const r = await api('refundBooking', { id: b.id, target, amount: partial === null ? undefined : partial });
+            if (r.booking) replace(r.booking);
+            toast('Refunded ' + money(r.refund ? r.refund.amount : partial || refundable, ccy) + '.', 'ok');
+          } catch (err) {
+            toast(err.message, 'err');
+            btn.disabled = false;
+            btn.textContent = 'Refund';
+          }
+        },
+      });
+      rows.push(el('div', { class: 'mb-refrow' }, [
+        el('span', { class: 'mb-reflabel', text: label + ': ' + money(paid, ccy) + ' paid' + (refunded > 0 ? ' · ' + money(refunded, ccy) + ' refunded' : '') }),
+        amt,
+        btn,
+      ]));
+    };
+
+    makeRow('deposit', 'Deposit', b.deposit, b.depositRefunded, b.canRefundDeposit);
+    makeRow('balance', 'Balance', b.balance, b.balanceRefunded, b.canRefundBalance);
+
+    if (!rows.length) {
+      if (b.refundedTotal > 0) {
+        return el('div', { class: 'mb-refunds' }, [el('div', { class: 'mb-reftotal', text: 'Fully refunded · ' + money(b.refundedTotal, ccy) })]);
+      }
+      return null;
+    }
+    const panel = el('div', { class: 'mb-refunds' }, [el('div', { class: 'mb-reflabel mb-refhead', text: 'Refund' })].concat(rows));
+    if (b.refundedTotal > 0) panel.appendChild(el('div', { class: 'mb-reftotal', text: 'Refunded to date: ' + money(b.refundedTotal, ccy) }));
+    return panel;
+  }
+
   function viewCard(b) {
     const ccy = b.currency || 'GBP';
     const head = el('div', { class: 'mb-head' }, [
@@ -182,7 +234,7 @@ export function initBookingsAdmin(root, data, ctx) {
       },
     }));
 
-    return el('div', { class: 'mb-card' }, [head, grid, actions]);
+    return el('div', { class: 'mb-card' }, [head, grid, refundPanel(b), actions]);
   }
 
   function editCard(b) {

@@ -553,6 +553,13 @@ export function directToAdmin(b) {
     depositPaidAt: b.depositPaidAt || '',
     balancePaidAt: b.balancePaidAt || '',
     emailed: b.emailed || {},
+    // Refunds
+    canRefundDeposit: !!(b.stripe && b.stripe.depositPaymentIntent),
+    canRefundBalance: !!(b.stripe && b.stripe.balancePaymentIntent),
+    depositRefunded: round2((b.refunds || []).filter((r) => r.target === 'deposit').reduce((s, r) => s + (r.amount || 0), 0)),
+    balanceRefunded: round2((b.refunds || []).filter((r) => r.target === 'balance').reduce((s, r) => s + (r.amount || 0), 0)),
+    refundedTotal: b.refundedTotal || 0,
+    refunds: (b.refunds || []).map((r) => ({ at: r.at, amount: r.amount, target: r.target, status: r.status })),
   };
 }
 
@@ -615,6 +622,47 @@ export async function updateDirectBooking(id, input) {
   list[idx] = rec;
   await saveDirectBookings(list);
   return { booking: directToAdmin(rec) };
+}
+
+// Refund all or part of a booking's payment via Stripe. `target` is 'deposit'
+// or 'balance' (each is a separate Stripe charge); `amount` (in £) is optional —
+// omit it for a full refund of that payment's remaining balance. Stripe enforces
+// the ceiling (you can't refund more than was captured). Returns
+// { booking, refund } or { error }.
+export async function refundBooking(id, { target, amount, reason } = {}) {
+  const list = await loadDirectBookings();
+  const idx = list.findIndex((b) => b.id === id);
+  if (idx < 0) return { error: 'Booking not found.' };
+  const rec = list[idx];
+
+  const which = target === 'balance' ? 'balance' : 'deposit';
+  const piId = which === 'balance' ? rec.stripe && rec.stripe.balancePaymentIntent : rec.stripe && rec.stripe.depositPaymentIntent;
+  if (!piId) return { error: `There's no ${which} payment on file to refund.` };
+
+  const params = { payment_intent: piId, metadata: { bookingId: id, ref: rec.ref, target: which } };
+  if (amount !== undefined && amount !== null && amount !== '') {
+    const amt = round2(amount);
+    if (!(amt > 0)) return { error: 'Refund amount must be greater than £0.' };
+    params.amount = pence(amt);
+  }
+  if (reason) params.metadata.note = String(reason).slice(0, 200);
+
+  let refund;
+  try {
+    refund = await stripe('refunds', { params });
+  } catch (err) {
+    return { error: err.message };
+  }
+
+  const now = new Date().toISOString();
+  const entry = { at: now, amount: round2((refund.amount || 0) / 100), target: which, stripeId: refund.id, status: refund.status };
+  rec.refunds = [...(rec.refunds || []), entry];
+  rec.refundedTotal = round2((rec.refundedTotal || 0) + entry.amount);
+  rec.updatedAt = now;
+  rec.history = [...(rec.history || []), { at: now, event: 'refund', amount: entry.amount, target: which }];
+  list[idx] = rec;
+  await saveDirectBookings(list);
+  return { booking: directToAdmin(rec), refund: entry };
 }
 
 // Permanently delete a booking record (for test/erroneous bookings). This

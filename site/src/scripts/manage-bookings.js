@@ -308,6 +308,11 @@ export function initBookingsAdmin(root, data, ctx) {
   function render() {
     root.textContent = '';
 
+    // Back to the main dashboard.
+    root.appendChild(el('div', { class: 'mb-topbar' }, [
+      el('a', { class: 'mb-back', href: '/management/' }, '← Back to dashboard'),
+    ]));
+
     const filters = el('div', { class: 'mb-filters' }, FILTERS.map(([id, label]) => {
       const count = id === 'all' ? state.bookings.filter((b) => b.status !== 'pending').length : state.bookings.filter((b) => b.status === id).length;
       return el('button', {

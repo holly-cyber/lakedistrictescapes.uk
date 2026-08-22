@@ -2419,3 +2419,8 @@
     .mb-refrow .mb-reflabel { min-width: 190px; flex: 1 1 190px; }
     .mb-refamt { max-width: 170px; flex: 0 0 auto; }
     .mb-reftotal { font-size: 0.82rem; font-weight: 700; color: var(--gable-deep); }
+
+    /* Back-to-dashboard link on the bookings manager */
+    .mb-topbar { margin: 0 0 1rem; }
+    .mb-back { font-size: 0.85rem; font-weight: 700; color: var(--gable-deep); text-decoration: none; border: 1px solid rgba(111,115,87,0.4); border-radius: 8px; padding: 0.4rem 0.7rem; display: inline-block; }
+    .mb-back:hover { background: var(--gable-deep); color: #fff; }

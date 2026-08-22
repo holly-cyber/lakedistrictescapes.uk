@@ -8,6 +8,7 @@ import {
   updateDirectBooking,
   cancelDirectBooking,
   deleteDirectBooking,
+  refundBooking,
   maybeEmail,
 } from '../direct-bookings.mjs';
 
@@ -682,6 +683,20 @@ export default async (req) => {
     }
     if (r.error) return json({ error: r.error }, 400);
     return json({ ok: true, booking: r.booking });
+  }
+
+  // ---- WRITE: refund all or part of a direct booking's payment ----
+  if (action === 'refundBooking') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    let r;
+    try {
+      r = await refundBooking(id, { target: body.target, amount: body.amount, reason: body.reason });
+    } catch (err) {
+      return json({ error: 'Could not process the refund. ' + err.message }, 500);
+    }
+    if (r.error) return json({ error: r.error }, 400);
+    return json({ ok: true, booking: r.booking, refund: r.refund });
   }
 
   // ---- WRITE: permanently delete a direct booking (test/erroneous) ----

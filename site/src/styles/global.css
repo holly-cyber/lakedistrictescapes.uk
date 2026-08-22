@@ -2448,3 +2448,10 @@
     .cr-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .cr-detail { color: var(--mid); }
     .cr-email { display: block; font-size: 0.78rem; color: var(--gable-deep); }
+
+    /* Cancellation policy on the booking page + manager */
+    .bk-policy { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px dashed rgba(176,168,153,0.5); font-size: 0.8rem; color: var(--mid); }
+    .bk-policy strong { color: var(--gable-deep); display: block; margin-bottom: 0.3rem; }
+    .bk-policy ul { margin: 0; padding-left: 1.1rem; line-height: 1.5; }
+    .mb-policyrow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; justify-content: space-between; background: rgba(216,234,229,0.35); border-radius: 8px; padding: 0.5rem 0.7rem; }
+    .mb-policyrow .mb-reflabel { flex: 1 1 200px; }

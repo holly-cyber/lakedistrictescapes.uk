@@ -1,4 +1,4 @@
-import { quoteStay, isAvailable, createCheckout, findBySessionPublic } from '../direct-bookings.mjs';
+import { quoteStay, isAvailable, createCheckout, findBySessionPublic, cancellationPolicy } from '../direct-bookings.mjs';
 import { stripeConfigured } from '../stripe.mjs';
 import { PRICING, PROPERTIES } from '../management-data.mjs';
 
@@ -51,7 +51,12 @@ export default async (req) => {
   const action = String(body?.action || 'quote');
 
   if (action === 'config') {
-    return json({ configured: stripeConfigured(), properties: publicConfig() });
+    const pol = cancellationPolicy();
+    return json({
+      configured: stripeConfigured(),
+      properties: publicConfig(),
+      policy: { tier: pol.tier, summary: pol.summary, bullets: pol.bullets },
+    });
   }
 
   if (action === 'quote') {

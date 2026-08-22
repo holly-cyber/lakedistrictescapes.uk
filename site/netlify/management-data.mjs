@@ -46,6 +46,27 @@ export const PROPERTIES = {
 // these are starting figures (Primrose ≈ its recent Airbnb average; The
 // Rockery is a placeholder while it stays "Coming Soon 2027", bookable:false).
 // ─────────────────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────
+// CANCELLATION POLICY for direct bookings — mirrors Airbnb's "Flexible" tier
+// so guests get the same terms they'd see on the listing.
+//   • Cancel 24h+ before check-in → full refund of everything paid.
+//   • Cancel within 24h of check-in (or after arrival) → the first night (and
+//     any nights already begun) is non-refundable; remaining nights refunded.
+// Cancelling also stops the automatic balance charge. Check-in time is treated
+// as 15:00 (3pm). To switch tiers later, change fullRefundHours / the text.
+// ─────────────────────────────────────────────────────────────────────────
+export const CANCELLATION_POLICY = {
+  tier: 'Flexible',
+  fullRefundHours: 24,
+  checkinHour: 15,
+  summary:
+    'Free cancellation up to 24 hours before check-in for a full refund. Cancel within 24 hours of check-in and the first night is non-refundable, with any remaining nights refunded.',
+  bullets: [
+    'Full refund if you cancel at least 24 hours before check-in (3pm arrival).',
+    'Within 24 hours of check-in: first night non-refundable, remaining nights refunded.',
+  ],
+};
+
 export const PRICING = {
   'primrose-cottage': {
     bookable: true,

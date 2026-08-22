@@ -17,7 +17,7 @@
 //   cancelled         → abandoned or cancelled
 // ─────────────────────────────────────────────────────────────────────────
 import { getStore } from '@netlify/blobs';
-import { PRICING, PROPERTIES, BOOKINGS as SEED_BOOKINGS } from './management-data.mjs';
+import { PRICING, PROPERTIES, BOOKINGS as SEED_BOOKINGS, CANCELLATION_POLICY } from './management-data.mjs';
 import { stripe } from './stripe.mjs';
 import { parseICal } from './functions/availability.mjs';
 import { sendEmail, bookingConfirmationEmail, balanceReceiptEmail } from './email.mjs';
@@ -458,6 +458,26 @@ async function markPaid(id, paymentIntentId) {
   return { ok: true, booking: updated };
 }
 
+// Append one or more refund entries to a booking and bump its refundedTotal.
+async function persistRefunds(id, entries) {
+  const list = await loadDirectBookings();
+  const idx = list.findIndex((b) => b.id === id);
+  if (idx < 0) return null;
+  const rec = list[idx];
+  const now = new Date().toISOString();
+  const added = round2(entries.reduce((s, e) => s + (e.amount || 0), 0));
+  const next = {
+    ...rec,
+    refunds: [...(rec.refunds || []), ...entries],
+    refundedTotal: round2((rec.refundedTotal || 0) + added),
+    updatedAt: now,
+    history: [...(rec.history || []), ...entries.map((e) => ({ at: e.at || now, event: 'refund', amount: e.amount, target: e.target }))],
+  };
+  list[idx] = next;
+  await saveDirectBookings(list);
+  return next;
+}
+
 // Apply a shallow patch to a stored record by id.
 async function patch(id, changes) {
   const list = await loadDirectBookings();
@@ -538,6 +558,44 @@ export function directToSchedule(b) {
   return { property: b.property, start: b.start, end: b.end, nights: b.nights, channel: 'Direct' };
 }
 
+// ---- cancellation policy (Flexible) ----------------------------------------
+export function cancellationPolicy() {
+  return CANCELLATION_POLICY;
+}
+// How much has actually been captured on this booking (net of prior refunds).
+function amountPaid(rec) {
+  const dep = rec.depositPaidAt ? rec.deposit || 0 : 0;
+  const bal = rec.status === 'paid' || rec.balancePaidAt ? rec.balance || 0 : 0;
+  return round2(dep + bal - (rec.refundedTotal || 0));
+}
+// Compute the refund the Flexible policy allows if this booking is cancelled
+// now. Returns { available, suggested, reason, perNight }. `nowMs` is injectable
+// for testing.
+export function policyRefund(rec, nowMs) {
+  const now = nowMs == null ? Date.now() : nowMs;
+  const available = Math.max(0, amountPaid(rec));
+  const nights = rec.nights > 0 ? rec.nights : 1;
+  const perNight = round2((rec.total || 0) / nights);
+  const checkinMs = new Date(rec.start + 'T' + String(CANCELLATION_POLICY.checkinHour).padStart(2, '0') + ':00:00Z').getTime();
+  const hoursUntil = (checkinMs - now) / 3600000;
+
+  if (hoursUntil >= CANCELLATION_POLICY.fullRefundHours) {
+    return { available, suggested: available, reason: `Full refund — cancelled more than ${CANCELLATION_POLICY.fullRefundHours}h before check-in.`, perNight };
+  }
+  // Within 24h of check-in or after arrival: first night + any begun nights are
+  // non-refundable; the rest are refunded.
+  const msSince = now - checkinMs;
+  const nightsStayed = msSince <= 0 ? 0 : Math.min(nights, Math.floor(msSince / 86400000) + 1);
+  const nonRefundableNights = Math.max(1, nightsStayed);
+  const refundableByNights = Math.max(0, round2((nights - nonRefundableNights) * perNight));
+  const suggested = Math.min(available, refundableByNights);
+  const reason =
+    nonRefundableNights >= nights
+      ? 'No refund — within 24h of check-in / stay underway (all nights non-refundable).'
+      : `Partial refund — within 24h of check-in: ${nonRefundableNights} night${nonRefundableNights === 1 ? '' : 's'} non-refundable.`;
+  return { available, suggested: round2(suggested), reason, perNight };
+}
+
 // Full record → the admin projection for the direct-bookings management page.
 // This IS gated behind the management code, so it may include contact details.
 export function directToAdmin(b) {
@@ -577,6 +635,13 @@ export function directToAdmin(b) {
     balanceRefunded: round2((b.refunds || []).filter((r) => r.target === 'balance').reduce((s, r) => s + (r.amount || 0), 0)),
     refundedTotal: b.refundedTotal || 0,
     refunds: (b.refunds || []).map((r) => ({ at: r.at, amount: r.amount, target: r.target, status: r.status })),
+    // Flexible-policy guidance for a cancellation right now.
+    amountPaid: amountPaid(b),
+    policyTier: CANCELLATION_POLICY.tier,
+    ...(() => {
+      const pr = policyRefund(b);
+      return { policySuggestedRefund: pr.suggested, policyRefundReason: pr.reason, policyAvailable: pr.available };
+    })(),
   };
 }
 
@@ -653,6 +718,39 @@ export async function refundBooking(id, { target, amount, reason } = {}) {
   const idx = list.findIndex((b) => b.id === id);
   if (idx < 0) return { error: 'Booking not found.' };
   const rec = list[idx];
+
+  // 'auto' — spread a total refund amount across the balance charge first, then
+  // the deposit (used by the "Refund per policy" button). Makes up to two Stripe
+  // refunds and records each.
+  if (target === 'auto') {
+    let remaining = round2(amount);
+    if (!(remaining > 0)) return { error: 'Refund amount must be greater than £0.' };
+    const refundedFor = (t) => round2((rec.refunds || []).filter((r) => r.target === t).reduce((s, r) => s + (r.amount || 0), 0));
+    const legs = [
+      { t: 'balance', pi: rec.stripe && rec.stripe.balancePaymentIntent, cap: round2((rec.status === 'paid' || rec.balancePaidAt ? rec.balance : 0) - refundedFor('balance')) },
+      { t: 'deposit', pi: rec.stripe && rec.stripe.depositPaymentIntent, cap: round2((rec.depositPaidAt ? rec.deposit : 0) - refundedFor('deposit')) },
+    ];
+    const done = [];
+    for (const leg of legs) {
+      if (remaining <= 0) break;
+      if (!leg.pi || leg.cap <= 0) continue;
+      const take = Math.min(remaining, leg.cap);
+      if (take <= 0) continue;
+      let refund;
+      try {
+        refund = await stripe('refunds', { params: { payment_intent: leg.pi, amount: pence(take), metadata: { bookingId: id, ref: rec.ref, target: leg.t, note: reason ? String(reason).slice(0, 200) : 'policy' } } });
+      } catch (err) {
+        // Record any legs already done, then report the failure.
+        if (done.length) await persistRefunds(id, done);
+        return { error: err.message, partial: done.length ? done : undefined };
+      }
+      done.push({ at: new Date().toISOString(), amount: round2((refund.amount || 0) / 100), target: leg.t, stripeId: refund.id, status: refund.status });
+      remaining = round2(remaining - take);
+    }
+    if (!done.length) return { error: 'There is nothing left to refund on this booking.' };
+    const updated = await persistRefunds(id, done);
+    return { booking: directToAdmin(updated), refund: { amount: round2(done.reduce((s, d) => s + d.amount, 0)), legs: done } };
+  }
 
   const which = target === 'balance' ? 'balance' : 'deposit';
   const piId = which === 'balance' ? rec.stripe && rec.stripe.balancePaymentIntent : rec.stripe && rec.stripe.depositPaymentIntent;

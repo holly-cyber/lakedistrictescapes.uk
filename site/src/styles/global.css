@@ -2424,3 +2424,27 @@
     .mb-topbar { margin: 0 0 1rem; }
     .mb-back { font-size: 0.85rem; font-weight: 700; color: var(--gable-deep); text-decoration: none; border: 1px solid rgba(111,115,87,0.4); border-radius: 8px; padding: 0.4rem 0.7rem; display: inline-block; }
     .mb-back:hover { background: var(--gable-deep); color: #fff; }
+
+    /* Channel badges (Direct vs Airbnb) on schedule + dashboard */
+    .sched-chan { font-size: 0.64rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; padding: 0.14rem 0.44rem; border-radius: 999px; }
+    .sched-chan--direct { background: var(--gable-deep); color: #fff; }
+    .sched-chan--airbnb { background: rgba(176,168,153,0.25); color: var(--mid); }
+    .chan-badge { display: inline-block; font-size: 0.66rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; padding: 0.12rem 0.46rem; border-radius: 999px; margin-right: 0.35rem; }
+    .chan-badge--direct { background: var(--gable-deep); color: #fff; }
+
+    /* Cancellations & refunds report */
+    .mb-topbar { display: flex; justify-content: space-between; gap: 0.6rem; flex-wrap: wrap; }
+    .mb-back-right { }
+    .cr-summary { display: flex; gap: 0.8rem; flex-wrap: wrap; margin: 0 0 1.2rem; }
+    .cr-stat { background: #fff; border: 1px solid rgba(176,168,153,0.32); border-radius: 12px; padding: 0.8rem 1.1rem; min-width: 120px; }
+    .cr-stat-n { display: block; font-size: 1.4rem; font-weight: 800; color: var(--gable-deep); font-variant-numeric: tabular-nums; }
+    .cr-stat-l { display: block; font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mid); }
+    .cr-toolbar { display: flex; justify-content: flex-end; margin: 0 0 0.8rem; }
+    .cr-scroll { overflow-x: auto; background: #fff; border: 1px solid rgba(176,168,153,0.3); border-radius: 12px; }
+    .cr-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; min-width: 720px; }
+    .cr-table th { text-align: left; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--mid); padding: 0.7rem 0.8rem; border-bottom: 1px solid rgba(176,168,153,0.3); white-space: nowrap; }
+    .cr-table td { padding: 0.7rem 0.8rem; border-bottom: 1px solid rgba(176,168,153,0.18); color: var(--body-text); vertical-align: top; }
+    .cr-table tr:last-child td { border-bottom: none; }
+    .cr-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .cr-detail { color: var(--mid); }
+    .cr-email { display: block; font-size: 0.78rem; color: var(--gable-deep); }

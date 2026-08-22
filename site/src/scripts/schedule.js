@@ -98,6 +98,7 @@ export function initSchedule(root, data) {
       e('div', { class: 'sched-card-top' }, [
         e('span', { class: 'sched-prop sched-prop--' + (b.property === 'the-rockery' ? 'house' : 'cottage'), text: propShort(b.property) }),
         e('span', { class: 'sched-nights', text: b.nights + ' night' + (b.nights === 1 ? '' : 's') }),
+        b.channel ? e('span', { class: 'sched-chan sched-chan--' + (b.channel === 'Direct' ? 'direct' : 'airbnb'), text: b.channel }) : null,
       ]),
       e('div', { class: 'sched-legs' }, [
         e('div', { class: 'sched-leg' }, [

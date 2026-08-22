@@ -568,6 +568,7 @@ export function directToAdmin(b) {
     createdAt: b.createdAt || '',
     depositPaidAt: b.depositPaidAt || '',
     balancePaidAt: b.balancePaidAt || '',
+    cancelledAt: b.cancelledAt || '',
     emailed: b.emailed || {},
     // Refunds
     canRefundDeposit: !!(b.stripe && b.stripe.depositPaymentIntent),

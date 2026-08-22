@@ -353,7 +353,9 @@ function bookingsTable(bookings, properties, handlers, headExtra) {
     } else {
       delCell = e('td', {});
     }
-    const channelCell = e('td', { class: 'muted' }, [b.channel || 'Airbnb', directStatusPill(b)]);
+    const channelCell = b.source === 'direct'
+      ? e('td', {}, [e('span', { class: 'chan-badge chan-badge--direct', text: 'Direct' }), directStatusPill(b)])
+      : e('td', { class: 'muted' }, [b.channel || 'Airbnb']);
     return e('tr', {}, [
       e('td', { text: b.start }),
       e('td', { text: String(b.nights) }),

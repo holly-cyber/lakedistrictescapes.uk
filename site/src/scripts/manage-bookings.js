@@ -308,9 +308,10 @@ export function initBookingsAdmin(root, data, ctx) {
   function render() {
     root.textContent = '';
 
-    // Back to the main dashboard.
+    // Back to the main dashboard + link to the cancellations/refunds report.
     root.appendChild(el('div', { class: 'mb-topbar' }, [
       el('a', { class: 'mb-back', href: '/management/' }, '← Back to dashboard'),
+      el('a', { class: 'mb-back mb-back-right', href: '/management/cancellations/' }, 'Cancellations & refunds →'),
     ]));
 
     const filters = el('div', { class: 'mb-filters' }, FILTERS.map(([id, label]) => {

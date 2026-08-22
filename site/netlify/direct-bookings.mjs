@@ -617,6 +617,16 @@ export async function updateDirectBooking(id, input) {
   return { booking: directToAdmin(rec) };
 }
 
+// Permanently delete a booking record (for test/erroneous bookings). This
+// removes it everywhere — list, schedule, dashboard. Does NOT refund; any refund
+// is handled in Stripe. Returns { ok, id } or { error }.
+export async function deleteDirectBooking(id) {
+  const list = await loadDirectBookings();
+  if (!list.some((b) => b.id === id)) return { error: 'Booking not found.' };
+  await saveDirectBookings(list.filter((b) => b.id !== id));
+  return { ok: true, id };
+}
+
 // Cancel a booking — frees the dates on the site + schedule. Does NOT refund;
 // refunds are handled in Stripe. Returns { booking } or { error }.
 export async function cancelDirectBooking(id) {

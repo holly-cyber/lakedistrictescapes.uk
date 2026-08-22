@@ -7,6 +7,7 @@ import {
   listDirectBookingsAdmin,
   updateDirectBooking,
   cancelDirectBooking,
+  deleteDirectBooking,
   maybeEmail,
 } from '../direct-bookings.mjs';
 
@@ -681,6 +682,20 @@ export default async (req) => {
     }
     if (r.error) return json({ error: r.error }, 400);
     return json({ ok: true, booking: r.booking });
+  }
+
+  // ---- WRITE: permanently delete a direct booking (test/erroneous) ----
+  if (action === 'deleteDirectBooking') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    let r;
+    try {
+      r = await deleteDirectBooking(id);
+    } catch (err) {
+      return json({ error: 'Could not delete the booking. ' + err.message }, 500);
+    }
+    if (r.error) return json({ error: r.error }, 400);
+    return json({ ok: true, id });
   }
 
   // ---- WRITE: resend the guest confirmation email ----

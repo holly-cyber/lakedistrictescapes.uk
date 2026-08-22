@@ -64,6 +64,11 @@ export function initBookingsAdmin(root, data, ctx) {
     render();
   }
 
+  function remove(id) {
+    state.bookings = state.bookings.filter((b) => b.id !== id);
+    render();
+  }
+
   function toast(msg, kind) {
     let t = root.querySelector('.mb-toast');
     if (!t) {
@@ -166,6 +171,16 @@ export function initBookingsAdmin(root, data, ctx) {
         },
       }));
     }
+    // Permanent delete — for test or erroneous bookings. Available on any status.
+    actions.appendChild(el('button', {
+      class: 'mb-btn mb-btn-danger', type: 'button', text: 'Delete',
+      onclick: async (e) => {
+        if (!window.confirm('Permanently delete ' + b.ref + '? This removes it from the list, schedule and dashboard for good. Use for test or mistaken bookings — it does NOT refund (do that in Stripe).')) return;
+        e.target.disabled = true;
+        try { await api('deleteDirectBooking', { id: b.id }); remove(b.id); toast('Booking deleted.', 'ok'); }
+        catch (err) { toast(err.message, 'err'); e.target.disabled = false; }
+      },
+    }));
 
     return el('div', { class: 'mb-card' }, [head, grid, actions]);
   }

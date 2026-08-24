@@ -17,6 +17,16 @@ function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 }
 
+// Report whether the configured Stripe secret key is live or test — by prefix
+// only, never returning the key itself. Used by the booking page to warn (owner)
+// when the site is still in test mode.
+function stripeMode() {
+  const k = String(Netlify.env.get('STRIPE_SECRET_KEY') || '');
+  if (/^(sk|rk)_live_/.test(k)) return 'live';
+  if (/^(sk|rk)_test_/.test(k)) return 'test';
+  return 'unset';
+}
+
 function safeEqual(a, b) {
   if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
   let diff = 0;
@@ -76,6 +86,7 @@ export default async (req) => {
     const pol = cancellationPolicy();
     return json({
       configured: stripeConfigured(),
+      stripeMode: stripeMode(),
       properties: publicConfig(),
       policy: { tier: pol.tier, summary: pol.summary, bullets: pol.bullets },
     });

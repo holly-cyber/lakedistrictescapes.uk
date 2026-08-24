@@ -157,6 +157,14 @@ export async function initBook(root, opts = {}) {
   const errBox = root.querySelector('#bk-error');
   const termsLabel = root.querySelector('.bk-terms span');
 
+  // Test-mode warning — Stripe is using a test key, so no real charge is taken.
+  if (config.stripeMode === 'test') {
+    const warn = document.createElement('div');
+    warn.className = 'bk-testmode';
+    warn.textContent = '⚠ Payments are in TEST mode — no real charge will be taken. Set your live Stripe key to go live.';
+    form.parentNode.insertBefore(warn, form);
+  }
+
   let overrideBanner = null;
   if (override) {
     overrideBanner = document.createElement('div');

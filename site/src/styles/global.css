@@ -2459,3 +2459,6 @@
     /* Owner override banner on the booking page */
     .bk-override { background: var(--gable-deep); color: #fff; font-size: 0.82rem; font-weight: 700; padding: 0.6rem 0.9rem; border-radius: 10px; margin: 0 0 1.2rem; text-align: center; }
     .bk-override.is-invalid { background: #a4362f; }
+
+    /* Stripe test-mode warning on the booking page */
+    .bk-testmode { background: #b45309; color: #fff; font-size: 0.82rem; font-weight: 700; padding: 0.6rem 0.9rem; border-radius: 10px; margin: 0 0 1.2rem; text-align: center; }

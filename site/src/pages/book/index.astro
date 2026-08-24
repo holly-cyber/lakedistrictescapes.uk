@@ -50,9 +50,12 @@ import Footer from '../../components/Footer.astro';
   const root = document.getElementById('book-app');
   const params = new URLSearchParams(window.location.search);
   const property = params.get('property') || '';
+  // Owner override: /book?override=<management code> (or ?key=) bypasses the
+  // availability check so a deliberately-held date can be booked.
+  const override = params.get('override') || params.get('key') || '';
 
   const loading = document.getElementById('book-loading');
   if (loading) loading.remove();
 
-  initBook(root, { property });
+  initBook(root, { property, override });
 </script>

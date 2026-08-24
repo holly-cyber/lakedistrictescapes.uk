@@ -38,6 +38,7 @@ async function post(payload) {
 }
 
 export async function initBook(root, opts = {}) {
+  const override = opts.override || '';
   let config;
   try {
     config = await post({ action: 'config' });
@@ -156,6 +157,14 @@ export async function initBook(root, opts = {}) {
   const errBox = root.querySelector('#bk-error');
   const termsLabel = root.querySelector('.bk-terms span');
 
+  let overrideBanner = null;
+  if (override) {
+    overrideBanner = document.createElement('div');
+    overrideBanner.className = 'bk-override';
+    overrideBanner.textContent = 'Owner override — availability checks bypassed for this booking.';
+    form.parentNode.insertBefore(overrideBanner, form);
+  }
+
   const propOf = () => (propEl.tagName === 'SELECT' ? propEl.value : propEl.value);
   let lastQuote = null;
   let quoteTimer = null;
@@ -240,10 +249,16 @@ export async function initBook(root, opts = {}) {
     if (d <= a) return clearQuote('Departure must be after arrival.');
     const seq = ++quoteSeq;
     quoteBox.classList.add('is-loading');
-    post({ action: 'quote', property: propOf(), start: a, end: d, guests: Number(guests.value) || 1, dogs: Number(dogs.value) || 0, infants: Number(infants.value) || 0 })
+    post({ action: 'quote', property: propOf(), start: a, end: d, guests: Number(guests.value) || 1, dogs: Number(dogs.value) || 0, infants: Number(infants.value) || 0, override })
       .then((res) => {
         if (seq !== quoteSeq) return; // a newer request superseded this one
         quoteBox.classList.remove('is-loading');
+        if (override && overrideBanner) {
+          overrideBanner.classList.toggle('is-invalid', !res.override);
+          overrideBanner.textContent = res.override
+            ? 'Owner override active — availability checks bypassed for this booking.'
+            : 'Override code not recognised — normal availability applies.';
+        }
         renderQuote(res.quote, res.available);
       })
       .catch((err) => {
@@ -291,6 +306,7 @@ export async function initBook(root, opts = {}) {
         name,
         email,
         phone,
+        override,
       });
       if (res.url) {
         window.location.assign(res.url);

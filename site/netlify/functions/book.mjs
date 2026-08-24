@@ -17,6 +17,22 @@ function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
 }
 
+function safeEqual(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return diff === 0;
+}
+// Owner override: when the management access code is supplied, availability
+// (including Airbnb "Not available" blocks) is bypassed so the owner can book a
+// date they've deliberately held. Public visitors never have this code.
+function ownerOverride(body) {
+  const code = String(body?.override || '').trim();
+  if (!code) return false;
+  const expected = Netlify.env.get('MANAGEMENT_ACCESS_CODE');
+  return expected ? safeEqual(code.toLowerCase(), expected.trim().toLowerCase()) : false;
+}
+
 function publicConfig() {
   const properties = {};
   for (const [key, cfg] of Object.entries(PRICING)) {
@@ -62,13 +78,16 @@ export default async (req) => {
   if (action === 'quote') {
     const q = quoteStay(body);
     if (q.error) return json({ error: q.error }, 400);
+    const override = ownerOverride(body);
     let available = true;
-    try {
-      available = await isAvailable(q.quote.property, q.quote.start, q.quote.end);
-    } catch {
-      /* if the check fails, don't block the quote; checkout re-checks */
+    if (!override) {
+      try {
+        available = await isAvailable(q.quote.property, q.quote.start, q.quote.end);
+      } catch {
+        /* if the check fails, don't block the quote; checkout re-checks */
+      }
     }
-    return json({ ok: true, quote: q.quote, available });
+    return json({ ok: true, quote: q.quote, available, override });
   }
 
   if (action === 'lookup') {
@@ -83,7 +102,8 @@ export default async (req) => {
       return json({ error: 'Online booking isn’t switched on yet. Please use the enquiry form.' }, 503);
     }
     const origin = originOf(req);
-    const r = await createCheckout(body, origin);
+    // Only the server-validated override flag is passed on — never the raw code.
+    const r = await createCheckout({ ...body, bypassAvailability: ownerOverride(body) }, origin);
     if (r.error) return json({ error: r.error }, 400);
     return json({ ok: true, url: r.url, ref: r.ref });
   }

@@ -2455,3 +2455,7 @@
     .bk-policy ul { margin: 0; padding-left: 1.1rem; line-height: 1.5; }
     .mb-policyrow { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; justify-content: space-between; background: rgba(216,234,229,0.35); border-radius: 8px; padding: 0.5rem 0.7rem; }
     .mb-policyrow .mb-reflabel { flex: 1 1 200px; }
+
+    /* Owner override banner on the booking page */
+    .bk-override { background: var(--gable-deep); color: #fff; font-size: 0.82rem; font-weight: 700; padding: 0.6rem 0.9rem; border-radius: 10px; margin: 0 0 1.2rem; text-align: center; }
+    .bk-override.is-invalid { background: #a4362f; }

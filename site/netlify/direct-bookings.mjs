@@ -235,7 +235,9 @@ export async function createCheckout(input, origin) {
   if (!name) return { error: 'Please enter your name.' };
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return { error: 'Please enter a valid email address.' };
 
-  if (!(await isAvailable(quote.property, quote.start, quote.end))) {
+  // The owner override (validated in book.mjs) skips the availability check so a
+  // deliberately-held date can be booked; everyone else is checked as normal.
+  if (!input.bypassAvailability && !(await isAvailable(quote.property, quote.start, quote.end))) {
     return { error: 'Sorry — those dates have just been taken. Please choose different dates.' };
   }
 

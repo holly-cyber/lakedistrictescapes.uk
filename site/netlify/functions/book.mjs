@@ -23,14 +23,20 @@ function safeEqual(a, b) {
   for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return diff === 0;
 }
-// Owner override: when the management access code is supplied, availability
+// Owner override: when a valid override code is supplied, availability
 // (including Airbnb "Not available" blocks) is bypassed so the owner can book a
-// date they've deliberately held. Public visitors never have this code.
+// date they've deliberately held. Uses a DEDICATED BOOKING_OVERRIDE_CODE so the
+// management dashboard code never has to appear in a booking URL; the management
+// code is also accepted as a fallback if no dedicated code is set.
 function ownerOverride(body) {
   const code = String(body?.override || '').trim();
   if (!code) return false;
-  const expected = Netlify.env.get('MANAGEMENT_ACCESS_CODE');
-  return expected ? safeEqual(code.toLowerCase(), expected.trim().toLowerCase()) : false;
+  const lc = code.toLowerCase();
+  for (const name of ['BOOKING_OVERRIDE_CODE', 'MANAGEMENT_ACCESS_CODE']) {
+    const expected = Netlify.env.get(name);
+    if (expected && safeEqual(lc, expected.trim().toLowerCase())) return true;
+  }
+  return false;
 }
 
 function publicConfig() {

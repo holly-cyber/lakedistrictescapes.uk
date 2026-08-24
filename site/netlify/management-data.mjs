@@ -70,7 +70,7 @@ export const CANCELLATION_POLICY = {
 export const PRICING = {
   'primrose-cottage': {
     bookable: true,
-    nightly: 125,
+    nightly: 115,
     cleaningFee: 0,
     minNights: 2,
     maxGuests: 2, // adults / over-2s

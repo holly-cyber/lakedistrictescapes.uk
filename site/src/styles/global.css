@@ -2488,3 +2488,8 @@
     .price-in-md { width: 150px; }
     .price-season-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
     @media (max-width: 560px) { .price-in-md { width: 100%; } .price-season-row { gap: 0.3rem; } }
+
+    /* Dynamic pricing block in the pricing editor */
+    .price-dyn { display: grid; gap: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgba(176,168,153,0.5); }
+    .price-dyn-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 700; color: var(--gable-deep); }
+    .price-feed { font-size: 0.78rem; color: var(--mid); font-style: italic; margin: 0; }

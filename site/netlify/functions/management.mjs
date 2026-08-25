@@ -11,7 +11,7 @@ import {
   refundBooking,
   maybeEmail,
 } from '../direct-bookings.mjs';
-import { allEffectivePricing, updatePropertyPricing } from '../pricing.mjs';
+import { allEffectivePricing, updatePropertyPricing, feedMeta, saveFeed, clearFeed } from '../pricing.mjs';
 
 // Netlify Function (v2) — gated data feed + write API for the private owner
 // dashboard (management.lakedistrictescapes.uk).
@@ -662,6 +662,27 @@ export default async (req) => {
     return json({ ok: true, property, pricing: r.pricing });
   }
 
+  // ---- WRITE: import/clear an external market price feed (plug-in point) ----
+  if (action === 'setPriceFeed') {
+    const property = propKey(body.property);
+    if (!body.rates || typeof body.rates !== 'object') return json({ error: 'No rates supplied.' }, 400);
+    try {
+      const out = await saveFeed(property, body.rates, body.source);
+      return json({ ok: true, property, ...out, feed: await feedMeta(property) });
+    } catch (err) {
+      return json({ error: 'Could not save the price feed. ' + err.message }, 500);
+    }
+  }
+  if (action === 'clearPriceFeed') {
+    const property = propKey(body.property);
+    try {
+      await clearFeed(property);
+    } catch (err) {
+      return json({ error: 'Could not clear the price feed. ' + err.message }, 500);
+    }
+    return json({ ok: true, property });
+  }
+
   // ---- READ: full direct-booking list for the bookings admin page ----
   if (action === 'directBookings') {
     try {
@@ -813,6 +834,14 @@ export default async (req) => {
   let pricing = {};
   try {
     pricing = await allEffectivePricing();
+    // Attach external-feed status per property (for the dynamic-pricing panel).
+    for (const key of Object.keys(pricing)) {
+      try {
+        pricing[key]._feed = await feedMeta(key);
+      } catch {
+        /* ignore */
+      }
+    }
   } catch {
     /* pricing editor just won't show if this fails */
   }

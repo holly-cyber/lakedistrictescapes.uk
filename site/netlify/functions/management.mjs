@@ -11,6 +11,7 @@ import {
   refundBooking,
   maybeEmail,
 } from '../direct-bookings.mjs';
+import { allEffectivePricing, updatePropertyPricing } from '../pricing.mjs';
 
 // Netlify Function (v2) — gated data feed + write API for the private owner
 // dashboard (management.lakedistrictescapes.uk).
@@ -648,6 +649,19 @@ export default async (req) => {
     return json({ ok: true, booking: r.booking ? directToBooking(r.booking) : null, paid: !!r.ok });
   }
 
+  // ---- WRITE: update a property's pricing (rates / length-of-stay) ----
+  if (action === 'updatePricing') {
+    const property = propKey(body.property);
+    let r;
+    try {
+      r = await updatePropertyPricing(property, body.pricing || {});
+    } catch (err) {
+      return json({ error: 'Could not save pricing. ' + err.message }, 500);
+    }
+    if (r.error) return json({ error: r.error }, 400);
+    return json({ ok: true, property, pricing: r.pricing });
+  }
+
   // ---- READ: full direct-booking list for the bookings admin page ----
   if (action === 'directBookings') {
     try {
@@ -796,10 +810,18 @@ export default async (req) => {
   const owner = (await loadOwnerExpenses()).map(ownerPublic);
   const expenses = [...baseExpenses, ...owner];
 
+  let pricing = {};
+  try {
+    pricing = await allEffectivePricing();
+  } catch {
+    /* pricing editor just won't show if this fails */
+  }
+
   return json({
     properties: PROPERTIES,
     bookings: allBookings,
     expenses,
+    pricing,
     meta: {
       source,
       warning,

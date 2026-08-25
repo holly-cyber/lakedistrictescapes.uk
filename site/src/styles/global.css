@@ -2462,3 +2462,24 @@
 
     /* Stripe test-mode warning on the booking page */
     .bk-testmode { background: #b45309; color: #fff; font-size: 0.82rem; font-weight: 700; padding: 0.6rem 0.9rem; border-radius: 10px; margin: 0 0 1.2rem; text-align: center; }
+
+    /* Owner pricing editor in the dashboard */
+    .price-wrap { display: grid; gap: 1rem; margin: 0 0 1.4rem; }
+    .price-body { display: grid; gap: 0.9rem; }
+    .price-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.7rem 1rem; }
+    .price-field { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.82rem; color: var(--mid); font-weight: 600; }
+    .price-in { border: 1px solid rgba(176,168,153,0.5); border-radius: 8px; padding: 0.45rem 0.55rem; font-size: 0.95rem; font-family: inherit; color: var(--body-text); background: #fff; width: 100%; box-sizing: border-box; }
+    .price-in:focus { outline: 2px solid var(--gable-deep); outline-offset: 1px; border-color: var(--gable-deep); }
+    .price-in-sm { width: 88px; }
+    .price-note { font-size: 0.8rem; color: var(--mid); line-height: 1.5; margin: 0.2rem 0 0; }
+    .price-tiers-head { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gable-deep); font-weight: 800; margin-top: 0.3rem; }
+    .price-tiers { display: grid; gap: 0.5rem; }
+    .price-tier-row { display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap; }
+    .price-tier-lbl { font-size: 0.82rem; color: var(--mid); }
+    .price-tier-hint { font-size: 0.82rem; color: var(--gable-deep); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .price-tier-del { border: none; background: rgba(164,54,47,0.1); color: #a4362f; border-radius: 6px; width: 24px; height: 24px; cursor: pointer; font-size: 1rem; line-height: 1; }
+    .price-tier-del:hover { background: #a4362f; color: #fff; }
+    .price-actions { display: flex; align-items: center; gap: 0.8rem; margin-top: 0.4rem; }
+    .price-status { font-size: 0.85rem; font-weight: 600; margin: 0; }
+    .price-status.ok { color: #2f6b45; }
+    .price-status.err { color: #a4362f; }

@@ -1,6 +1,7 @@
 import { quoteStay, isAvailable, createCheckout, findBySessionPublic, cancellationPolicy } from '../direct-bookings.mjs';
 import { stripeConfigured } from '../stripe.mjs';
-import { PRICING, PROPERTIES } from '../management-data.mjs';
+import { PROPERTIES } from '../management-data.mjs';
+import { effectivePricing, allEffectivePricing } from '../pricing.mjs';
 
 // Netlify Function (v2) — PUBLIC direct-booking API for the /book page.
 //
@@ -49,9 +50,10 @@ function ownerOverride(body) {
   return false;
 }
 
-function publicConfig() {
+async function publicConfig() {
+  const all = await allEffectivePricing();
   const properties = {};
-  for (const [key, cfg] of Object.entries(PRICING)) {
+  for (const [key, cfg] of Object.entries(all)) {
     if (!cfg.bookable || !PROPERTIES[key]) continue;
     properties[key] = {
       key,
@@ -65,6 +67,7 @@ function publicConfig() {
       maxDogs: cfg.maxDogs == null ? 0 : cfg.maxDogs,
       depositPct: cfg.depositPct,
       balanceDueDays: cfg.balanceDueDays,
+      losTiers: cfg.losTiers || [],
       currency: cfg.currency || 'GBP',
     };
   }
@@ -87,13 +90,14 @@ export default async (req) => {
     return json({
       configured: stripeConfigured(),
       stripeMode: stripeMode(),
-      properties: publicConfig(),
+      properties: await publicConfig(),
       policy: { tier: pol.tier, summary: pol.summary, bullets: pol.bullets },
     });
   }
 
   if (action === 'quote') {
-    const q = quoteStay(body);
+    const cfg = await effectivePricing(String(body.property || '').toLowerCase());
+    const q = quoteStay(body, cfg);
     if (q.error) return json({ error: q.error }, 400);
     const override = ownerOverride(body);
     let available = true;

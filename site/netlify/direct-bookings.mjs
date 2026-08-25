@@ -21,6 +21,7 @@ import { PRICING, PROPERTIES, BOOKINGS as SEED_BOOKINGS, CANCELLATION_POLICY } f
 import { stripe } from './stripe.mjs';
 import { parseICal } from './functions/availability.mjs';
 import { sendEmail, bookingConfirmationEmail, balanceReceiptEmail } from './email.mjs';
+import { effectivePricing, nightlyRateFor } from './pricing.mjs';
 
 export const DIRECT_STORE = 'direct-bookings';
 // Statuses that occupy the calendar / count as real income.
@@ -96,11 +97,11 @@ function bookableProperty(key) {
 
 // ---- quoting (pure) ---------------------------------------------------------
 // Validate a requested stay and compute the price breakdown. No I/O.
-export function quoteStay({ property, start, end, guests, dogs, infants }) {
+export function quoteStay({ property, start, end, guests, dogs, infants }, cfgOverride) {
   const key = String(property || '').toLowerCase();
-  const cfg = PRICING[key];
+  const cfg = cfgOverride || PRICING[key];
   if (!cfg) return { error: 'Unknown property.' };
-  if (!bookableProperty(key)) return { error: `${(PROPERTIES[key] && PROPERTIES[key].name) || 'This property'} isn’t open for direct booking yet.` };
+  if (!(cfg.bookable && PROPERTIES[key])) return { error: `${(PROPERTIES[key] && PROPERTIES[key].name) || 'This property'} isn’t open for direct booking yet.` };
 
   const s = isoDate(start);
   const e = isoDate(end);
@@ -122,7 +123,8 @@ export function quoteStay({ property, start, end, guests, dogs, infants }) {
   if (dg > maxDogs) return { error: maxDogs === 0 ? 'Sorry, dogs can’t be accommodated here.' : `Up to ${maxDogs} dog${maxDogs === 1 ? '' : 's'} can be accommodated.` };
   if (inf > maxInfants) return { error: maxInfants === 0 ? 'No cot space for under-2s here.' : `Up to ${maxInfants} child${maxInfants === 1 ? '' : 'ren'} under 2.` };
 
-  const subtotal = round2(nights * cfg.nightly);
+  const nightly = nightlyRateFor(cfg, nights);
+  const subtotal = round2(nights * nightly);
   const cleaning = round2(cfg.cleaningFee || 0);
   const total = round2(subtotal + cleaning);
   const deposit = round2(total * (cfg.depositPct / 100));
@@ -139,7 +141,9 @@ export function quoteStay({ property, start, end, guests, dogs, infants }) {
       guests: g,
       dogs: dg,
       infants: inf,
-      nightly: cfg.nightly,
+      nightly,
+      baseNightly: cfg.nightly,
+      losApplied: nightly !== cfg.nightly,
       subtotal,
       cleaning,
       total,
@@ -225,7 +229,8 @@ function makeRef() {
 // Checkout Session for the deposit (saving the card off-session for the
 // balance). Returns { url, bookingId, ref } or { error }.
 export async function createCheckout(input, origin) {
-  const q = quoteStay(input);
+  const cfg = await effectivePricing(String(input.property || '').toLowerCase());
+  const q = quoteStay(input, cfg);
   if (q.error) return { error: q.error };
   const quote = q.quote;
 

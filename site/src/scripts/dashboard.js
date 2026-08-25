@@ -305,6 +305,102 @@ function directStatusPill(b) {
 // schedule instantly, but they are NOT pushed to Airbnb automatically. This card
 // gives the owner the iCal URL to IMPORT into each Airbnb listing so Airbnb
 // blocks those nights too, preventing a double-booking from the Airbnb side.
+// Owner pricing editor — base nightly rate, minimum stay, fees, and
+// length-of-stay rates (e.g. a lower per-night rate for 3+ nights or a week).
+function pricingSection(pricing, properties, onSave) {
+  if (!pricing || !Object.keys(pricing).length) return null;
+  const wrap = e('div', { class: 'price-wrap' });
+
+  Object.keys(pricing).forEach((key) => {
+    const p = pricing[key];
+    if (!p) return;
+    const name = (properties[key] && properties[key].name) || key;
+    const inputs = {};
+    const field = (label, fname, val, step) => {
+      const inp = e('input', { class: 'price-in', type: 'number', min: '0', step: step || '1', value: val == null ? '' : String(val) });
+      inputs[fname] = inp;
+      return e('label', { class: 'price-field' }, [e('span', { text: label }), inp]);
+    };
+
+    const tiersWrap = e('div', { class: 'price-tiers' });
+    const tierRows = [];
+    function addTierRow(t) {
+      const minIn = e('input', { class: 'price-in price-in-sm', type: 'number', min: '2', step: '1', value: t ? String(t.minNights) : '', placeholder: 'nights' });
+      const rateIn = e('input', { class: 'price-in price-in-sm', type: 'number', min: '0', step: '0.01', value: t ? String(t.nightly) : '', placeholder: '£' });
+      const hint = e('span', { class: 'price-tier-hint' });
+      const upd = () => {
+        const n = Number(minIn.value), r = Number(rateIn.value);
+        hint.textContent = n > 0 && r > 0 ? '= ' + money(n * r) + (n === 7 ? ' / week' : '') : '';
+      };
+      minIn.addEventListener('input', upd);
+      rateIn.addEventListener('input', upd);
+      const del = e('button', { class: 'price-tier-del', type: 'button', title: 'Remove', 'aria-label': 'Remove rate' }, '×');
+      const rec = { minIn, rateIn };
+      const row = e('div', { class: 'price-tier-row' }, [
+        e('span', { class: 'price-tier-lbl', text: 'From' }), minIn,
+        e('span', { class: 'price-tier-lbl', text: 'nights →' }), rateIn,
+        e('span', { class: 'price-tier-lbl', text: '/night' }), hint, del,
+      ]);
+      tierRows.push(rec);
+      del.addEventListener('click', () => { const i = tierRows.indexOf(rec); if (i >= 0) tierRows.splice(i, 1); row.remove(); });
+      tiersWrap.appendChild(row);
+      upd();
+    }
+    (p.losTiers || []).forEach(addTierRow);
+    const addBtn = e('button', { class: 'dash-linkbtn', type: 'button', text: '+ Add a length-of-stay rate' });
+    addBtn.addEventListener('click', () => addTierRow());
+
+    const status = e('p', { class: 'price-status' });
+    const saveBtn = e('button', { class: 'mb-btn', type: 'button', text: 'Save prices' });
+    saveBtn.addEventListener('click', async () => {
+      const payload = {
+        nightly: inputs.nightly.value,
+        minNights: inputs.minNights.value,
+        cleaningFee: inputs.cleaningFee.value,
+        depositPct: inputs.depositPct.value,
+        balanceDueDays: inputs.balanceDueDays.value,
+        maxGuests: inputs.maxGuests.value,
+        maxInfants: inputs.maxInfants.value,
+        maxDogs: inputs.maxDogs.value,
+        losTiers: tierRows.map((r) => ({ minNights: r.minIn.value, nightly: r.rateIn.value })).filter((t) => t.minNights && t.nightly),
+      };
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving…';
+      status.textContent = '';
+      try {
+        await onSave(key, payload);
+        status.textContent = 'Saved ✓';
+        status.className = 'price-status ok';
+      } catch (err) {
+        status.textContent = err.message || 'Could not save.';
+        status.className = 'price-status err';
+      }
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save prices';
+    });
+
+    const cardBody = e('div', { class: 'price-body' }, [
+      e('div', { class: 'price-grid' }, [
+        field('Nightly rate (£)', 'nightly', p.nightly, '0.01'),
+        field('Minimum nights', 'minNights', p.minNights),
+        field('Cleaning fee (£)', 'cleaningFee', p.cleaningFee || 0, '0.01'),
+        field('Deposit %', 'depositPct', p.depositPct),
+        field('Balance due (days before)', 'balanceDueDays', p.balanceDueDays),
+        field('Max guests', 'maxGuests', p.maxGuests),
+        field('Max under-2s', 'maxInfants', p.maxInfants || 0),
+        field('Max dogs', 'maxDogs', p.maxDogs || 0),
+      ]),
+      e('p', { class: 'price-note', text: 'The nightly rate applies to your shortest stay (the minimum nights above). Add rates below for longer stays — e.g. a lower per-night rate from 3 nights, and a weekly rate from 7 nights.' }),
+      e('div', { class: 'price-tiers-head', text: 'Length-of-stay rates' }),
+      tiersWrap,
+      addBtn,
+      e('div', { class: 'price-actions' }, [saveBtn, status]),
+    ]);
+    wrap.appendChild(card('Pricing — ' + name, p.bookable ? 'live for direct booking' : 'not open for direct booking yet', cardBody));
+  });
+  return wrap;
+}
+
 function syncNote(properties) {
   const origin = 'https://lakedistrictescapes.uk';
   const rows = Object.keys(properties).map((key) => {
@@ -1159,6 +1255,15 @@ export function initDashboard(root, data, opts = {}) {
         toast(err.message || 'Could not delete.', 'err');
       }
     },
+    async onSavePricing(key, payload) {
+      const out = await apiCall('updatePricing', { property: key, pricing: payload });
+      if (out.pricing) {
+        if (!data.pricing) data.pricing = {};
+        data.pricing[key] = out.pricing;
+      }
+      toast('Pricing updated for ' + ((properties[key] && properties[key].name) || key) + '.', 'ok');
+      return out;
+    },
     async onRetryBalance(b, btn) {
       if (!window.confirm('Retry charging the ' + money(b.balance) + ' balance to the card on file for ' + (b.guest || 'this guest') + '?')) return;
       if (btn) { btn.disabled = true; btn.textContent = 'Charging…'; }
@@ -1252,6 +1357,12 @@ export function initDashboard(root, data, opts = {}) {
 
     // Calendar-sync setup: import URL(s) to block Airbnb for direct bookings.
     body.appendChild(syncNote(properties));
+
+    // Owner pricing editor (rates + length-of-stay), if the feed provided it.
+    if (data.pricing) {
+      const ps = pricingSection(data.pricing, properties, handlers.onSavePricing);
+      if (ps) body.appendChild(ps);
+    }
 
     if (!v.bookings.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [

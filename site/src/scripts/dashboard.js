@@ -375,6 +375,36 @@ function pricingSection(pricing, properties, onSave) {
     const addSeasonBtn = e('button', { class: 'dash-linkbtn', type: 'button', text: '+ Add a seasonal rate' });
     addSeasonBtn.addEventListener('click', () => addSeasonRow());
 
+    // Dynamic (rule-based) pricing controls + external-feed status.
+    const d = p.dynamic || {};
+    const lt = {};
+    (d.leadTime || []).forEach((t) => { lt[t.withinDays] = t.pct; });
+    const dinp = (val, step) => e('input', { class: 'price-in price-in-sm', type: 'number', step: step || '1', value: val == null || val === '' ? '' : String(val) });
+    const dynEnabled = e('input', { type: 'checkbox' });
+    if (d.enabled) dynEnabled.checked = true;
+    const weekendPct = dinp(d.weekendPct || '', '1');
+    const lm7 = dinp(lt[7] != null ? lt[7] : '', '1');
+    const lm14 = dinp(lt[14] != null ? lt[14] : '', '1');
+    const floorIn = dinp(d.floor != null ? d.floor : '', '0.01');
+    const ceilIn = dinp(d.ceiling != null ? d.ceiling : '', '0.01');
+    const feed = p._feed;
+    const feedLine = feed
+      ? 'External market feed: ' + feed.source + ' — ' + feed.count + ' dates, updated ' + String(feed.updatedAt).slice(0, 10) + '.'
+      : 'External market feed: none connected (in-house rules only). Ready to plug in later.';
+    const dynBlock = e('div', { class: 'price-dyn' }, [
+      e('div', { class: 'price-tiers-head', text: 'Dynamic pricing (rules)' }),
+      e('label', { class: 'price-dyn-toggle' }, [dynEnabled, e('span', { text: ' Enable dynamic pricing rules' })]),
+      e('div', { class: 'price-grid' }, [
+        e('label', { class: 'price-field' }, [e('span', { text: 'Weekend uplift % (Fri/Sat)' }), weekendPct]),
+        e('label', { class: 'price-field' }, [e('span', { text: 'Last-minute: within 7 days %' }), lm7]),
+        e('label', { class: 'price-field' }, [e('span', { text: 'Last-minute: within 14 days %' }), lm14]),
+        e('label', { class: 'price-field' }, [e('span', { text: 'Price floor (£/night)' }), floorIn]),
+        e('label', { class: 'price-field' }, [e('span', { text: 'Price ceiling (£/night)' }), ceilIn]),
+      ]),
+      e('p', { class: 'price-note', text: 'Rules apply on top of your base / seasonal / length-of-stay rates. Use a negative % for discounts (e.g. -15 for last-minute). Floor & ceiling keep prices within safe bounds.' }),
+      e('p', { class: 'price-feed', text: feedLine }),
+    ]);
+
     const status = e('p', { class: 'price-status' });
     const saveBtn = e('button', { class: 'mb-btn', type: 'button', text: 'Save prices' });
     saveBtn.addEventListener('click', async () => {
@@ -391,6 +421,16 @@ function pricingSection(pricing, properties, onSave) {
         seasons: seasonRows
           .map((r) => ({ name: r.nameIn.value, start: r.startIn.value, end: r.endIn.value, nightly: r.rateIn.value }))
           .filter((s) => s.start && s.end && s.nightly),
+        dynamic: {
+          enabled: dynEnabled.checked,
+          weekendPct: weekendPct.value,
+          leadTime: [
+            { withinDays: 7, pct: lm7.value },
+            { withinDays: 14, pct: lm14.value },
+          ].filter((t) => t.pct !== '' && Number(t.pct) !== 0),
+          floor: floorIn.value,
+          ceiling: ceilIn.value,
+        },
       };
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving…';
@@ -426,6 +466,7 @@ function pricingSection(pricing, properties, onSave) {
       e('p', { class: 'price-note', text: 'Set a per-night rate for specific date ranges (e.g. peak summer, Christmas). Seasonal rates override the standard/length-of-stay rate for nights that fall within them.' }),
       seasonsWrap,
       addSeasonBtn,
+      dynBlock,
       e('div', { class: 'price-actions' }, [saveBtn, status]),
     ]);
     wrap.appendChild(card('Pricing — ' + name, p.bookable ? 'live for direct booking' : 'not open for direct booking yet', cardBody));

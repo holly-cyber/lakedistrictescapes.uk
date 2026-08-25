@@ -21,7 +21,7 @@ import { PRICING, PROPERTIES, BOOKINGS as SEED_BOOKINGS, CANCELLATION_POLICY } f
 import { stripe } from './stripe.mjs';
 import { parseICal } from './functions/availability.mjs';
 import { sendEmail, bookingConfirmationEmail, balanceReceiptEmail } from './email.mjs';
-import { effectivePricing, nightlyRateFor, seasonRateFor } from './pricing.mjs';
+import { effectivePricing, nightlyRateFor, seasonRateFor, isWeekendNight, leadTimeFactor, clampRate, loadFeed } from './pricing.mjs';
 
 export const DIRECT_STORE = 'direct-bookings';
 // Statuses that occupy the calendar / count as real income.
@@ -97,7 +97,7 @@ function bookableProperty(key) {
 
 // ---- quoting (pure) ---------------------------------------------------------
 // Validate a requested stay and compute the price breakdown. No I/O.
-export function quoteStay({ property, start, end, guests, dogs, infants }, cfgOverride) {
+export function quoteStay({ property, start, end, guests, dogs, infants }, cfgOverride, dyn) {
   const key = String(property || '').toLowerCase();
   const cfg = cfgOverride || PRICING[key];
   if (!cfg) return { error: 'Unknown property.' };
@@ -123,26 +123,60 @@ export function quoteStay({ property, start, end, guests, dogs, infants }, cfgOv
   if (dg > maxDogs) return { error: maxDogs === 0 ? 'Sorry, dogs can’t be accommodated here.' : `Up to ${maxDogs} dog${maxDogs === 1 ? '' : 's'} can be accommodated.` };
   if (inf > maxInfants) return { error: maxInfants === 0 ? 'No cot space for under-2s here.' : `Up to ${maxInfants} child${maxInfants === 1 ? '' : 'ren'} under 2.` };
 
-  // Price each night by its date: a seasonal rate if the date falls in a season,
-  // otherwise the length-of-stay rate for this stay's length.
+  // Price each night by its date, in precedence order:
+  //   external feed rate → seasonal rate → length-of-stay rate → base nightly,
+  // then in-house dynamic rules (weekend uplift, last-minute) with guardrails.
   const losRate = nightlyRateFor(cfg, nights);
+  const dcfg = cfg.dynamic || {};
+  const feed = (dyn && dyn.feed) || null;
+  const dynOn = !!(dyn && dcfg.enabled);
+  const daysToCheckin = dynOn && dyn.today ? nightsBetween(dyn.today, s) : null;
+  const leadFactor = dynOn ? leadTimeFactor(dcfg, daysToCheckin) : 1;
+
   let subtotalRaw = 0;
   let seasonalApplied = false;
+  let feedApplied = false;
+  let dynAdjusted = false;
+  let minR = Infinity;
+  let maxR = -Infinity;
   const nd = new Date(s + 'T00:00:00Z');
   for (let i = 0; i < nights; i++) {
     const iso = nd.toISOString().slice(0, 10);
-    const sr = seasonRateFor(cfg, iso);
-    if (sr != null) {
-      subtotalRaw += sr;
-      seasonalApplied = true;
+    let rate;
+    let isFeed = false;
+    if (feed && feed[iso] > 0) {
+      rate = feed[iso];
+      isFeed = true;
+      feedApplied = true;
     } else {
-      subtotalRaw += losRate;
+      const sr = seasonRateFor(cfg, iso);
+      if (sr != null) {
+        rate = sr;
+        seasonalApplied = true;
+      } else {
+        rate = losRate;
+      }
     }
+    if (dynOn && (!isFeed || dcfg.applyOverFeed)) {
+      if (dcfg.weekendPct && isWeekendNight(iso)) {
+        rate = rate * (1 + dcfg.weekendPct / 100);
+        dynAdjusted = true;
+      }
+    }
+    rate = round2(clampRate(rate, dcfg));
+    subtotalRaw += rate;
+    if (rate < minR) minR = rate;
+    if (rate > maxR) maxR = rate;
     nd.setUTCDate(nd.getUTCDate() + 1);
+  }
+  if (leadFactor !== 1) {
+    subtotalRaw = subtotalRaw * leadFactor;
+    dynAdjusted = true;
   }
   const subtotal = round2(subtotalRaw);
   const avgNightly = round2(subtotal / nights);
-  const nightly = seasonalApplied ? avgNightly : losRate;
+  const variableNightly = seasonalApplied || feedApplied || dynAdjusted || maxR !== minR;
+  const nightly = variableNightly ? avgNightly : losRate;
   const cleaning = round2(cfg.cleaningFee || 0);
   const total = round2(subtotal + cleaning);
   const deposit = round2(total * (cfg.depositPct / 100));
@@ -164,6 +198,9 @@ export function quoteStay({ property, start, end, guests, dogs, infants }, cfgOv
       avgNightly,
       losApplied: losRate !== cfg.nightly,
       seasonalApplied,
+      feedApplied,
+      dynamicApplied: dynAdjusted,
+      variableNightly,
       subtotal,
       cleaning,
       total,
@@ -249,8 +286,10 @@ function makeRef() {
 // Checkout Session for the deposit (saving the card off-session for the
 // balance). Returns { url, bookingId, ref } or { error }.
 export async function createCheckout(input, origin) {
-  const cfg = await effectivePricing(String(input.property || '').toLowerCase());
-  const q = quoteStay(input, cfg);
+  const key = String(input.property || '').toLowerCase();
+  const cfg = await effectivePricing(key);
+  const f = await loadFeed(key);
+  const q = quoteStay(input, cfg, { today: today(), feed: f && f.rates });
   if (q.error) return { error: q.error };
   const quote = q.quote;
 

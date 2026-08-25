@@ -1,7 +1,7 @@
 import { quoteStay, isAvailable, createCheckout, findBySessionPublic, cancellationPolicy } from '../direct-bookings.mjs';
 import { stripeConfigured } from '../stripe.mjs';
 import { PROPERTIES } from '../management-data.mjs';
-import { effectivePricing, allEffectivePricing } from '../pricing.mjs';
+import { effectivePricing, allEffectivePricing, loadFeed } from '../pricing.mjs';
 
 // Netlify Function (v2) — PUBLIC direct-booking API for the /book page.
 //
@@ -96,8 +96,10 @@ export default async (req) => {
   }
 
   if (action === 'quote') {
-    const cfg = await effectivePricing(String(body.property || '').toLowerCase());
-    const q = quoteStay(body, cfg);
+    const key = String(body.property || '').toLowerCase();
+    const cfg = await effectivePricing(key);
+    const f = await loadFeed(key);
+    const q = quoteStay(body, cfg, { today: new Date().toISOString().slice(0, 10), feed: f && f.rates });
     if (q.error) return json({ error: q.error }, 400);
     const override = ownerOverride(body);
     let available = true;

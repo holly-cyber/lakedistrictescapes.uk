@@ -9,6 +9,10 @@ import { getStore } from '@netlify/blobs';
 import { PRICING, PROPERTIES } from './management-data.mjs';
 
 const STORE = 'mgmt-pricing';
+// Separate store for machine-written external price feeds (the plug-in point for
+// market-data engines like PriceLabs). Keyed by property → { rates, source,
+// updatedAt }. A future scheduled importer writes here; pricing reads it.
+const FEED_STORE = 'mgmt-price-feed';
 
 function num(v) {
   if (typeof v === 'number') return isFinite(v) ? v : undefined;
@@ -83,6 +87,92 @@ export function seasonRateFor(cfg, dateIso) {
   return null;
 }
 
+// ---- dynamic (rule-based) pricing ------------------------------------------
+// In-house rules that react to the booking (day-of-week, lead time) with safety
+// guardrails. External market feeds slot in ABOVE this (see resolveNightRate).
+function pct(v) {
+  const n = num(v);
+  if (n === undefined) return 0;
+  return Math.max(-90, Math.min(300, n));
+}
+function cleanDynamic(o) {
+  o = o || {};
+  const leadTime = Array.isArray(o.leadTime)
+    ? o.leadTime
+        .map((t) => ({ withinDays: Math.round(num(t && t.withinDays) || 0), pct: pct(t && t.pct) }))
+        .filter((t) => t.withinDays > 0 && t.pct !== 0)
+        .sort((a, b) => a.withinDays - b.withinDays)
+    : [];
+  const floor = num(o.floor);
+  const ceiling = num(o.ceiling);
+  return {
+    enabled: !!o.enabled,
+    weekendPct: pct(o.weekendPct),
+    leadTime,
+    floor: floor !== undefined && floor > 0 ? round2(floor) : null,
+    ceiling: ceiling !== undefined && ceiling > 0 ? round2(ceiling) : null,
+    applyOverFeed: !!o.applyOverFeed,
+  };
+}
+// Fri or Sat night (getUTCDay: Sun=0 … Sat=6).
+export function isWeekendNight(dateIso) {
+  const d = new Date(dateIso + 'T00:00:00Z').getUTCDay();
+  return d === 5 || d === 6;
+}
+// Last-minute multiplier for a stay `daysToCheckin` away. Tightest matching tier
+// wins (tiers are sorted ascending by withinDays).
+export function leadTimeFactor(dyn, daysToCheckin) {
+  if (daysToCheckin == null || !dyn.leadTime || !dyn.leadTime.length) return 1;
+  for (const t of dyn.leadTime) {
+    if (daysToCheckin <= t.withinDays) return 1 + t.pct / 100;
+  }
+  return 1;
+}
+export function clampRate(rate, dyn) {
+  let r = rate;
+  if (dyn.floor != null && r < dyn.floor) r = dyn.floor;
+  if (dyn.ceiling != null && r > dyn.ceiling) r = dyn.ceiling;
+  return r;
+}
+
+// ---- external price feed (plug-in point) -----------------------------------
+function feedStore() {
+  return getStore({ name: FEED_STORE, consistency: 'strong' });
+}
+// Returns { rates:{date:rate}, source, updatedAt, count } or null.
+export async function loadFeed(property) {
+  try {
+    const o = await feedStore().get(property, { type: 'json' });
+    return o && typeof o === 'object' && o.rates ? o : null;
+  } catch {
+    return null;
+  }
+}
+// Machine importers (or manual testing) push a feed here.
+export async function saveFeed(property, rates, source) {
+  const clean = {};
+  for (const k of Object.keys(rates || {})) {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(k)) {
+      const r = round2(rates[k]);
+      if (r > 0) clean[k] = r;
+    }
+  }
+  const rec = { rates: clean, source: String(source || 'feed').slice(0, 40), updatedAt: new Date().toISOString(), count: Object.keys(clean).length };
+  await feedStore().setJSON(property, rec);
+  return { count: rec.count };
+}
+export async function clearFeed(property) {
+  try {
+    await feedStore().delete(property);
+  } catch {
+    /* already gone */
+  }
+}
+export async function feedMeta(property) {
+  const f = await loadFeed(property);
+  return f ? { source: f.source, updatedAt: f.updatedAt, count: f.count || Object.keys(f.rates || {}).length } : null;
+}
+
 // Merge an override object over the code default for one property.
 export function mergeCfg(key, override) {
   const base = PRICING[key] || {};
@@ -97,6 +187,7 @@ export function mergeCfg(key, override) {
   if (o.bookable !== undefined) cfg.bookable = !!o.bookable;
   cfg.losTiers = cleanTiers(o.losTiers !== undefined ? o.losTiers : base.losTiers);
   cfg.seasons = cleanSeasons(o.seasons !== undefined ? o.seasons : base.seasons);
+  cfg.dynamic = cleanDynamic(o.dynamic !== undefined ? o.dynamic : base.dynamic);
   return cfg;
 }
 
@@ -141,6 +232,7 @@ export async function updatePropertyPricing(key, input) {
   if (input.bookable !== undefined) next.bookable = !!input.bookable;
   if (input.losTiers !== undefined) next.losTiers = cleanTiers(input.losTiers);
   if (input.seasons !== undefined) next.seasons = cleanSeasons(input.seasons);
+  if (input.dynamic !== undefined) next.dynamic = cleanDynamic(input.dynamic);
 
   all[key] = next;
   await savePricingOverrides(all);

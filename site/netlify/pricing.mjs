@@ -55,6 +55,34 @@ function cleanTiers(list) {
   return out.sort((a, b) => a.minNights - b.minNights);
 }
 
+// Normalise seasonal date-range rates: [{name, start, end, nightly}] where
+// start/end are ISO dates (inclusive of the nights on those dates), rate>0 and
+// start<=end. Sorted by start date.
+function cleanSeasons(list) {
+  if (!Array.isArray(list)) return [];
+  const iso = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '').slice(0, 10)) ? String(v).slice(0, 10) : '');
+  const out = [];
+  for (const s of list) {
+    const start = iso(s && s.start);
+    const end = iso(s && s.end);
+    const nr = round2(s && s.nightly);
+    if (start && end && start <= end && nr > 0) {
+      out.push({ name: String((s && s.name) || '').slice(0, 60), start, end, nightly: nr });
+    }
+  }
+  return out.sort((a, b) => a.start.localeCompare(b.start));
+}
+
+// The seasonal nightly rate for a given date (ISO), or null if no season covers
+// it. First matching season wins.
+export function seasonRateFor(cfg, dateIso) {
+  const d = String(dateIso).slice(0, 10);
+  for (const s of cfg.seasons || []) {
+    if (s.start <= d && d <= s.end) return s.nightly;
+  }
+  return null;
+}
+
 // Merge an override object over the code default for one property.
 export function mergeCfg(key, override) {
   const base = PRICING[key] || {};
@@ -68,6 +96,7 @@ export function mergeCfg(key, override) {
   }
   if (o.bookable !== undefined) cfg.bookable = !!o.bookable;
   cfg.losTiers = cleanTiers(o.losTiers !== undefined ? o.losTiers : base.losTiers);
+  cfg.seasons = cleanSeasons(o.seasons !== undefined ? o.seasons : base.seasons);
   return cfg;
 }
 
@@ -111,6 +140,7 @@ export async function updatePropertyPricing(key, input) {
   if (next.minNights !== undefined && next.minNights < 1) return { error: 'Minimum nights must be at least 1.' };
   if (input.bookable !== undefined) next.bookable = !!input.bookable;
   if (input.losTiers !== undefined) next.losTiers = cleanTiers(input.losTiers);
+  if (input.seasons !== undefined) next.seasons = cleanSeasons(input.seasons);
 
   all[key] = next;
   await savePricingOverrides(all);

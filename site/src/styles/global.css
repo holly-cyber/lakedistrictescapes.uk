@@ -2483,3 +2483,8 @@
     .price-status { font-size: 0.85rem; font-weight: 600; margin: 0; }
     .price-status.ok { color: #2f6b45; }
     .price-status.err { color: #a4362f; }
+
+    /* Seasonal rate rows in the pricing editor */
+    .price-in-md { width: 150px; }
+    .price-season-row { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+    @media (max-width: 560px) { .price-in-md { width: 100%; } .price-season-row { gap: 0.3rem; } }

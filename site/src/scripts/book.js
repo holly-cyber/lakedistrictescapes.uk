@@ -220,7 +220,8 @@ export async function initBook(root, opts = {}) {
     const cfg = properties[propOf()];
     quoteBox.innerHTML = `
       <h3 class="bk-quote-h">Price</h3>
-      <div class="bk-line"><span>${esc(String(q.nights))} night${q.nights === 1 ? '' : 's'} × ${money(q.nightly, q.currency)}</span><span>${money(q.subtotal, q.currency)}</span></div>
+      <div class="bk-line"><span>${esc(String(q.nights))} night${q.nights === 1 ? '' : 's'}${q.seasonalApplied ? '' : ' × ' + money(q.nightly, q.currency)}</span><span>${money(q.subtotal, q.currency)}</span></div>
+      ${q.seasonalApplied ? `<div class="bk-line bk-later"><span>Averages ${money(q.avgNightly, q.currency)}/night (seasonal rates)</span><span></span></div>` : ''}
       ${q.cleaning > 0 ? `<div class="bk-line"><span>Cleaning</span><span>${money(q.cleaning, q.currency)}</span></div>` : ''}
       <div class="bk-line bk-total"><span>Total</span><span>${money(q.total, q.currency)}</span></div>
       <div class="bk-split">

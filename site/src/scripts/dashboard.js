@@ -350,6 +350,31 @@ function pricingSection(pricing, properties, onSave) {
     const addBtn = e('button', { class: 'dash-linkbtn', type: 'button', text: '+ Add a length-of-stay rate' });
     addBtn.addEventListener('click', () => addTierRow());
 
+    // Seasonal date-range rates.
+    const seasonsWrap = e('div', { class: 'price-tiers' });
+    const seasonRows = [];
+    function addSeasonRow(s) {
+      const nameIn = e('input', { class: 'price-in price-in-md', type: 'text', maxlength: '60', value: s ? s.name || '' : '', placeholder: 'e.g. Peak summer' });
+      const startIn = e('input', { class: 'price-in price-in-sm', type: 'date', value: s ? s.start : '' });
+      const endIn = e('input', { class: 'price-in price-in-sm', type: 'date', value: s ? s.end : '' });
+      const rateIn = e('input', { class: 'price-in price-in-sm', type: 'number', min: '0', step: '0.01', value: s ? String(s.nightly) : '', placeholder: '£' });
+      const del = e('button', { class: 'price-tier-del', type: 'button', title: 'Remove', 'aria-label': 'Remove season' }, '×');
+      const rec = { nameIn, startIn, endIn, rateIn };
+      const row = e('div', { class: 'price-season-row' }, [
+        nameIn,
+        e('span', { class: 'price-tier-lbl', text: '' }), startIn,
+        e('span', { class: 'price-tier-lbl', text: '→' }), endIn,
+        e('span', { class: 'price-tier-lbl', text: '£' }), rateIn,
+        e('span', { class: 'price-tier-lbl', text: '/night' }), del,
+      ]);
+      seasonRows.push(rec);
+      del.addEventListener('click', () => { const i = seasonRows.indexOf(rec); if (i >= 0) seasonRows.splice(i, 1); row.remove(); });
+      seasonsWrap.appendChild(row);
+    }
+    (p.seasons || []).forEach(addSeasonRow);
+    const addSeasonBtn = e('button', { class: 'dash-linkbtn', type: 'button', text: '+ Add a seasonal rate' });
+    addSeasonBtn.addEventListener('click', () => addSeasonRow());
+
     const status = e('p', { class: 'price-status' });
     const saveBtn = e('button', { class: 'mb-btn', type: 'button', text: 'Save prices' });
     saveBtn.addEventListener('click', async () => {
@@ -363,6 +388,9 @@ function pricingSection(pricing, properties, onSave) {
         maxInfants: inputs.maxInfants.value,
         maxDogs: inputs.maxDogs.value,
         losTiers: tierRows.map((r) => ({ minNights: r.minIn.value, nightly: r.rateIn.value })).filter((t) => t.minNights && t.nightly),
+        seasons: seasonRows
+          .map((r) => ({ name: r.nameIn.value, start: r.startIn.value, end: r.endIn.value, nightly: r.rateIn.value }))
+          .filter((s) => s.start && s.end && s.nightly),
       };
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving…';
@@ -394,6 +422,10 @@ function pricingSection(pricing, properties, onSave) {
       e('div', { class: 'price-tiers-head', text: 'Length-of-stay rates' }),
       tiersWrap,
       addBtn,
+      e('div', { class: 'price-tiers-head', text: 'Seasonal rates (peak / off-peak dates)' }),
+      e('p', { class: 'price-note', text: 'Set a per-night rate for specific date ranges (e.g. peak summer, Christmas). Seasonal rates override the standard/length-of-stay rate for nights that fall within them.' }),
+      seasonsWrap,
+      addSeasonBtn,
       e('div', { class: 'price-actions' }, [saveBtn, status]),
     ]);
     wrap.appendChild(card('Pricing — ' + name, p.bookable ? 'live for direct booking' : 'not open for direct booking yet', cardBody));

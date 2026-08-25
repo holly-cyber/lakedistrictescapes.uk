@@ -21,7 +21,7 @@ import { PRICING, PROPERTIES, BOOKINGS as SEED_BOOKINGS, CANCELLATION_POLICY } f
 import { stripe } from './stripe.mjs';
 import { parseICal } from './functions/availability.mjs';
 import { sendEmail, bookingConfirmationEmail, balanceReceiptEmail } from './email.mjs';
-import { effectivePricing, nightlyRateFor } from './pricing.mjs';
+import { effectivePricing, nightlyRateFor, seasonRateFor } from './pricing.mjs';
 
 export const DIRECT_STORE = 'direct-bookings';
 // Statuses that occupy the calendar / count as real income.
@@ -123,8 +123,26 @@ export function quoteStay({ property, start, end, guests, dogs, infants }, cfgOv
   if (dg > maxDogs) return { error: maxDogs === 0 ? 'Sorry, dogs can’t be accommodated here.' : `Up to ${maxDogs} dog${maxDogs === 1 ? '' : 's'} can be accommodated.` };
   if (inf > maxInfants) return { error: maxInfants === 0 ? 'No cot space for under-2s here.' : `Up to ${maxInfants} child${maxInfants === 1 ? '' : 'ren'} under 2.` };
 
-  const nightly = nightlyRateFor(cfg, nights);
-  const subtotal = round2(nights * nightly);
+  // Price each night by its date: a seasonal rate if the date falls in a season,
+  // otherwise the length-of-stay rate for this stay's length.
+  const losRate = nightlyRateFor(cfg, nights);
+  let subtotalRaw = 0;
+  let seasonalApplied = false;
+  const nd = new Date(s + 'T00:00:00Z');
+  for (let i = 0; i < nights; i++) {
+    const iso = nd.toISOString().slice(0, 10);
+    const sr = seasonRateFor(cfg, iso);
+    if (sr != null) {
+      subtotalRaw += sr;
+      seasonalApplied = true;
+    } else {
+      subtotalRaw += losRate;
+    }
+    nd.setUTCDate(nd.getUTCDate() + 1);
+  }
+  const subtotal = round2(subtotalRaw);
+  const avgNightly = round2(subtotal / nights);
+  const nightly = seasonalApplied ? avgNightly : losRate;
   const cleaning = round2(cfg.cleaningFee || 0);
   const total = round2(subtotal + cleaning);
   const deposit = round2(total * (cfg.depositPct / 100));
@@ -143,7 +161,9 @@ export function quoteStay({ property, start, end, guests, dogs, infants }, cfgOv
       infants: inf,
       nightly,
       baseNightly: cfg.nightly,
-      losApplied: nightly !== cfg.nightly,
+      avgNightly,
+      losApplied: losRate !== cfg.nightly,
+      seasonalApplied,
       subtotal,
       cleaning,
       total,

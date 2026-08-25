@@ -2493,3 +2493,15 @@
     .price-dyn { display: grid; gap: 0.6rem; padding-top: 0.6rem; border-top: 1px dashed rgba(176,168,153,0.5); }
     .price-dyn-toggle { display: flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; font-weight: 700; color: var(--gable-deep); }
     .price-feed { font-size: 0.78rem; color: var(--mid); font-style: italic; margin: 0; }
+
+    /* Weekly achieved-rate chart + pricing recommendations */
+    .wk-band { fill: rgba(216,234,229,0.55); }
+    .wk-line { stroke: var(--gable-deep); stroke-width: 2; }
+    .wk-dot { fill: var(--gable-deep); }
+    .wk-avg { stroke: #a4362f; stroke-width: 1.2; stroke-dasharray: 4 3; }
+    .reco-wrap { margin-top: 1rem; }
+    .reco-lead { font-size: 0.9rem; color: var(--body-text); margin: 0 0 0.7rem; }
+    .reco-lead strong { color: var(--gable-deep); }
+    .reco-table { font-size: 0.86rem; }
+    .reco-table td.num, .reco-table th:nth-child(n+2) { text-align: right; }
+    .reco-note { font-size: 0.78rem; color: var(--mid); line-height: 1.5; margin: 0.7rem 0 0; }

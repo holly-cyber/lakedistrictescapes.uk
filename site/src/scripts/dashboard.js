@@ -258,6 +258,135 @@ function occupancyChart(series) {
   return svg;
 }
 
+// ---------- weekly achieved-rate analysis & pricing recommendations ----------
+// Typical Lake District demand peaks (approx week-of-year), with a suggested
+// premium over the baseline achieved rate.
+const KNOWN_PEAKS = [
+  { name: 'February half-term', startWeek: 7, endWeek: 8, uplift: 0.15 },
+  { name: 'Easter', startWeek: 13, endWeek: 16, uplift: 0.25 },
+  { name: 'Late-May half-term & bank holiday', startWeek: 21, endWeek: 22, uplift: 0.2 },
+  { name: 'Summer school holidays', startWeek: 30, endWeek: 35, uplift: 0.3 },
+  { name: 'October half-term', startWeek: 43, endWeek: 44, uplift: 0.2 },
+  { name: 'Christmas & New Year', startWeek: 51, endWeek: 52, uplift: 0.35 },
+];
+function weekOfYear(iso) {
+  const d = new Date(iso + 'T00:00:00Z');
+  const day = Math.floor((d - Date.UTC(d.getUTCFullYear(), 0, 1)) / 86400000);
+  return Math.min(52, Math.floor(day / 7) + 1);
+}
+function round5(v) {
+  return Math.round((Number(v) || 0) / 5) * 5;
+}
+// Distribute each booking's achieved £/night across the weeks its nights fall
+// in (aggregated across years → a 52-week seasonal picture).
+function computeWeekly(bookings) {
+  const wk = {};
+  for (let w = 1; w <= 52; w++) wk[w] = { sum: 0, nights: 0 };
+  let totSum = 0, totNights = 0;
+  (bookings || []).forEach((b) => {
+    const nights = b.nights > 0 ? Math.round(b.nights) : 0;
+    if (!nights || !(b.gross > 0) || !b.start) return;
+    const nightly = b.gross / nights;
+    const d = new Date(b.start + 'T00:00:00Z');
+    for (let i = 0; i < nights; i++) {
+      const w = weekOfYear(d.toISOString().slice(0, 10));
+      wk[w].sum += nightly;
+      wk[w].nights += 1;
+      totSum += nightly;
+      totNights += 1;
+      d.setUTCDate(d.getUTCDate() + 1);
+    }
+  });
+  const weeks = [];
+  for (let w = 1; w <= 52; w++) weeks.push({ week: w, avg: wk[w].nights ? wk[w].sum / wk[w].nights : null, nights: wk[w].nights });
+  return { weeks, overallAvg: totNights ? totSum / totNights : 0, totalNights: totNights };
+}
+
+function weeklyRateChart(weekly, overallAvg) {
+  const dataWeeks = weekly.filter((w) => w.avg != null);
+  const height = 240, padL = 48, padR = 16, padT = 16, padB = 42, colW = 13;
+  const width = padL + padR + 52 * colW;
+  const chartH = height - padT - padB;
+  const max = niceMax(Math.max(overallAvg || 0, ...dataWeeks.map((w) => w.avg), 1) * 1.15);
+  const x = (w) => padL + (w - 0.5) * colW;
+  const y = (v) => padT + chartH * (1 - v / max);
+  const svg = s('svg', { viewBox: `0 0 ${width} ${height}`, class: 'chart', preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': 'Achieved nightly rate by week' });
+
+  KNOWN_PEAKS.forEach((p) => {
+    const x1 = padL + (p.startWeek - 1) * colW;
+    const x2 = padL + p.endWeek * colW;
+    svg.appendChild(s('rect', { x: x1, y: padT, width: Math.max(0, x2 - x1), height: chartH, class: 'wk-band' }));
+  });
+  [0, 0.25, 0.5, 0.75, 1].forEach((f) => {
+    const yy = padT + chartH * (1 - f);
+    svg.appendChild(s('line', { x1: padL, y1: yy, x2: width - padR, y2: yy, class: 'chart-grid' }));
+    svg.appendChild(s('text', { x: padL - 8, y: yy + 3.5, class: 'chart-yl', 'text-anchor': 'end' }, money(max * f, true)));
+  });
+  if (overallAvg > 0) {
+    const ay = y(overallAvg);
+    svg.appendChild(s('line', { x1: padL, y1: ay, x2: width - padR, y2: ay, class: 'wk-avg' }));
+    svg.appendChild(s('text', { x: width - padR, y: ay - 4, class: 'chart-val', 'text-anchor': 'end' }, 'avg ' + money(overallAvg)));
+  }
+  [['Jan', 1], ['Feb', 5], ['Mar', 9], ['Apr', 14], ['May', 18], ['Jun', 22], ['Jul', 27], ['Aug', 31], ['Sep', 35], ['Oct', 40], ['Nov', 44], ['Dec', 48]].forEach(([m, w]) => {
+    svg.appendChild(s('text', { x: x(w), y: height - padB + 18, class: 'chart-xl', 'text-anchor': 'middle' }, m));
+  });
+  if (dataWeeks.length) {
+    let d = '';
+    dataWeeks.forEach((w, i) => { d += (i === 0 ? 'M' : 'L') + x(w.week).toFixed(1) + ' ' + y(w.avg).toFixed(1) + ' '; });
+    svg.appendChild(s('path', { d: d.trim(), class: 'wk-line', fill: 'none' }));
+    dataWeeks.forEach((w) => {
+      const c = s('circle', { cx: x(w.week), cy: y(w.avg), r: 3, class: 'wk-dot' });
+      c.appendChild(s('title', {}, 'Week ' + w.week + ' · ' + money(w.avg) + '/night · ' + w.nights + ' night' + (w.nights === 1 ? '' : 's')));
+      svg.appendChild(c);
+    });
+  }
+  return svg;
+}
+
+// Recommended rates per peak period: blends your achieved data with a typical
+// Lakes premium over the baseline.
+function pricingRecommendations(weekly, overallAvg) {
+  const base = round5(overallAvg);
+  return KNOWN_PEAKS.map((p) => {
+    const inRange = weekly.weeks.filter((w) => w.week >= p.startWeek && w.week <= p.endWeek && w.avg != null);
+    const dataNights = inRange.reduce((sum, w) => sum + w.nights, 0);
+    const dataAvg = dataNights ? inRange.reduce((sum, w) => sum + w.avg * w.nights, 0) / dataNights : null;
+    const formula = base * (1 + p.uplift);
+    const nightly = round5(Math.max(formula, dataAvg || 0));
+    return {
+      name: p.name,
+      nightly,
+      weekly: round5(nightly * 7 * 0.92), // small weekly discount
+      dataAvg: dataAvg != null ? Math.round(dataAvg) : null,
+      dataNights,
+      uplift: p.uplift,
+    };
+  });
+}
+
+function pricingRecoPanel(weekly) {
+  const recos = pricingRecommendations(weekly, weekly.overallAvg);
+  const base = round5(weekly.overallAvg);
+  const rows = recos.map((r) => e('tr', {}, [
+    e('td', { text: r.name }),
+    e('td', { class: 'num', text: money(r.nightly) }),
+    e('td', { class: 'num', text: money(r.weekly) }),
+    e('td', { class: 'num muted', text: r.dataAvg != null ? money(r.dataAvg) + ' · ' + r.dataNights + 'n' : '—' }),
+  ]));
+  const table = e('table', { class: 'dash-table reco-table' }, [
+    e('thead', {}, e('tr', {}, ['Peak period', 'Rec. nightly', 'Rec. week', 'Your data'].map((h) => e('th', { text: h })))),
+    e('tbody', {}, rows),
+  ]);
+  return e('div', { class: 'reco-wrap' }, [
+    e('p', { class: 'reco-lead' }, [
+      'Baseline achieved rate: ', e('strong', { text: money(weekly.overallAvg) + '/night' }),
+      ' from ' + weekly.totalNights + ' nights. Suggested standard rate ', e('strong', { text: money(base) }), '.',
+    ]),
+    scroller(table),
+    e('p', { class: 'reco-note', text: 'Recommendations blend your achieved rates with typical Lake District peak demand, and sharpen as more bookings build up. Apply them in the Pricing card (base nightly + seasonal rates).' }),
+  ]);
+}
+
 // ---------- UI pieces ----------
 function kpi(label, value, sub, accent) {
   return e('div', { class: 'kpi' + (accent ? ' kpi--' + accent : '') }, [
@@ -1468,6 +1597,16 @@ export function initDashboard(root, data, opts = {}) {
         e('div', {}, [scroller(groupedBarChart(v.monthly))]),
         legend([{ cls: 'lg-income', label: 'Income' }, { cls: 'lg-expense', label: 'Expenses' }])));
       body.appendChild(card('Occupancy by month', 'nights booked vs available', scroller(occupancyChart(v.monthly))));
+    }
+
+    // Achieved nightly rate by week + pricing recommendations.
+    const weekly = computeWeekly(v.bookings);
+    if (weekly.totalNights > 0) {
+      body.appendChild(card(
+        'Achieved rate by week',
+        'average £/night from your bookings across the year',
+        e('div', {}, [scroller(weeklyRateChart(weekly.weeks, weekly.overallAvg)), pricingRecoPanel(weekly)]),
+      ));
     }
 
     // Tax + tables

@@ -436,172 +436,8 @@ function directStatusPill(b) {
 // blocks those nights too, preventing a double-booking from the Airbnb side.
 // Owner pricing editor — base nightly rate, minimum stay, fees, and
 // length-of-stay rates (e.g. a lower per-night rate for 3+ nights or a week).
-function pricingSection(pricing, properties, onSave) {
-  if (!pricing || !Object.keys(pricing).length) return null;
-  const wrap = e('div', { class: 'price-wrap' });
-
-  Object.keys(pricing).forEach((key) => {
-    const p = pricing[key];
-    if (!p) return;
-    const name = (properties[key] && properties[key].name) || key;
-    const inputs = {};
-    const field = (label, fname, val, step) => {
-      const inp = e('input', { class: 'price-in', type: 'number', min: '0', step: step || '1', value: val == null ? '' : String(val) });
-      inputs[fname] = inp;
-      return e('label', { class: 'price-field' }, [e('span', { text: label }), inp]);
-    };
-
-    const tiersWrap = e('div', { class: 'price-tiers' });
-    const tierRows = [];
-    function addTierRow(t) {
-      const minIn = e('input', { class: 'price-in price-in-sm', type: 'number', min: '2', step: '1', value: t ? String(t.minNights) : '', placeholder: 'nights' });
-      const rateIn = e('input', { class: 'price-in price-in-sm', type: 'number', min: '0', step: '0.01', value: t ? String(t.nightly) : '', placeholder: '£' });
-      const hint = e('span', { class: 'price-tier-hint' });
-      const upd = () => {
-        const n = Number(minIn.value), r = Number(rateIn.value);
-        hint.textContent = n > 0 && r > 0 ? '= ' + money(n * r) + (n === 7 ? ' / week' : '') : '';
-      };
-      minIn.addEventListener('input', upd);
-      rateIn.addEventListener('input', upd);
-      const del = e('button', { class: 'price-tier-del', type: 'button', title: 'Remove', 'aria-label': 'Remove rate' }, '×');
-      const rec = { minIn, rateIn };
-      const row = e('div', { class: 'price-tier-row' }, [
-        e('span', { class: 'price-tier-lbl', text: 'From' }), minIn,
-        e('span', { class: 'price-tier-lbl', text: 'nights →' }), rateIn,
-        e('span', { class: 'price-tier-lbl', text: '/night' }), hint, del,
-      ]);
-      tierRows.push(rec);
-      del.addEventListener('click', () => { const i = tierRows.indexOf(rec); if (i >= 0) tierRows.splice(i, 1); row.remove(); });
-      tiersWrap.appendChild(row);
-      upd();
-    }
-    (p.losTiers || []).forEach(addTierRow);
-    const addBtn = e('button', { class: 'dash-linkbtn', type: 'button', text: '+ Add a length-of-stay rate' });
-    addBtn.addEventListener('click', () => addTierRow());
-
-    // Seasonal date-range rates.
-    const seasonsWrap = e('div', { class: 'price-tiers' });
-    const seasonRows = [];
-    function addSeasonRow(s) {
-      const nameIn = e('input', { class: 'price-in price-in-md', type: 'text', maxlength: '60', value: s ? s.name || '' : '', placeholder: 'e.g. Peak summer' });
-      const startIn = e('input', { class: 'price-in price-in-sm', type: 'date', value: s ? s.start : '' });
-      const endIn = e('input', { class: 'price-in price-in-sm', type: 'date', value: s ? s.end : '' });
-      const rateIn = e('input', { class: 'price-in price-in-sm', type: 'number', min: '0', step: '0.01', value: s ? String(s.nightly) : '', placeholder: '£' });
-      const del = e('button', { class: 'price-tier-del', type: 'button', title: 'Remove', 'aria-label': 'Remove season' }, '×');
-      const rec = { nameIn, startIn, endIn, rateIn };
-      const row = e('div', { class: 'price-season-row' }, [
-        nameIn,
-        e('span', { class: 'price-tier-lbl', text: '' }), startIn,
-        e('span', { class: 'price-tier-lbl', text: '→' }), endIn,
-        e('span', { class: 'price-tier-lbl', text: '£' }), rateIn,
-        e('span', { class: 'price-tier-lbl', text: '/night' }), del,
-      ]);
-      seasonRows.push(rec);
-      del.addEventListener('click', () => { const i = seasonRows.indexOf(rec); if (i >= 0) seasonRows.splice(i, 1); row.remove(); });
-      seasonsWrap.appendChild(row);
-    }
-    (p.seasons || []).forEach(addSeasonRow);
-    const addSeasonBtn = e('button', { class: 'dash-linkbtn', type: 'button', text: '+ Add a seasonal rate' });
-    addSeasonBtn.addEventListener('click', () => addSeasonRow());
-
-    // Dynamic (rule-based) pricing controls + external-feed status.
-    const d = p.dynamic || {};
-    const lt = {};
-    (d.leadTime || []).forEach((t) => { lt[t.withinDays] = t.pct; });
-    const dinp = (val, step) => e('input', { class: 'price-in price-in-sm', type: 'number', step: step || '1', value: val == null || val === '' ? '' : String(val) });
-    const dynEnabled = e('input', { type: 'checkbox' });
-    if (d.enabled) dynEnabled.checked = true;
-    const weekendPct = dinp(d.weekendPct || '', '1');
-    const lm7 = dinp(lt[7] != null ? lt[7] : '', '1');
-    const lm14 = dinp(lt[14] != null ? lt[14] : '', '1');
-    const floorIn = dinp(d.floor != null ? d.floor : '', '0.01');
-    const ceilIn = dinp(d.ceiling != null ? d.ceiling : '', '0.01');
-    const feed = p._feed;
-    const feedLine = feed
-      ? 'External market feed: ' + feed.source + ' — ' + feed.count + ' dates, updated ' + String(feed.updatedAt).slice(0, 10) + '.'
-      : 'External market feed: none connected (in-house rules only). Ready to plug in later.';
-    const dynBlock = e('div', { class: 'price-dyn' }, [
-      e('div', { class: 'price-tiers-head', text: 'Dynamic pricing (rules)' }),
-      e('label', { class: 'price-dyn-toggle' }, [dynEnabled, e('span', { text: ' Enable dynamic pricing rules' })]),
-      e('div', { class: 'price-grid' }, [
-        e('label', { class: 'price-field' }, [e('span', { text: 'Weekend uplift % (Fri/Sat)' }), weekendPct]),
-        e('label', { class: 'price-field' }, [e('span', { text: 'Last-minute: within 7 days %' }), lm7]),
-        e('label', { class: 'price-field' }, [e('span', { text: 'Last-minute: within 14 days %' }), lm14]),
-        e('label', { class: 'price-field' }, [e('span', { text: 'Price floor (£/night)' }), floorIn]),
-        e('label', { class: 'price-field' }, [e('span', { text: 'Price ceiling (£/night)' }), ceilIn]),
-      ]),
-      e('p', { class: 'price-note', text: 'Rules apply on top of your base / seasonal / length-of-stay rates. Use a negative % for discounts (e.g. -15 for last-minute). Floor & ceiling keep prices within safe bounds.' }),
-      e('p', { class: 'price-feed', text: feedLine }),
-    ]);
-
-    const status = e('p', { class: 'price-status' });
-    const saveBtn = e('button', { class: 'mb-btn', type: 'button', text: 'Save prices' });
-    saveBtn.addEventListener('click', async () => {
-      const payload = {
-        nightly: inputs.nightly.value,
-        minNights: inputs.minNights.value,
-        cleaningFee: inputs.cleaningFee.value,
-        depositPct: inputs.depositPct.value,
-        balanceDueDays: inputs.balanceDueDays.value,
-        maxGuests: inputs.maxGuests.value,
-        maxInfants: inputs.maxInfants.value,
-        maxDogs: inputs.maxDogs.value,
-        losTiers: tierRows.map((r) => ({ minNights: r.minIn.value, nightly: r.rateIn.value })).filter((t) => t.minNights && t.nightly),
-        seasons: seasonRows
-          .map((r) => ({ name: r.nameIn.value, start: r.startIn.value, end: r.endIn.value, nightly: r.rateIn.value }))
-          .filter((s) => s.start && s.end && s.nightly),
-        dynamic: {
-          enabled: dynEnabled.checked,
-          weekendPct: weekendPct.value,
-          leadTime: [
-            { withinDays: 7, pct: lm7.value },
-            { withinDays: 14, pct: lm14.value },
-          ].filter((t) => t.pct !== '' && Number(t.pct) !== 0),
-          floor: floorIn.value,
-          ceiling: ceilIn.value,
-        },
-      };
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving…';
-      status.textContent = '';
-      try {
-        await onSave(key, payload);
-        status.textContent = 'Saved ✓';
-        status.className = 'price-status ok';
-      } catch (err) {
-        status.textContent = err.message || 'Could not save.';
-        status.className = 'price-status err';
-      }
-      saveBtn.disabled = false;
-      saveBtn.textContent = 'Save prices';
-    });
-
-    const cardBody = e('div', { class: 'price-body' }, [
-      e('div', { class: 'price-grid' }, [
-        field('Nightly rate (£)', 'nightly', p.nightly, '0.01'),
-        field('Minimum nights', 'minNights', p.minNights),
-        field('Cleaning fee (£)', 'cleaningFee', p.cleaningFee || 0, '0.01'),
-        field('Deposit %', 'depositPct', p.depositPct),
-        field('Balance due (days before)', 'balanceDueDays', p.balanceDueDays),
-        field('Max guests', 'maxGuests', p.maxGuests),
-        field('Max under-2s', 'maxInfants', p.maxInfants || 0),
-        field('Max dogs', 'maxDogs', p.maxDogs || 0),
-      ]),
-      e('p', { class: 'price-note', text: 'The nightly rate applies to your shortest stay (the minimum nights above). Add rates below for longer stays — e.g. a lower per-night rate from 3 nights, and a weekly rate from 7 nights.' }),
-      e('div', { class: 'price-tiers-head', text: 'Length-of-stay rates' }),
-      tiersWrap,
-      addBtn,
-      e('div', { class: 'price-tiers-head', text: 'Seasonal rates (peak / off-peak dates)' }),
-      e('p', { class: 'price-note', text: 'Set a per-night rate for specific date ranges (e.g. peak summer, Christmas). Seasonal rates override the standard/length-of-stay rate for nights that fall within them.' }),
-      seasonsWrap,
-      addSeasonBtn,
-      dynBlock,
-      e('div', { class: 'price-actions' }, [saveBtn, status]),
-    ]);
-    wrap.appendChild(card('Pricing — ' + name, p.bookable ? 'live for direct booking' : 'not open for direct booking yet', cardBody));
-  });
-  return wrap;
-}
+// The pricing editor moved to its own page — see scripts/manage-pricing.js and
+// pages/management/pricing.astro. The dashboard links to it via "Manage pricing".
 
 function syncNote(properties) {
   const origin = 'https://lakedistrictescapes.uk';
@@ -1457,15 +1293,6 @@ export function initDashboard(root, data, opts = {}) {
         toast(err.message || 'Could not delete.', 'err');
       }
     },
-    async onSavePricing(key, payload) {
-      const out = await apiCall('updatePricing', { property: key, pricing: payload });
-      if (out.pricing) {
-        if (!data.pricing) data.pricing = {};
-        data.pricing[key] = out.pricing;
-      }
-      toast('Pricing updated for ' + ((properties[key] && properties[key].name) || key) + '.', 'ok');
-      return out;
-    },
     async onRetryBalance(b, btn) {
       if (!window.confirm('Retry charging the ' + money(b.balance) + ' balance to the card on file for ' + (b.guest || 'this guest') + '?')) return;
       if (btn) { btn.disabled = true; btn.textContent = 'Charging…'; }
@@ -1548,6 +1375,7 @@ export function initDashboard(root, data, opts = {}) {
 
     // Quick link to the dedicated direct-bookings manager.
     body.appendChild(e('div', { class: 'dash-toplinks' }, [
+      e('a', { class: 'dash-managelink', href: '/management/pricing/' }, 'Manage pricing →'),
       e('a', { class: 'dash-managelink', href: '/management/bookings/' }, 'Manage direct bookings →'),
     ]));
 
@@ -1559,12 +1387,6 @@ export function initDashboard(root, data, opts = {}) {
 
     // Calendar-sync setup: import URL(s) to block Airbnb for direct bookings.
     body.appendChild(syncNote(properties));
-
-    // Owner pricing editor (rates + length-of-stay), if the feed provided it.
-    if (data.pricing) {
-      const ps = pricingSection(data.pricing, properties, handlers.onSavePricing);
-      if (ps) body.appendChild(ps);
-    }
 
     if (!v.bookings.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [

@@ -8,10 +8,12 @@ interface Props {
   theme?: 'blue' | 'green';
   /** Public Airbnb listing URL — shows a "Book on Airbnb" button when set. */
   airbnbUrl?: string;
-  /** Anchor for the direct-enquiry button. */
+  /** Href for the primary direct button (anchor or a page like /book). */
   enquireHref?: string;
+  /** Label for the primary direct button. */
+  bookLabel?: string;
 }
-const { property, months = 4, theme = 'blue', airbnbUrl, enquireHref = '#enquire' } = Astro.props;
+const { property, months = 4, theme = 'blue', airbnbUrl, enquireHref = '#enquire', bookLabel = 'Enquire — Book Direct' } = Astro.props;
 ---
 <section class={`section availability-section availability--${theme}`} id="availability">
   <div class="availability-head reveal">
@@ -30,7 +32,7 @@ const { property, months = 4, theme = 'blue', airbnbUrl, enquireHref = '#enquire
     <p class="availability-note">Loading availability…</p>
   </div>
   <div class="availability-actions reveal">
-    <a href={enquireHref} class="btn btn-green">Enquire — Book Direct</a>
+    <a href={enquireHref} class="btn btn-green">{bookLabel}</a>
     {airbnbUrl && (
       <a href={airbnbUrl} class="btn btn-airbnb" target="_blank" rel="noopener noreferrer">
         Book on Airbnb ↗

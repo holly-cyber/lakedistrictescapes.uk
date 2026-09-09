@@ -97,10 +97,13 @@ function computeView(data, view) {
   const { properties, bookings, expenses } = data;
   const inView = (b) => view === 'all' || b.property === view;
   const isOff = (b) => b.status === 'cancelled' || b.status === 'moved';
+  // Airbnb calendar rows carry no money, so they never touch the figures.
+  const isPending = (b) => b.source === 'airbnb-live' || b.pending === true;
   // Live bookings drive every money/occupancy figure; cancelled & moved rows are
-  // kept only for the record (shown separately, left out of the totals).
-  const bk = bookings.filter((b) => inView(b) && !isOff(b));
+  // kept only for the record, and Airbnb-calendar rows wait to be imported.
+  const bk = bookings.filter((b) => inView(b) && !isOff(b) && !isPending(b));
   const inactive = bookings.filter((b) => inView(b) && isOff(b));
+  const awaiting = bookings.filter((b) => inView(b) && isPending(b) && !isOff(b));
 
   // Expenses: only the business-use % of each receipt is claimable. Combined
   // counts everything in full; a single-property view counts that property's
@@ -202,6 +205,7 @@ function computeView(data, view) {
     ongoingProfit, nights, avgNightly, avgProfitNight, ongoingProfitNight, occupancy, monthly,
     bookings: bk.slice().sort((a, b) => a.start.localeCompare(b.start)),
     inactiveBookings: inactive.slice().sort((a, b) => a.start.localeCompare(b.start)),
+    awaitingImport: awaiting.slice().sort((a, b) => a.start.localeCompare(b.start)),
     expenses: exp.slice().sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
@@ -546,6 +550,27 @@ function cancelledMovedCard(list, properties, subtitle) {
   if (moved) parts.push(moved + ' moved');
   return card('Cancelled & moved bookings', subtitle || parts.join(' · ') + ' — freed up, not counted in the totals',
     scroller(e('table', { class: 'dash-table cm-table' }, [e('thead', {}, head), e('tbody', {}, rows)])));
+}
+
+// Live Airbnb reservations pulled straight from the calendar feed that haven't
+// been imported yet — dates only, no money. Shown so a new Airbnb booking
+// appears immediately; import the CSV to fill in the figures. Returns null when
+// there are none.
+function awaitingImportCard(list, properties) {
+  if (!list || !list.length) return null;
+  const head = e('tr', {}, ['Check-in', 'Check-out', 'Nights', 'Property', 'Channel'].map((h) => e('th', { text: h })));
+  const rows = list.map((b) => e('tr', { class: 'ai-row' }, [
+    e('td', { text: b.start }),
+    e('td', { text: b.end }),
+    e('td', { text: String(b.nights) }),
+    e('td', { text: propLabel(b.property, properties) }),
+    e('td', {}, [e('span', { class: 'chan-badge chan-badge--airbnb', text: 'Airbnb' })]),
+  ]));
+  const body = e('div', {}, [
+    e('p', { class: 'ai-lead muted', text: 'Straight from your Airbnb calendar — dates only. Import your Airbnb CSV (in “Add a booking” above) to record the earnings; these rows stay out of the income and occupancy figures until you do.' }),
+    scroller(e('table', { class: 'dash-table ai-table' }, [e('thead', {}, head), e('tbody', {}, rows)])),
+  ]);
+  return card('New Airbnb bookings — awaiting import', list.length + ' from the live calendar', body);
 }
 
 function exportBookingsCsv(bookings, properties, viewLabel) {
@@ -1454,10 +1479,13 @@ export function initDashboard(root, data, opts = {}) {
     const bt = bookingsTable(v.bookings, properties, handlers, bkgCsv);
     if (bt) body.appendChild(bt);
 
+    const ai = awaitingImportCard(v.awaitingImport, properties);
+    if (ai) body.appendChild(ai);
+
     const cm = cancelledMovedCard(v.inactiveBookings, properties);
     if (cm) body.appendChild(cm);
 
-    if (!v.bookings.length && !v.inactiveBookings.length) {
+    if (!v.bookings.length && !v.inactiveBookings.length && !v.awaitingImport.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [
         e('p', { text: 'No bookings recorded yet for ' + (view === 'the-rockery' ? 'The Rockery' : 'this property') + '.' }),
         e('p', { class: 'muted', text: 'Add one above, or import your Airbnb reservations CSV to load them all at once.' }),
@@ -1474,7 +1502,18 @@ export function initDashboard(root, data, opts = {}) {
     // Calendar-sync setup: import URL(s) to block Airbnb for direct bookings.
     body.appendChild(syncNote(properties));
 
-    if (!v.bookings.length && !v.inactiveBookings.length && !v.expenses.length) {
+    // Nudge: new Airbnb bookings from the live calendar waiting to be imported.
+    if (v.awaitingImport.length) {
+      const nudge = e('div', { class: 'dash-nudge' }, [
+        e('span', { text: v.awaitingImport.length + ' new Airbnb booking' + (v.awaitingImport.length === 1 ? '' : 's') + ' from the live calendar — not yet counted in the figures.' }),
+      ]);
+      const link = e('button', { class: 'dash-linkbtn', type: 'button', text: 'See them in All bookings →' });
+      link.addEventListener('click', () => { section = 'bookings'; render(); });
+      nudge.appendChild(link);
+      body.appendChild(nudge);
+    }
+
+    if (!v.bookings.length && !v.inactiveBookings.length && !v.awaitingImport.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [
         e('p', { text: 'No bookings or expenses recorded yet for ' + (view === 'the-rockery' ? 'The Rockery' : 'this property') + '.' }),
         e('p', { class: 'muted', text: 'The Rockery isn’t taking bookings yet — add a receipt above to start logging its costs, and its figures will appear here once it launches.' }),

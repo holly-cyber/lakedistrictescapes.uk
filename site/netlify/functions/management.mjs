@@ -12,6 +12,7 @@ import {
   maybeEmail,
 } from '../direct-bookings.mjs';
 import { allEffectivePricing, updatePropertyPricing, feedMeta, saveFeed, clearFeed } from '../pricing.mjs';
+import { parseIcalReservations } from './schedule.mjs';
 
 // Netlify Function (v2) — gated data feed + write API for the private owner
 // dashboard (management.lakedistrictescapes.uk).
@@ -242,6 +243,72 @@ function buildBooking(input) {
 // Dedup key for a booking with no confirmation code.
 function bookingCompositeKey(b) {
   return [b.property, b.start, b.end, round2(b.gross)].join('|');
+}
+
+// ---- live Airbnb calendar (dates only) --------------------------------------
+// New Airbnb bookings appear automatically on the dashboard as "awaiting
+// import" rows, so the owner sees them without waiting for a CSV import. They
+// carry NO money (Airbnb's calendar has none), so they are flagged pending and
+// left out of every income/occupancy figure until the CSV is imported.
+const ICAL_ENV = {
+  'the-rockery': 'AIRBNB_ICAL_THE_ROCKERY',
+  'primrose-cottage': 'AIRBNB_ICAL_PRIMROSE_COTTAGE',
+};
+async function fetchIcalReservations(url) {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'LakeDistrictEscapes/1.0 (+https://lakedistrictescapes.uk)' },
+      signal: controller.signal,
+    });
+    clearTimeout(timer);
+    if (!res.ok) return [];
+    return parseIcalReservations(await res.text());
+  } catch {
+    return [];
+  }
+}
+// Returns placeholder booking rows for live Airbnb reservations not already in
+// `existing` (matched on property + dates), newest arrivals first.
+async function liveAirbnbBookings(existing) {
+  const seen = new Set(existing.map((b) => b.property + '|' + isoDate(b.start) + '|' + isoDate(b.end)));
+  const jobs = [];
+  for (const [property, envName] of Object.entries(ICAL_ENV)) {
+    const url = Netlify.env.get(envName);
+    if (url) jobs.push(fetchIcalReservations(url).then((rs) => ({ property, rs })));
+  }
+  if (!jobs.length) return { rows: [], configured: false };
+  const out = [];
+  for (const { property, rs } of await Promise.all(jobs)) {
+    for (const r of rs) {
+      const start = isoDate(r.from);
+      const end = isoDate(r.to);
+      if (!start || !end) continue;
+      const key = property + '|' + start + '|' + end;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({
+        property,
+        channel: 'Airbnb',
+        code: '',
+        guest: '',
+        booked: '',
+        start,
+        end,
+        nights: nightsBetween(start, end),
+        gross: 0,
+        fee: 0,
+        cleaning: 0,
+        net: 0,
+        currency: 'GBP',
+        source: 'airbnb-live',
+        pending: true, // dates only — not counted until imported
+      });
+    }
+  }
+  out.sort((a, b) => b.start.localeCompare(a.start));
+  return { rows: out, configured: true };
 }
 // Decode + validate + store a receipt file under `receipt/<id>`. Returns
 // { receipt:{receiptId,receiptName,receiptType} } or { error, status }.
@@ -826,7 +893,11 @@ export default async (req) => {
   const directBookings = (await loadDirectBookings())
     .filter((b) => b.status && b.status !== 'cancelled' && b.status !== 'pending')
     .map(directToBooking);
-  const allBookings = [...baseBookings, ...ownerBookings, ...directBookings];
+  const recorded = [...baseBookings, ...ownerBookings, ...directBookings];
+  // Live Airbnb reservations not yet recorded here — surfaced as "awaiting
+  // import" rows so a new Airbnb booking shows up straight away.
+  const live = await liveAirbnbBookings(recorded);
+  const allBookings = [...recorded, ...live.rows];
 
   const owner = (await loadOwnerExpenses()).map(ownerPublic);
   const expenses = [...baseExpenses, ...owner];
@@ -857,6 +928,8 @@ export default async (req) => {
       ownerExpenseCount: owner.length,
       ownerBookingCount: ownerBookings.length,
       directBookingCount: directBookings.length,
+      airbnbLive: live.configured,
+      airbnbLiveCount: live.rows.length,
     },
   });
 };

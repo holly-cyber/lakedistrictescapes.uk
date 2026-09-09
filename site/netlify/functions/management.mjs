@@ -272,7 +272,13 @@ async function fetchIcalReservations(url) {
 // Returns placeholder booking rows for live Airbnb reservations not already in
 // `existing` (matched on property + dates), newest arrivals first.
 async function liveAirbnbBookings(existing) {
-  const seen = new Set(existing.map((b) => b.property + '|' + isoDate(b.start) + '|' + isoDate(b.end)));
+  // Dedup against ACTIVE recorded bookings only — a cancelled/moved row must not
+  // hide a fresh Airbnb booking that has re-let the same dates.
+  const seen = new Set(
+    existing
+      .filter((b) => b.status !== 'cancelled' && b.status !== 'moved')
+      .map((b) => b.property + '|' + isoDate(b.start) + '|' + isoDate(b.end)),
+  );
   const jobs = [];
   for (const [property, envName] of Object.entries(ICAL_ENV)) {
     const url = Netlify.env.get(envName);

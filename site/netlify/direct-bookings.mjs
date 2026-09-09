@@ -241,7 +241,9 @@ export async function busyRanges(propertyKey, { ignoreId } = {}) {
   const ranges = [];
 
   // Seed + owner (CSV/manual) bookings from management-data + mgmt-bookings blob.
+  // Cancelled/moved rows are kept for the record only — they no longer block.
   for (const b of SEED_BOOKINGS) {
+    if (b.status === 'cancelled' || b.status === 'moved') continue;
     if (b.property === propertyKey && b.start && b.end) ranges.push({ start: isoDate(b.start), end: isoDate(b.end) });
   }
   try {

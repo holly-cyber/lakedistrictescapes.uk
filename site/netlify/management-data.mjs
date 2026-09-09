@@ -22,6 +22,14 @@
 // Netlify Blobs (not here) and merged into the same feed at request time, so
 // day-to-day entries don't need a code change or Airtable. The rows below are
 // the starting/seed data; edit them only for corrections to the originals.
+//
+// STATUS: a booking with no `status` (or 'confirmed') is a live reservation.
+// Set `status: 'cancelled'` for a booking the guest cancelled, or
+// `status: 'moved'` (with `movedTo: 'YYYY-MM-DD'`) when a guest shifted their
+// stay to new dates — add a separate live row for the new dates. Cancelled and
+// moved rows are kept for the record: they show on the dashboard and the
+// cleaner schedule (clearly marked) but are left OUT of income, occupancy and
+// availability, and are NOT exported to Airbnb, so those nights free up again.
 // ─────────────────────────────────────────────────────────────────────────
 
 export const PROPERTIES = {
@@ -104,11 +112,17 @@ export const BOOKINGS = [
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMRYBQZZX9', guest: 'Carly Henshaw', booked: '2026-08-08', start: '2026-08-27', end: '2026-08-31', nights: 4, gross: 500.0, fee: 77.5, cleaning: 0, net: 422.5, payout: '2026-08-31', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM9XBRWNP2', guest: 'Hannah Bowey', booked: '2026-08-30', start: '2026-08-31', end: '2026-09-03', nights: 3, gross: 363.37, fee: 69.76, cleaning: 0, net: 305.24, payout: '2026-09-03', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMBQJ3W8Z9', guest: 'Helen Schofield', booked: '2026-08-10', start: '2026-09-08', end: '2026-09-11', nights: 3, gross: 376.0, fee: 58.28, cleaning: 0, net: 317.72, payout: '2026-09-11', currency: 'GBP' },
+  // Cancelled — 11 & 12 Sept freed up again (kept for the record only).
+  { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMYF5DMYWQ', guest: "Mary O'Hagan", booked: '2026-08-09', start: '2026-09-11', end: '2026-09-13', nights: 2, gross: 250.0, fee: 38.75, cleaning: 0, net: 211.25, payout: '2026-09-13', currency: 'GBP', status: 'cancelled', cancelledOn: '2026-09-09' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM92RTKNET', guest: 'Keith Graham', booked: '2026-08-31', start: '2026-09-15', end: '2026-09-19', nights: 4, gross: 517.45, fee: 99.32, cleaning: 0, net: 434.68, payout: '2026-09-19', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM9K5A9SD4', guest: 'Benjamin Francis Raby', booked: '2026-08-26', start: '2026-09-19', end: '2026-09-21', nights: 2, gross: 275.2, fee: 52.82, cleaning: 0, net: 231.18, payout: '2026-09-21', currency: 'GBP' },
+  // Moved to 27 Feb 2027 — 25 & 26 Sept freed up (see the live row below).
+  { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM3M99ERHT', guest: 'Liz Beverley', booked: '2026-08-08', start: '2026-09-25', end: '2026-09-27', nights: 2, gross: 250.0, fee: 38.75, cleaning: 0, net: 211.25, payout: '2026-09-27', currency: 'GBP', status: 'moved', movedTo: '2027-02-27', movedOn: '2026-09-09' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM25JMHSEQ', guest: 'Joanne Cowan', booked: '2026-08-31', start: '2026-10-01', end: '2026-10-05', nights: 4, gross: 547.48, fee: 105.1, cleaning: 0, net: 459.9, payout: '2026-10-05', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM835TMCWK', guest: 'Miranda Palmer', booked: '2026-08-12', start: '2026-10-20', end: '2026-10-23', nights: 3, gross: 363.37, fee: 69.76, cleaning: 0, net: 305.24, payout: '2026-10-23', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMTQT2FRBA', guest: 'Sarah Goodacre', booked: '2026-08-10', start: '2026-12-26', end: '2027-01-02', nights: 7, gross: 770.35, fee: 147.88, cleaning: 0, net: 647.12, payout: '2027-01-02', currency: 'GBP' },
+  // Liz Beverley's stay, moved here from 25 Sept 2026 (same reservation).
+  { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM3M99ERHT', guest: 'Liz Beverley', booked: '2026-08-08', start: '2027-02-27', end: '2027-03-01', nights: 2, gross: 250.0, fee: 38.75, cleaning: 0, net: 211.25, payout: '2027-03-01', currency: 'GBP', movedFrom: '2026-09-25' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HMJ3P839JS', guest: 'Amber Secker', booked: '2026-08-21', start: '2027-05-15', end: '2027-05-17', nights: 2, gross: 242.25, fee: 46.5, cleaning: 0, net: 203.5, payout: '2027-05-17', currency: 'GBP' },
   { property: 'primrose-cottage', channel: 'Airbnb', code: 'HM8D23H9SW', guest: 'Daniel Ryan', booked: '2026-08-31', start: '2027-08-01', end: '2027-08-03', nights: 2, gross: 242.25, fee: 46.5, cleaning: 0, net: 203.5, payout: '2027-08-03', currency: 'GBP' },
 ];

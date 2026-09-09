@@ -96,7 +96,11 @@ function eachNight(startIso, endIso, fn) {
 function computeView(data, view) {
   const { properties, bookings, expenses } = data;
   const inView = (b) => view === 'all' || b.property === view;
-  const bk = bookings.filter(inView);
+  const isOff = (b) => b.status === 'cancelled' || b.status === 'moved';
+  // Live bookings drive every money/occupancy figure; cancelled & moved rows are
+  // kept only for the record (shown separately, left out of the totals).
+  const bk = bookings.filter((b) => inView(b) && !isOff(b));
+  const inactive = bookings.filter((b) => inView(b) && isOff(b));
 
   // Expenses: only the business-use % of each receipt is claimable. Combined
   // counts everything in full; a single-property view counts that property's
@@ -197,6 +201,7 @@ function computeView(data, view) {
     grossIncome, fees, cleaning, netPayout, expensesTotal, startupTotal, vatReclaim, netProfit,
     ongoingProfit, nights, avgNightly, avgProfitNight, ongoingProfitNight, occupancy, monthly,
     bookings: bk.slice().sort((a, b) => a.start.localeCompare(b.start)),
+    inactiveBookings: inactive.slice().sort((a, b) => a.start.localeCompare(b.start)),
     expenses: exp.slice().sort((a, b) => a.date.localeCompare(b.date)),
   };
 }
@@ -504,6 +509,43 @@ function bookingsTable(bookings, properties, handlers, headExtra) {
   });
   return card('Bookings', bookings.length + ' reservation' + (bookings.length === 1 ? '' : 's'),
     scroller(e('table', { class: 'dash-table' }, [e('thead', {}, head), e('tbody', {}, rows)])), headExtra);
+}
+
+// "2027-02-27" → "27 Feb 2027".
+function fmtDay(iso) {
+  if (!iso) return '';
+  const [y, m, d] = String(iso).slice(0, 10).split('-').map(Number);
+  if (!y || !m || !d) return String(iso);
+  return d + ' ' + MONTHS[m - 1] + ' ' + y;
+}
+
+// Card listing cancelled & moved bookings — kept for the record, out of the
+// income and occupancy figures. Used on the overview (summary) and the
+// all-bookings tab. Returns null when there are none.
+function cancelledMovedCard(list, properties, subtitle) {
+  if (!list || !list.length) return null;
+  const head = e('tr', {}, ['Original dates', 'Guest', 'Property', 'Was', 'Status'].map((h) => e('th', { text: h })));
+  const rows = list.map((b) => {
+    const moved = b.status === 'moved';
+    const pill = e('span', { class: 'mb-st ' + (moved ? 'mb-st--scheduled' : 'mb-st--cancelled'), text: moved ? 'Moved' : 'Cancelled' });
+    const statusCell = moved && b.movedTo
+      ? e('td', {}, [pill, e('span', { class: 'cm-to', text: '→ ' + fmtDay(b.movedTo) })])
+      : e('td', {}, pill);
+    return e('tr', { class: 'cm-row' }, [
+      e('td', { text: fmtDay(b.start) + ' → ' + fmtDay(b.end) }),
+      e('td', { text: b.guest || '—' }),
+      e('td', { text: propLabel(b.property, properties) }),
+      e('td', { class: 'num muted', text: money(b.gross) }),
+      statusCell,
+    ]);
+  });
+  const cancelled = list.filter((b) => b.status === 'cancelled').length;
+  const moved = list.filter((b) => b.status === 'moved').length;
+  const parts = [];
+  if (cancelled) parts.push(cancelled + ' cancelled');
+  if (moved) parts.push(moved + ' moved');
+  return card('Cancelled & moved bookings', subtitle || parts.join(' · ') + ' — freed up, not counted in the totals',
+    scroller(e('table', { class: 'dash-table cm-table' }, [e('thead', {}, head), e('tbody', {}, rows)])));
 }
 
 function exportBookingsCsv(bookings, properties, viewLabel) {
@@ -1218,6 +1260,7 @@ export function initDashboard(root, data, opts = {}) {
   const api = opts.api || '/api/management';
   const code = opts.code || '';
   let view = 'all';
+  let section = 'overview'; // 'overview' | 'bookings'
   let taxRate = parseFloat(sessionStorage.getItem('lde-mgmt-taxrate'));
   if (!(taxRate > 0)) taxRate = 0.2;
   function setTaxRate(r) {
@@ -1369,26 +1412,69 @@ export function initDashboard(root, data, opts = {}) {
     toggle.appendChild(btn);
   });
 
-  function render() {
-    const v = computeView(data, view);
-    body.textContent = '';
+  function viewLabel() {
+    return views.find((x) => x.id === view).label;
+  }
 
-    // Quick link to the dedicated direct-bookings manager.
-    body.appendChild(e('div', { class: 'dash-toplinks' }, [
+  // Primary section switch: Overview (money + analytics) vs All bookings (the
+  // full reservation list, kept off the overview now it runs long).
+  function sectionNav() {
+    const nav = e('div', { class: 'dash-sections', role: 'tablist' });
+    [['overview', 'Overview'], ['bookings', 'All bookings']].forEach(([id, label]) => {
+      const btn = e('button', { class: 'dash-section-tgl' + (section === id ? ' active' : ''), type: 'button', role: 'tab', text: label });
+      btn.addEventListener('click', () => {
+        if (section === id) return;
+        section = id;
+        render();
+      });
+      nav.appendChild(btn);
+    });
+    return nav;
+  }
+
+  function topLinks() {
+    return e('div', { class: 'dash-toplinks' }, [
+      e('a', { class: 'dash-managelink', href: '/schedule/', target: '_blank', rel: 'noopener' }, 'Cleaner schedule →'),
       e('a', { class: 'dash-managelink', href: '/management/pricing/' }, 'Manage pricing →'),
       e('a', { class: 'dash-managelink', href: '/management/bookings/' }, 'Manage direct bookings →'),
-    ]));
+    ]);
+  }
 
-    // Add-booking and add-receipt forms are always available, in every view.
+  function renderBookings(v) {
+    // Add-booking form (manual + CSV import) lives with the list it feeds.
     body.appendChild(e('div', { class: 'dash-add-forms' }, [
       addBookingForm(properties, handlers.onAddBooking, handlers.onImportBookings),
+    ]));
+
+    let bkgCsv = null;
+    if (v.bookings.length) {
+      bkgCsv = e('button', { class: 'dash-linkbtn dash-csv', type: 'button', text: '⬇ Export CSV' });
+      bkgCsv.addEventListener('click', () => exportBookingsCsv(v.bookings, properties, viewLabel()));
+    }
+    const bt = bookingsTable(v.bookings, properties, handlers, bkgCsv);
+    if (bt) body.appendChild(bt);
+
+    const cm = cancelledMovedCard(v.inactiveBookings, properties);
+    if (cm) body.appendChild(cm);
+
+    if (!v.bookings.length && !v.inactiveBookings.length) {
+      body.appendChild(e('div', { class: 'dash-empty' }, [
+        e('p', { text: 'No bookings recorded yet for ' + (view === 'the-rockery' ? 'The Rockery' : 'this property') + '.' }),
+        e('p', { class: 'muted', text: 'Add one above, or import your Airbnb reservations CSV to load them all at once.' }),
+      ]));
+    }
+  }
+
+  function renderOverview(v) {
+    // Add-receipt form is always available on the overview.
+    body.appendChild(e('div', { class: 'dash-add-forms' }, [
       addReceiptForm(properties, handlers.onAdd, handlers.onParse),
     ]));
 
     // Calendar-sync setup: import URL(s) to block Airbnb for direct bookings.
     body.appendChild(syncNote(properties));
 
-    if (!v.bookings.length && !v.expenses.length) {
+    if (!v.bookings.length && !v.inactiveBookings.length && !v.expenses.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [
         e('p', { text: 'No bookings or expenses recorded yet for ' + (view === 'the-rockery' ? 'The Rockery' : 'this property') + '.' }),
         e('p', { class: 'muted', text: 'The Rockery isn’t taking bookings yet — add a receipt above to start logging its costs, and its figures will appear here once it launches.' }),
@@ -1415,7 +1501,7 @@ export function initDashboard(root, data, opts = {}) {
 
     // Charts
     if (v.monthly.length) {
-      body.appendChild(card('Income vs expenditure', 'by month, ' + views.find((x) => x.id === view).label.toLowerCase(),
+      body.appendChild(card('Income vs expenditure', 'by month, ' + viewLabel().toLowerCase(),
         e('div', {}, [scroller(groupedBarChart(v.monthly))]),
         legend([{ cls: 'lg-income', label: 'Income' }, { cls: 'lg-expense', label: 'Expenses' }])));
       body.appendChild(card('Occupancy by month', 'nights booked vs available', scroller(occupancyChart(v.monthly))));
@@ -1431,27 +1517,31 @@ export function initDashboard(root, data, opts = {}) {
       ));
     }
 
-    // Tax + tables
+    // Tax summary.
     body.appendChild(taxSummary(v, taxRate, setTaxRate));
 
-    // Bookings table — with CSV export in its header.
-    let bkgCsv = null;
-    if (v.bookings.length) {
-      bkgCsv = e('button', { class: 'dash-linkbtn dash-csv', type: 'button', text: '⬇ Export CSV' });
-      bkgCsv.addEventListener('click', () =>
-        exportBookingsCsv(v.bookings, properties, views.find((x) => x.id === view).label));
-    }
-    const bt = bookingsTable(v.bookings, properties, handlers, bkgCsv);
-    if (bt) body.appendChild(bt);
+    // Cancelled & moved summary — the full list is on the All bookings tab.
+    const cm = cancelledMovedCard(v.inactiveBookings, properties);
+    if (cm) body.appendChild(cm);
 
     // Expenses table — with CSV export in its header.
     let csvBtn = null;
     if (v.expenses.length) {
       csvBtn = e('button', { class: 'dash-linkbtn dash-csv', type: 'button', text: '⬇ Export CSV' });
-      csvBtn.addEventListener('click', () =>
-        exportExpensesCsv(v.expenses, properties, views.find((x) => x.id === view).label));
+      csvBtn.addEventListener('click', () => exportExpensesCsv(v.expenses, properties, viewLabel()));
     }
     body.appendChild(expensesTable(v.expenses, properties, handlers, csvBtn));
+  }
+
+  function render() {
+    const v = computeView(data, view);
+    body.textContent = '';
+
+    body.appendChild(sectionNav());
+    body.appendChild(topLinks());
+
+    if (section === 'bookings') renderBookings(v);
+    else renderOverview(v);
   }
 
   root.textContent = '';

@@ -113,12 +113,17 @@ export default async () => {
   const list = [...SEED_BOOKINGS, ...owner, ...direct].map((b) => {
     const start = isoDate(b.start);
     const end = isoDate(b.end);
+    // Status is safe to expose (no guest/money) and lets the cleaner see when a
+    // previously-scheduled changeover has been cancelled or moved elsewhere.
+    const status = b.status === 'cancelled' || b.status === 'moved' ? b.status : 'confirmed';
     return {
       property: b.property === 'the-rockery' ? 'the-rockery' : 'primrose-cottage',
       start,
       end,
       nights: b.nights > 0 ? Math.round(b.nights) : nightsBetween(start, end),
       channel: String(b.channel || 'Airbnb').slice(0, 40),
+      status,
+      movedTo: status === 'moved' ? isoDate(b.movedTo) : undefined,
     };
   });
 

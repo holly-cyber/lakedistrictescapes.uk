@@ -62,11 +62,14 @@ export function initSchedule(root, data) {
   const all = (data.bookings || []).slice();
   let view = 'all';
 
+  const isOff = (b) => b.status === 'cancelled' || b.status === 'moved';
+
   // Which same-day turnarounds exist (a departure with a new arrival same day
-  // at the same property)? Precompute for badges.
-  const arrivalsByKey = new Set(all.map((b) => b.property + '|' + b.start));
+  // at the same property)? Precompute for badges — cancelled/moved stays don't
+  // count, since no one is actually arriving or departing.
+  const arrivalsByKey = new Set(all.filter((b) => !isOff(b)).map((b) => b.property + '|' + b.start));
   all.forEach((b) => {
-    b.sameDayTurnaround = arrivalsByKey.has(b.property + '|' + b.end);
+    b.sameDayTurnaround = !isOff(b) && arrivalsByKey.has(b.property + '|' + b.end);
   });
 
   const propLabel = (key) => (key === 'the-rockery' ? (properties['the-rockery'] || {}).name || 'The Rockery' : (properties['primrose-cottage'] || {}).name || 'Primrose Cottage');
@@ -93,8 +96,10 @@ export function initSchedule(root, data) {
   });
 
   function stayCard(b) {
-    const rel = relDay(b.end);
-    const card = e('div', { class: 'sched-card' + (b.sameDayTurnaround ? ' sched-card--turn' : '') }, [
+    const off = isOff(b);
+    const rel = off ? null : relDay(b.end);
+    const cleanNote = b.sameDayTurnaround ? 'clean 10am → ready 3pm (same-day)' : 'clean from 10am';
+    const card = e('div', { class: 'sched-card' + (b.sameDayTurnaround ? ' sched-card--turn' : '') + (off ? ' sched-card--off' : '') }, [
       e('div', { class: 'sched-card-top' }, [
         e('span', { class: 'sched-prop sched-prop--' + (b.property === 'the-rockery' ? 'house' : 'cottage'), text: propShort(b.property) }),
         e('span', { class: 'sched-nights', text: b.nights + ' night' + (b.nights === 1 ? '' : 's') }),
@@ -104,19 +109,27 @@ export function initSchedule(root, data) {
         e('div', { class: 'sched-leg' }, [
           e('span', { class: 'sched-leg-k', text: 'Arrive' }),
           e('span', { class: 'sched-leg-v', text: fmtDate(b.start) }),
-          e('span', { class: 'sched-leg-note', text: 'ready by 3pm' }),
+          e('span', { class: 'sched-leg-note', text: off ? '' : 'ready by 3pm' }),
         ]),
         e('div', { class: 'sched-leg sched-leg--clean' }, [
           e('span', { class: 'sched-leg-k', text: 'Depart · clean' }),
           e('span', { class: 'sched-leg-v', text: fmtDate(b.end) }),
-          e('span', { class: 'sched-leg-note', text: b.sameDayTurnaround ? 'clean 10am → ready 3pm (same-day)' : 'clean from 10am' }),
+          e('span', { class: 'sched-leg-note', text: off ? 'no clean needed' : cleanNote }),
         ]),
       ]),
     ]);
-    if (b.sameDayTurnaround) {
-      card.querySelector('.sched-card-top').appendChild(e('span', { class: 'sched-badge', text: 'Same-day turnaround' }));
+    const top = card.querySelector('.sched-card-top');
+    if (off) {
+      const label = b.status === 'moved' ? 'Moved' : 'Cancelled';
+      top.appendChild(e('span', { class: 'sched-badge sched-badge--off', text: label }));
+      const note = b.status === 'moved'
+        ? 'This stay was moved' + (b.movedTo ? ' to ' + fmtDate(b.movedTo) : '') + ' — no clean needed on these dates.'
+        : 'This booking was cancelled — no clean needed on these dates.';
+      card.appendChild(e('p', { class: 'sched-offnote', text: note }));
+    } else if (b.sameDayTurnaround) {
+      top.appendChild(e('span', { class: 'sched-badge', text: 'Same-day turnaround' }));
     } else if (rel) {
-      card.querySelector('.sched-card-top').appendChild(e('span', { class: 'sched-badge sched-badge--soon', text: 'Clean ' + rel.toLowerCase() }));
+      top.appendChild(e('span', { class: 'sched-badge sched-badge--soon', text: 'Clean ' + rel.toLowerCase() }));
     }
     return card;
   }
@@ -133,8 +146,8 @@ export function initSchedule(root, data) {
       return;
     }
 
-    // Next clean highlight — soonest departure from today onward.
-    const upcoming = rows.filter((b) => daysUntil(b.end) >= 0).sort((a, b) => a.end.localeCompare(b.end));
+    // Next clean highlight — soonest departure from today onward (live stays only).
+    const upcoming = rows.filter((b) => !isOff(b) && daysUntil(b.end) >= 0).sort((a, b) => a.end.localeCompare(b.end));
     if (upcoming.length) {
       const nx = upcoming[0];
       const rel = relDay(nx.end);

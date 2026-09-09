@@ -86,6 +86,7 @@ export default async (req) => {
   };
 
   for (const b of SEED_BOOKINGS) {
+    if (b.status === 'cancelled' || b.status === 'moved') continue; // freed up — don't block on Airbnb
     if (b.property === key) push(b.start, b.end, b.code || b.id);
   }
   for (const b of await loadOwnerBookings()) {

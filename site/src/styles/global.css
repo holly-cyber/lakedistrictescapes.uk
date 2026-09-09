@@ -1918,6 +1918,35 @@
     }
     .dash-tgl.active { background: #fff; color: var(--off-black); box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
 
+    /* Primary section tabs (Overview / All bookings) — sit above the cards. */
+    .dash-sections {
+      display: inline-flex;
+      gap: 0.4rem;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid rgba(111,115,87,0.22);
+      width: 100%;
+    }
+    .dash-section-tgl {
+      border: none;
+      background: transparent;
+      padding: 0.55rem 0.2rem;
+      margin-right: 1.2rem;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.98rem;
+      font-weight: 700;
+      color: var(--mid);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .dash-section-tgl:hover { color: var(--gable-deep); }
+    .dash-section-tgl.active { color: var(--gable-deep); border-bottom-color: var(--gable-deep); }
+
+    /* Cancelled & moved bookings table. */
+    .cm-table .cm-row td:first-child { color: var(--mid); }
+    .cm-to { margin-left: 0.4rem; font-size: 0.82rem; color: var(--mid); font-weight: 600; }
+
     .dash-kpis {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -2201,6 +2230,13 @@
       padding: 0.18rem 0.55rem; border-radius: 999px; background: #f3e2c0; color: #8a5a12; white-space: nowrap;
     }
     .sched-badge--soon { background: var(--kendal-mint); color: var(--gable-deep); }
+    .sched-badge--off { background: rgba(90,94,82,0.16); color: #5a5e52; }
+
+    /* Cancelled / moved stay — greyed and struck so the cleaner sees no clean is due. */
+    .sched-card--off { background: #f7f6f3; border-style: dashed; opacity: 0.85; }
+    .sched-card--off .sched-leg-v { text-decoration: line-through; color: var(--mid); }
+    .sched-card--off .sched-prop { opacity: 0.75; }
+    .sched-offnote { margin: 0.55rem 0 0; font-size: 0.82rem; color: var(--mid); }
 
     .sched-legs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
     .sched-leg {

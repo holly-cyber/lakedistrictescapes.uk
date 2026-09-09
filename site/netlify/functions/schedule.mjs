@@ -127,8 +127,11 @@ export default async () => {
     };
   });
 
-  // 3: live Airbnb reservations from the iCal feeds, deduped against the above.
-  const keys = new Set(list.map((b) => b.property + '|' + b.start + '|' + b.end));
+  // 3: live Airbnb reservations from the iCal feeds. Dedup against ACTIVE stays
+  // only — a cancelled/moved row must NOT hide a fresh live booking that has
+  // re-let the same dates (that's the whole point of freeing them up).
+  const keyOf = (b) => b.property + '|' + b.start + '|' + b.end;
+  const activeKeys = new Set(list.filter((b) => b.status === 'confirmed').map(keyOf));
   const feeds = [];
   for (const [propKey, envName] of Object.entries(ICAL_ENV)) {
     const url = Netlify.env.get(envName);
@@ -142,16 +145,22 @@ export default async () => {
       const end = isoDate(r.to);
       if (!start || !end) continue;
       const key = propKey + '|' + start + '|' + end;
-      if (keys.has(key)) continue;
-      keys.add(key);
-      list.push({ property: propKey, start, end, nights: nightsBetween(start, end), channel: 'Airbnb' });
+      if (activeKeys.has(key)) continue;
+      activeKeys.add(key);
+      list.push({ property: propKey, start, end, nights: nightsBetween(start, end), channel: 'Airbnb', status: 'confirmed' });
     }
   }
+
+  // Drop any cancelled/moved row whose dates have since been re-let (a live or
+  // recorded active booking now covers them) — the new stay replaces it.
+  const relet = list.filter((b) => (b.status === 'cancelled' || b.status === 'moved') && activeKeys.has(keyOf(b)));
+  const reletKeys = new Set(relet.map(keyOf));
 
   // Keep only stays that haven't fully finished (from yesterday onward), sorted.
   const cutoff = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
   const bookings = list
     .filter((b) => b.start && b.end && b.end >= cutoff)
+    .filter((b) => !((b.status === 'cancelled' || b.status === 'moved') && reletKeys.has(keyOf(b))))
     .sort((a, b) => a.start.localeCompare(b.start) || a.end.localeCompare(b.end));
 
   const properties = {};

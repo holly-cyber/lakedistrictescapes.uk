@@ -22,6 +22,7 @@ import { stripe } from './stripe.mjs';
 import { parseICal } from './functions/availability.mjs';
 import { loadOwnerBookings } from './owner-bookings.mjs';
 import { loadStatusOverrides, applyOverrides, isFreed } from './booking-status.mjs';
+import { loadOwnerBlocks } from './owner-blocks.mjs';
 import { sendEmail, bookingConfirmationEmail, balanceReceiptEmail } from './email.mjs';
 import { effectivePricing, nightlyRateFor, seasonRateFor, isWeekendNight, leadTimeFactor, clampRate, loadFeed } from './pricing.mjs';
 
@@ -261,6 +262,11 @@ export async function busyRanges(propertyKey, { ignoreId } = {}) {
     } else if (b.status === 'pending' && b.createdAt && now - new Date(b.createdAt).getTime() < PENDING_HOLD_MS) {
       ranges.push({ start: b.start, end: b.end });
     }
+  }
+
+  // Owner blocks (family, maintenance) — nobody books over these.
+  for (const b of await loadOwnerBlocks()) {
+    if (b.property === propertyKey && b.start && b.end) ranges.push({ start: isoDate(b.start), end: isoDate(b.end) });
   }
 
   // Live Airbnb calendar.

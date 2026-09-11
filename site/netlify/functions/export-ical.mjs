@@ -2,6 +2,7 @@ import { PROPERTIES, BOOKINGS as SEED_BOOKINGS } from '../management-data.mjs';
 import { loadDirectBookings, ACTIVE_STATUSES } from '../direct-bookings.mjs';
 import { loadOwnerBookings } from '../owner-bookings.mjs';
 import { loadStatusOverrides, applyOverrides, isFreed } from '../booking-status.mjs';
+import { loadOwnerBlocks } from '../owner-blocks.mjs';
 
 // Netlify Function (v2) — PUBLIC iCal export of our booked dates, so Airbnb (or
 // any other channel) can IMPORT it and block those nights on the listing.
@@ -114,6 +115,11 @@ export default async (req) => {
   }
   for (const b of await loadDirectBookings()) {
     if (b.property === key && ACTIVE_STATUSES.has(b.status)) push(b.start, b.end, b.id || b.ref);
+  }
+  // Owner blocks — family, maintenance, a weekend off. These exist nowhere but
+  // here, so every channel needs them regardless of which feed this is.
+  for (const b of await loadOwnerBlocks()) {
+    if (b.property === key) push(b.start, b.end, b.id);
   }
 
   const dtstamp = stamp();

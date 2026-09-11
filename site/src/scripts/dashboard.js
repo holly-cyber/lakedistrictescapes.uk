@@ -95,6 +95,7 @@ function eachNight(startIso, endIso, fn) {
 // ---------- analytics ----------
 function computeView(data, view) {
   const { properties, bookings, expenses } = data;
+  const blocks = (data.blocks || []).filter((b) => view === 'all' || b.property === view);
   const inView = (b) => view === 'all' || b.property === view;
   const isOff = (b) => b.status === 'cancelled' || b.status === 'moved';
   // Airbnb calendar rows carry no money, so they never touch the figures.
@@ -154,6 +155,23 @@ function computeView(data, view) {
     expenseByMonth[monthKey(x.date)] = (expenseByMonth[monthKey(x.date)] || 0) + x.alloc;
   });
 
+  // Nights held for family / maintenance, by month. They come OUT of the
+  // available-nights denominator below: a week you kept for yourself is not a
+  // week you failed to sell, and counting it as one flatters nobody.
+  const blockedByMonth = {};
+  const blockedSeen = new Set();
+  blocks.forEach((b) => {
+    if (!b.start || !b.end) return;
+    eachNight(b.start, b.end, (night) => {
+      const id = b.property + '|' + night;
+      if (blockedSeen.has(id)) return;
+      blockedSeen.add(id);
+      const k = night.slice(0, 7);
+      blockedByMonth[k] = (blockedByMonth[k] || 0) + 1;
+    });
+  });
+  const blockedNights = blockedSeen.size;
+
   // Available nights per month for the live properties in this view.
   const propsInView = view === 'all' ? Object.keys(properties) : [view];
   function availableNights(key) {
@@ -167,7 +185,8 @@ function computeView(data, view) {
       if (key === lfKey) total += dim - (Number(lf.slice(8, 10)) - 1);
       else total += dim;
     }
-    return total;
+    // Nights we've taken off the market aren't sellable, so they don't count.
+    return Math.max(0, total - (blockedByMonth[key] || 0));
   }
 
   // Month range across income, expenses and booked nights.
@@ -175,6 +194,7 @@ function computeView(data, view) {
     ...Object.keys(incomeByMonth),
     ...Object.keys(expenseByMonth),
     ...Object.keys(bookedNightsByMonth),
+    ...Object.keys(blockedByMonth),
   ]);
   let monthly = [];
   let occTotalBooked = 0;
@@ -203,6 +223,8 @@ function computeView(data, view) {
   return {
     grossIncome, fees, cleaning, netPayout, expensesTotal, startupTotal, vatReclaim, netProfit,
     ongoingProfit, nights, avgNightly, avgProfitNight, ongoingProfitNight, occupancy, monthly,
+    blocks: blocks.slice().sort((a, b) => String(a.start).localeCompare(String(b.start))),
+    blockedNights,
     bookings: bk.slice().sort((a, b) => a.start.localeCompare(b.start)),
     inactiveBookings: inactive.slice().sort((a, b) => a.start.localeCompare(b.start)),
     awaitingImport: awaiting.slice().sort((a, b) => a.start.localeCompare(b.start)),
@@ -843,6 +865,112 @@ function addBookingForm(properties, onAdd, onImport) {
   return details;
 }
 
+// "Block dates" — family, maintenance, a weekend off. No guest, no money; the
+// nights simply come off the market everywhere at once.
+function addBlockForm(properties, onAdd) {
+  const details = e('details', { class: 'dash-card receipt-form' });
+  details.appendChild(e('summary', { class: 'rf-summary' }, [
+    e('span', { class: 'rf-plus', text: '＋' }),
+    e('span', { text: 'Block dates (family, maintenance)' }),
+  ]));
+
+  const form = e('form', { class: 'receipt-fields', novalidate: 'novalidate' });
+  const propSel = e('select', { name: 'property', required: 'required' }, [
+    e('option', { value: 'primrose-cottage', text: 'Primrose Cottage' }),
+    e('option', { value: 'the-rockery', text: 'The Rockery' }),
+  ]);
+  const reasonSel = e('select', { name: 'reason' },
+    ['Owner use', 'Family', 'Maintenance', 'Cleaning', 'Other'].map((r) => e('option', { value: r, text: r })));
+  const inIn = e('input', { name: 'start', type: 'date', required: 'required' });
+  const outIn = e('input', { name: 'end', type: 'date', required: 'required' });
+  const noteIn = e('input', { name: 'note', type: 'text', maxlength: '200', placeholder: 'Optional — just for you' });
+
+  const preview = e('p', { class: 'rf-preview' });
+  function updatePreview() {
+    const nights = nightsBetweenIso(inIn.value, outIn.value);
+    if (nights > 0) {
+      preview.textContent = nights + ' night' + (nights === 1 ? '' : 's') + ' held — blocked on Airbnb and on direct bookings.';
+      preview.style.display = '';
+    } else if (inIn.value && outIn.value) {
+      preview.textContent = 'The end date must be after the start date.';
+      preview.style.display = '';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+  [inIn, outIn].forEach((n) => n.addEventListener('input', updatePreview));
+  updatePreview();
+
+  const grid = e('div', { class: 'rf-grid' }, [
+    field('Property', propSel),
+    field('Reason', reasonSel),
+    field('First night', inIn),
+    field('Free again from', outIn, 'The morning you check out — that night is not held.'),
+    field('Note', noteIn, 'Private to you — never shown to guests or cleaners.'),
+  ]);
+
+  const save = e('button', { class: 'guest-btn rf-save', type: 'submit', text: 'Block these dates' });
+  const status = e('p', { class: 'rf-status', role: 'status', 'aria-live': 'polite' });
+  form.appendChild(grid);
+  form.appendChild(preview);
+  form.appendChild(e('div', { class: 'rf-actions' }, [save, status]));
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (nightsBetweenIso(inIn.value, outIn.value) < 1) {
+      status.textContent = 'Please check the dates.';
+      status.className = 'rf-status err';
+      return;
+    }
+    save.disabled = true;
+    status.textContent = 'Blocking…';
+    status.className = 'rf-status';
+    try {
+      await onAdd({
+        property: propSel.value,
+        reason: reasonSel.value,
+        start: inIn.value,
+        end: outIn.value,
+        note: noteIn.value,
+      });
+      form.reset();
+      updatePreview();
+      status.textContent = '';
+      details.open = false;
+    } catch (err) {
+      status.textContent = err.message || 'Could not block those dates.';
+      status.className = 'rf-status err';
+    } finally {
+      save.disabled = false;
+    }
+  });
+
+  details.appendChild(form);
+  return details;
+}
+
+// Card listing the nights currently held for owner use.
+function blocksCard(list, properties, handlers) {
+  if (!list || !list.length) return null;
+  const head = e('tr', {}, ['Dates', 'Nights', 'Property', 'Reason', 'Note', ''].map((h) => e('th', { text: h })));
+  const rows = list.map((b) => {
+    const nights = b.nights > 0 ? b.nights : nightsBetweenIso(b.start, b.end);
+    const release = e('button', { class: 'dash-linkbtn', type: 'button', title: 'Put these nights back on sale' }, 'Release');
+    release.addEventListener('click', () => handlers.onDeleteBlock(b, release));
+    return e('tr', { class: 'blk-row' }, [
+      e('td', { text: fmtDay(b.start) + ' → ' + fmtDay(b.end) }),
+      e('td', { text: String(nights) }),
+      e('td', { text: propLabel(b.property, properties) }),
+      e('td', {}, [e('span', { class: 'sched-chan sched-chan--block', text: b.reason || 'Owner use' })]),
+      e('td', { class: 'muted', text: b.note || '—' }),
+      e('td', { class: 'bk-actions' }, release),
+    ]);
+  });
+  const total = list.reduce((a, b) => a + (b.nights > 0 ? b.nights : nightsBetweenIso(b.start, b.end)), 0);
+  return card('Blocked dates', total + ' night' + (total === 1 ? '' : 's') + ' held — off the market everywhere, and out of the occupancy figure',
+    scroller(e('table', { class: 'dash-table blk-table' }, [e('thead', {}, head), e('tbody', {}, rows)])));
+}
+
 function propLabel(key, properties) {
   return key === 'shared' ? 'Shared' : (properties[key] || {}).short || key;
 }
@@ -1422,6 +1550,29 @@ export function initDashboard(root, data, opts = {}) {
         if (btn) { btn.disabled = false; btn.textContent = 'Restore'; }
       }
     },
+    async onAddBlock(input) {
+      const out = await apiCall('addBlock', input);
+      if (out.block) {
+        data.blocks = data.blocks || [];
+        data.blocks.push(out.block);
+        render();
+        toast('Dates blocked — they\'re off the market everywhere.', 'ok');
+      }
+      return out;
+    },
+    async onDeleteBlock(b, btn) {
+      if (!window.confirm('Put ' + b.start + ' → ' + b.end + ' back on sale?')) return;
+      if (btn) { btn.disabled = true; btn.textContent = 'Releasing…'; }
+      try {
+        await apiCall('deleteBlock', { id: b.id });
+        data.blocks = (data.blocks || []).filter((it) => it.id !== b.id);
+        render();
+        toast('Released — those nights are bookable again.', 'ok');
+      } catch (err) {
+        toast(err.message || 'Could not release those dates.', 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Release'; }
+      }
+    },
     async onRetryBalance(b, btn) {
       if (!window.confirm('Retry charging the ' + money(b.balance) + ' balance to the card on file for ' + (b.guest || 'this guest') + '?')) return;
       if (btn) { btn.disabled = true; btn.textContent = 'Charging…'; }
@@ -1530,6 +1681,7 @@ export function initDashboard(root, data, opts = {}) {
     // Add-booking form (manual + CSV import) lives with the list it feeds.
     body.appendChild(e('div', { class: 'dash-add-forms' }, [
       addBookingForm(properties, handlers.onAddBooking, handlers.onImportBookings),
+      addBlockForm(properties, handlers.onAddBlock),
     ]));
 
     let bkgCsv = null;
@@ -1546,7 +1698,10 @@ export function initDashboard(root, data, opts = {}) {
     const cm = cancelledMovedCard(v.inactiveBookings, properties, null, handlers);
     if (cm) body.appendChild(cm);
 
-    if (!v.bookings.length && !v.inactiveBookings.length && !v.awaitingImport.length) {
+    const blk = blocksCard(v.blocks, properties, handlers);
+    if (blk) body.appendChild(blk);
+
+    if (!v.bookings.length && !v.inactiveBookings.length && !v.awaitingImport.length && !v.blocks.length) {
       body.appendChild(e('div', { class: 'dash-empty' }, [
         e('p', { text: 'No bookings recorded yet for ' + (view === 'the-rockery' ? 'The Rockery' : 'this property') + '.' }),
         e('p', { class: 'muted', text: 'Add one above, or import your Airbnb reservations CSV to load them all at once.' }),
@@ -1591,7 +1746,9 @@ export function initDashboard(root, data, opts = {}) {
       kpi('Net profit', money(v.netProfit), 'income − fees − costs', v.netProfit >= 0 ? 'pos' : 'neg'),
       v.startupTotal > 0 ? kpi('Profit excl. start-up', money(v.ongoingProfit), money(v.startupTotal) + ' one-off costs removed', 'pos') : null,
       kpi('Tax to set aside', money(estTax), '@ ' + Math.round(taxRate * 100) + '% · ~' + money(estTax / 12, true) + '/mo', 'tax'),
-      kpi('Occupancy', pct(v.occupancy), 'nights booked / available'),
+      kpi('Occupancy', pct(v.occupancy), v.blockedNights
+        ? 'nights booked / available (' + v.blockedNights + ' held for you)'
+        : 'nights booked / available'),
       kpi('Nights booked', String(v.nights), v.bookings.length + ' bookings'),
       kpi('Avg. nightly', money(v.avgNightly), 'gross per night booked'),
       kpi('Avg. profit / night', money(v.avgProfitNight), 'net profit per night', v.avgProfitNight >= 0 ? 'pos' : 'neg'),

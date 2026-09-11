@@ -1,6 +1,7 @@
-import { getStore } from '@netlify/blobs';
 import { PROPERTIES, BOOKINGS as SEED_BOOKINGS } from '../management-data.mjs';
 import { loadDirectBookings, directToSchedule, ACTIVE_STATUSES } from '../direct-bookings.mjs';
+import { loadOwnerBookings } from '../owner-bookings.mjs';
+import { loadStatusOverrides, applyOverrides } from '../booking-status.mjs';
 
 // Netlify Function (v2) — OPEN changeover schedule for the cleaner & gardener.
 //
@@ -41,15 +42,6 @@ function nightsBetween(a, b) {
 function icalToIso(value) {
   const m = String(value).match(/(\d{4})(\d{2})(\d{2})/);
   return m ? `${m[1]}-${m[2]}-${m[3]}` : null;
-}
-
-async function loadOwnerBookings() {
-  try {
-    const list = await getStore({ name: 'mgmt-bookings', consistency: 'strong' }).get('list', { type: 'json' });
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
 }
 
 // Parse only *reservation* events (skip owner-set "Not available" blocks) out of
@@ -108,9 +100,12 @@ async function fetchIcalReservations(url) {
 export default async () => {
   // 1 + 2: seed + owner bookings + confirmed direct (Stripe) bookings, mapped to
   // safe fields (dates only — no guest names, no money).
+  const overrides = await loadStatusOverrides();
   const owner = await loadOwnerBookings();
   const direct = (await loadDirectBookings()).filter((b) => ACTIVE_STATUSES.has(b.status)).map(directToSchedule);
-  const list = [...SEED_BOOKINGS, ...owner, ...direct].map((b) => {
+  // Owner-marked cancellations/moves apply to the seed and owner rows alike, so
+  // a stay freed on the dashboard shows as cancelled here too.
+  const list = applyOverrides([...SEED_BOOKINGS, ...owner], overrides).concat(direct).map((b) => {
     const start = isoDate(b.start);
     const end = isoDate(b.end);
     // Status is safe to expose (no guest/money) and lets the cleaner see when a

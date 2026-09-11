@@ -1,25 +1,40 @@
-import { getStore } from '@netlify/blobs';
 import { PROPERTIES, BOOKINGS as SEED_BOOKINGS } from '../management-data.mjs';
 import { loadDirectBookings, ACTIVE_STATUSES } from '../direct-bookings.mjs';
+import { loadOwnerBookings } from '../owner-bookings.mjs';
+import { loadStatusOverrides, applyOverrides, isFreed } from '../booking-status.mjs';
 
 // Netlify Function (v2) — PUBLIC iCal export of our booked dates, so Airbnb (or
 // any other channel) can IMPORT it and block those nights on the listing.
 //
-//   GET /api/calendar/primrose-cottage.ics   → text/calendar
+//   GET /api/calendar/primrose-cottage.ics        → text/calendar (for Airbnb)
 //   GET /api/calendar/the-rockery.ics
+//   GET /api/calendar/primrose-cottage.ics?for=<channel>   (another channel)
+//   GET /api/calendar/primrose-cottage.ics?include=all     (every held night)
 //
-// This is the outbound half of calendar sync: direct bookings + owner-entered
+// This is the outbound half of calendar sync: direct bookings and owner-entered
 // bookings live only on our side, so Airbnb doesn't know about them until it
 // pulls this feed. Airbnb host UI: Listing → Availability → Connect calendars →
 // Import calendar → paste this URL. Airbnb refreshes it periodically.
 //
+// WE DO NOT ECHO A CHANNEL'S OWN BOOKINGS BACK TO IT.
+// Airbnb already knows about every Airbnb reservation. Sending those nights
+// back as an imported "Not available" block adds nothing — and it breaks every
+// cancellation: when the guest cancels, Airbnb frees its own reservation, then
+// re-reads this feed, finds our block still sitting on those nights and shows
+// the dates as unavailable. The nights can never be re-sold on Airbnb until
+// someone notices and clears our row by hand. So the feed carries only what the
+// destination channel cannot already know: direct bookings, owner-entered
+// blocks, and stays from OTHER channels. `?include=all` overrides this for
+// debugging or for a channel that genuinely needs the full picture.
+//
+// Cancelled and moved bookings never go out — they have freed their nights.
+//
 // Dates ONLY — every event is a plain "Not available" all-day block, with no
 // guest names, money, or contact details (same privacy stance as the schedule).
 
-const ICAL_ENV = {
-  'the-rockery': 'AIRBNB_ICAL_THE_ROCKERY',
-  'primrose-cottage': 'AIRBNB_ICAL_PRIMROSE_COTTAGE',
-};
+// The channel each feed is built for. These URLs are the ones pasted into
+// Airbnb, so Airbnb-sourced stays are the ones we must not echo.
+const DEFAULT_FEED_CHANNEL = 'Airbnb';
 
 function isoDate(v) {
   return v ? String(v).slice(0, 10) : '';
@@ -45,14 +60,8 @@ function fold(line) {
   parts.push(' ' + s);
   return parts.join('\r\n');
 }
-
-async function loadOwnerBookings() {
-  try {
-    const list = await getStore({ name: 'mgmt-bookings', consistency: 'strong' }).get('list', { type: 'json' });
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
+function sameChannel(a, b) {
+  return String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
 }
 
 export default async (req) => {
@@ -68,11 +77,17 @@ export default async (req) => {
     return new Response('Unknown property.', { status: 404, headers: { 'Content-Type': 'text/plain' } });
   }
 
-  // Gather every date range we consider booked for this property so Airbnb never
-  // under-blocks: seed + owner (manual/CSV) + confirmed direct (Stripe) bookings.
-  // Re-exporting an Airbnb-sourced date is harmless — Airbnb simply keeps that
-  // night blocked — while the direct/manual ones are the dates Airbnb wouldn't
-  // otherwise know about. Deduped by date range.
+  const includeAll = url.searchParams.get('include') === 'all';
+  const feedChannel = (url.searchParams.get('for') || DEFAULT_FEED_CHANNEL).trim();
+  // A booking belongs in this feed unless the destination channel can already
+  // see it — i.e. it came from that channel in the first place. We only trust
+  // that when the row carries the channel's own confirmation code (every seed,
+  // Airtable and CSV-imported row does). A hand-typed row with no code might be
+  // a block the channel knows nothing about, so it still goes out: over-blocking
+  // costs a night, double-booking costs a guest.
+  const fromThisChannel = (b) => sameChannel(b.channel || 'Airbnb', feedChannel) && !!String(b.code || '').trim();
+  const forThisFeed = (b) => includeAll || !fromThisChannel(b);
+
   const seen = new Set();
   const events = [];
   const push = (start, end, uid) => {
@@ -85,12 +100,17 @@ export default async (req) => {
     events.push({ start: s, end: e, uid: (uid || dedupe).replace(/[^A-Za-z0-9._-]/g, '') });
   };
 
-  for (const b of SEED_BOOKINGS) {
-    if (b.status === 'cancelled' || b.status === 'moved') continue; // freed up — don't block on Airbnb
-    if (b.property === key) push(b.start, b.end, b.code || b.id);
+  // Owner-marked cancellations/moves apply to the seed rows and the owner rows
+  // alike, so a stay freed on the dashboard stops blocking the channel at once.
+  const overrides = await loadStatusOverrides();
+
+  for (const b of applyOverrides(SEED_BOOKINGS, overrides)) {
+    if (b.property !== key || isFreed(b) || !forThisFeed(b)) continue;
+    push(b.start, b.end, b.code || b.id);
   }
-  for (const b of await loadOwnerBookings()) {
-    if (b.property === key) push(b.start, b.end, b.id || b.code);
+  for (const b of applyOverrides(await loadOwnerBookings(), overrides)) {
+    if (b.property !== key || isFreed(b) || !forThisFeed(b)) continue;
+    push(b.start, b.end, b.id || b.code);
   }
   for (const b of await loadDirectBookings()) {
     if (b.property === key && ACTIVE_STATUSES.has(b.status)) push(b.start, b.end, b.id || b.ref);

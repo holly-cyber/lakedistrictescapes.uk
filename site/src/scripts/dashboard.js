@@ -484,18 +484,25 @@ function bookingsTable(bookings, properties, handlers, headExtra) {
   if (!bookings.length) return null;
   const head = e('tr', {}, ['Check-in', 'Nights', 'Guest', 'Property', 'Channel', 'Gross', 'Fee', 'Net', ''].map((h) => e('th', { text: h })));
   const rows = bookings.map((b) => {
-    let delCell;
+    const actions = [];
+    // Cancelled / moved on the channel? Free the nights here and they drop out
+    // of the iCal feed, so Airbnb re-opens them on its next refresh.
+    const isLive = b.source === 'airbnb-live' || b.pending === true;
+    if (b.statusKey && !isLive && handlers.onFreeBooking) {
+      const free = e('button', { class: 'dash-linkbtn bk-free', type: 'button', title: 'Cancelled or moved — free these nights on the channels' }, 'Free dates');
+      free.addEventListener('click', () => handlers.onFreeBooking(b, free));
+      actions.push(free);
+    }
     if (b.source === 'owner') {
       const del = e('button', { class: 'dash-del', type: 'button', title: 'Delete this booking', 'aria-label': 'Delete booking' }, '×');
       del.addEventListener('click', () => handlers.onDeleteBooking(b));
-      delCell = e('td', {}, del);
+      actions.push(del);
     } else if (b.source === 'direct' && b.status === 'balance_failed' && handlers.onRetryBalance) {
       const retry = e('button', { class: 'bk-retry', type: 'button', title: b.balanceError || 'Retry the balance charge' }, 'Retry balance');
       retry.addEventListener('click', () => handlers.onRetryBalance(b, retry));
-      delCell = e('td', {}, retry);
-    } else {
-      delCell = e('td', {});
+      actions.push(retry);
     }
+    const delCell = e('td', { class: 'bk-actions' }, actions);
     const channelCell = b.source === 'direct'
       ? e('td', {}, [e('span', { class: 'chan-badge chan-badge--direct', text: 'Direct' }), directStatusPill(b)])
       : e('td', { class: 'muted' }, [b.channel || 'Airbnb']);
@@ -526,21 +533,28 @@ function fmtDay(iso) {
 // Card listing cancelled & moved bookings — kept for the record, out of the
 // income and occupancy figures. Used on the overview (summary) and the
 // all-bookings tab. Returns null when there are none.
-function cancelledMovedCard(list, properties, subtitle) {
+function cancelledMovedCard(list, properties, subtitle, handlers) {
   if (!list || !list.length) return null;
-  const head = e('tr', {}, ['Original dates', 'Guest', 'Property', 'Was', 'Status'].map((h) => e('th', { text: h })));
+  const head = e('tr', {}, ['Original dates', 'Guest', 'Property', 'Was', 'Status', ''].map((h) => e('th', { text: h })));
   const rows = list.map((b) => {
     const moved = b.status === 'moved';
     const pill = e('span', { class: 'mb-st ' + (moved ? 'mb-st--scheduled' : 'mb-st--cancelled'), text: moved ? 'Moved' : 'Cancelled' });
     const statusCell = moved && b.movedTo
       ? e('td', {}, [pill, e('span', { class: 'cm-to', text: '→ ' + fmtDay(b.movedTo) })])
       : e('td', {}, pill);
+    let undoCell = e('td', {});
+    if (b.statusKey && handlers && handlers.onRestoreBooking) {
+      const undo = e('button', { class: 'dash-linkbtn', type: 'button', title: 'Put this booking back — the nights block again' }, 'Restore');
+      undo.addEventListener('click', () => handlers.onRestoreBooking(b, undo));
+      undoCell = e('td', { class: 'bk-actions' }, undo);
+    }
     return e('tr', { class: 'cm-row' }, [
       e('td', { text: fmtDay(b.start) + ' → ' + fmtDay(b.end) }),
       e('td', { text: b.guest || '—' }),
       e('td', { text: propLabel(b.property, properties) }),
       e('td', { class: 'num muted', text: money(b.gross) }),
       statusCell,
+      undoCell,
     ]);
   });
   const cancelled = list.filter((b) => b.status === 'cancelled').length;
@@ -1361,6 +1375,53 @@ export function initDashboard(root, data, opts = {}) {
         toast(err.message || 'Could not delete.', 'err');
       }
     },
+    // A stay cancelled or moved on the channel. The row stays on record (out of
+    // the money and occupancy figures) but stops going out in our iCal feed, so
+    // Airbnb re-opens the nights on its next refresh instead of showing them
+    // blocked by us.
+    async onFreeBooking(b, btn) {
+      const who = b.guest ? ' for ' + b.guest : '';
+      const dates = b.start + ' → ' + b.end;
+      const moved = window.confirm(
+        'Free up ' + dates + who + '?\n\nOK = the guest CANCELLED.\nCancel = the stay MOVED to new dates (you\'ll enter them next).'
+      );
+      let status = 'cancelled';
+      let movedTo = '';
+      if (!moved) {
+        movedTo = (window.prompt('New check-in date for the moved stay (YYYY-MM-DD). Leave blank to stop.') || '').trim();
+        if (!movedTo) return;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(movedTo)) { toast('Please use the YYYY-MM-DD date format.', 'err'); return; }
+        status = 'moved';
+      }
+      if (btn) { btn.disabled = true; btn.textContent = 'Freeing…'; }
+      try {
+        await apiCall('setBookingStatus', { key: b.statusKey, status, movedTo });
+        data.bookings.forEach((it) => {
+          if (it.statusKey === b.statusKey) { it.status = status; it.movedTo = movedTo || undefined; }
+        });
+        render();
+        toast(status === 'moved' ? 'Moved — the old nights are free again.' : 'Cancelled — those nights are free again.', 'ok');
+      } catch (err) {
+        toast(err.message || 'Could not free those dates.', 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Free dates'; }
+      }
+    },
+    // Undo the above — the booking is live again and its nights block once more.
+    async onRestoreBooking(b, btn) {
+      if (!window.confirm('Put this booking back? Those nights will block again on every channel.')) return;
+      if (btn) { btn.disabled = true; btn.textContent = 'Restoring…'; }
+      try {
+        await apiCall('setBookingStatus', { key: b.statusKey, status: 'confirmed' });
+        data.bookings.forEach((it) => {
+          if (it.statusKey === b.statusKey) { delete it.status; delete it.movedTo; }
+        });
+        render();
+        toast('Booking restored.', 'ok');
+      } catch (err) {
+        toast(err.message || 'Could not restore that booking.', 'err');
+        if (btn) { btn.disabled = false; btn.textContent = 'Restore'; }
+      }
+    },
     async onRetryBalance(b, btn) {
       if (!window.confirm('Retry charging the ' + money(b.balance) + ' balance to the card on file for ' + (b.guest || 'this guest') + '?')) return;
       if (btn) { btn.disabled = true; btn.textContent = 'Charging…'; }
@@ -1482,7 +1543,7 @@ export function initDashboard(root, data, opts = {}) {
     const ai = awaitingImportCard(v.awaitingImport, properties);
     if (ai) body.appendChild(ai);
 
-    const cm = cancelledMovedCard(v.inactiveBookings, properties);
+    const cm = cancelledMovedCard(v.inactiveBookings, properties, null, handlers);
     if (cm) body.appendChild(cm);
 
     if (!v.bookings.length && !v.inactiveBookings.length && !v.awaitingImport.length) {
@@ -1560,7 +1621,7 @@ export function initDashboard(root, data, opts = {}) {
     body.appendChild(taxSummary(v, taxRate, setTaxRate));
 
     // Cancelled & moved summary — the full list is on the All bookings tab.
-    const cm = cancelledMovedCard(v.inactiveBookings, properties);
+    const cm = cancelledMovedCard(v.inactiveBookings, properties, null, handlers);
     if (cm) body.appendChild(cm);
 
     // Expenses table — with CSV export in its header.

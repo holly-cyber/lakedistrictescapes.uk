@@ -20,6 +20,8 @@ import { getStore } from '@netlify/blobs';
 import { PRICING, PROPERTIES, BOOKINGS as SEED_BOOKINGS, CANCELLATION_POLICY } from './management-data.mjs';
 import { stripe } from './stripe.mjs';
 import { parseICal } from './functions/availability.mjs';
+import { loadOwnerBookings } from './owner-bookings.mjs';
+import { loadStatusOverrides, applyOverrides, isFreed } from './booking-status.mjs';
 import { sendEmail, bookingConfirmationEmail, balanceReceiptEmail } from './email.mjs';
 import { effectivePricing, nightlyRateFor, seasonRateFor, isWeekendNight, leadTimeFactor, clampRate, loadFeed } from './pricing.mjs';
 
@@ -241,20 +243,13 @@ export async function busyRanges(propertyKey, { ignoreId } = {}) {
   const ranges = [];
 
   // Seed + owner (CSV/manual) bookings from management-data + mgmt-bookings blob.
-  // Cancelled/moved rows are kept for the record only — they no longer block.
-  for (const b of SEED_BOOKINGS) {
-    if (b.status === 'cancelled' || b.status === 'moved') continue;
-    if (b.property === propertyKey && b.start && b.end) ranges.push({ start: isoDate(b.start), end: isoDate(b.end) });
-  }
-  try {
-    const owner = await getStore({ name: 'mgmt-bookings', consistency: 'strong' }).get('list', { type: 'json' });
-    if (Array.isArray(owner)) {
-      for (const b of owner) {
-        if (b.property === propertyKey && b.start && b.end) ranges.push({ start: isoDate(b.start), end: isoDate(b.end) });
-      }
-    }
-  } catch {
-    /* ignore */
+  // Cancelled/moved rows are kept for the record only — they no longer block,
+  // whether that status came from the seed data or from the dashboard.
+  const overrides = await loadStatusOverrides();
+  const held = [...applyOverrides(SEED_BOOKINGS, overrides), ...applyOverrides(await loadOwnerBookings(), overrides)];
+  for (const b of held) {
+    if (b.property !== propertyKey || isFreed(b) || !b.start || !b.end) continue;
+    ranges.push({ start: isoDate(b.start), end: isoDate(b.end) });
   }
 
   // Direct bookings (confirmed) + recent pending holds.

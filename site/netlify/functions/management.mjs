@@ -14,6 +14,7 @@ import {
 import { allEffectivePricing, updatePropertyPricing, feedMeta, saveFeed, clearFeed } from '../pricing.mjs';
 import { parseIcalReservations } from './schedule.mjs';
 import { loadOwnerBookings, saveOwnerBookings } from '../owner-bookings.mjs';
+import { loadOwnerBlocks, saveOwnerBlocks, buildBlock } from '../owner-blocks.mjs';
 import {
   loadStatusOverrides,
   saveStatusOverrides,
@@ -690,6 +691,36 @@ export default async (req) => {
     return json({ ok: true, added: added.map(bookingPublic), addedCount: added.length, skipped, invalid });
   }
 
+  // ---- WRITE: block dates for family / maintenance / owner use ----
+  // Not a booking: no guest, no money. It exists only here, so it is the one
+  // thing the channels genuinely need from our feed.
+  if (action === 'addBlock') {
+    const r = buildBlock(body, (k) => !!PROPERTIES[k] && k !== 'shared');
+    if (r.error) return json({ error: r.error }, 400);
+    try {
+      const list = await loadOwnerBlocks();
+      list.push(r.block);
+      await saveOwnerBlocks(list);
+    } catch (err) {
+      return json({ error: 'Could not save that block. ' + err.message }, 500);
+    }
+    return json({ ok: true, block: r.block });
+  }
+
+  // ---- WRITE: release blocked dates ----
+  if (action === 'deleteBlock') {
+    const id = String(body.id || '');
+    if (!id) return json({ error: 'Missing id.' }, 400);
+    try {
+      const list = await loadOwnerBlocks();
+      if (!list.some((b) => b.id === id)) return json({ error: 'Those blocked dates were not found.' }, 404);
+      await saveOwnerBlocks(list.filter((b) => b.id !== id));
+    } catch (err) {
+      return json({ error: 'Could not release those dates. ' + err.message }, 500);
+    }
+    return json({ ok: true, id });
+  }
+
   // ---- WRITE: cancel / move / restore a booking (frees or re-blocks dates) ----
   // Works for seed, Airtable and owner-entered rows alike. The booking stays on
   // record; only its status changes, and a cancelled/moved stay stops going out
@@ -945,6 +976,7 @@ export default async (req) => {
 
   const owner = (await loadOwnerExpenses()).map(ownerPublic);
   const expenses = [...baseExpenses, ...owner];
+  const blocks = (await loadOwnerBlocks()).sort((a, b) => String(a.start).localeCompare(String(b.start)));
 
   let pricing = {};
   try {
@@ -964,6 +996,7 @@ export default async (req) => {
   return json({
     properties: PROPERTIES,
     bookings: allBookings,
+    blocks,
     expenses,
     pricing,
     meta: {

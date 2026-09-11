@@ -2,6 +2,7 @@ import { PROPERTIES, BOOKINGS as SEED_BOOKINGS } from '../management-data.mjs';
 import { loadDirectBookings, directToSchedule, ACTIVE_STATUSES } from '../direct-bookings.mjs';
 import { loadOwnerBookings } from '../owner-bookings.mjs';
 import { loadStatusOverrides, applyOverrides } from '../booking-status.mjs';
+import { loadOwnerBlocks } from '../owner-blocks.mjs';
 
 // Netlify Function (v2) — OPEN changeover schedule for the cleaner & gardener.
 //
@@ -150,6 +151,24 @@ export default async () => {
   // recorded active booking now covers them) — the new stay replaces it.
   const relet = list.filter((b) => (b.status === 'cancelled' || b.status === 'moved') && activeKeys.has(keyOf(b)));
   const reletKeys = new Set(relet.map(keyOf));
+
+  // 4: owner blocks (family, maintenance). The cottage is occupied, so the
+  // cleaner and gardener need to see them — the reason, but never the note.
+  // Added after the live-calendar dedup so a block can't hide a real booking.
+  for (const b of await loadOwnerBlocks()) {
+    const start = isoDate(b.start);
+    const end = isoDate(b.end);
+    if (!start || !end) continue;
+    list.push({
+      property: b.property === 'the-rockery' ? 'the-rockery' : 'primrose-cottage',
+      start,
+      end,
+      nights: b.nights > 0 ? Math.round(b.nights) : nightsBetween(start, end),
+      channel: String(b.reason || 'Owner use').slice(0, 40),
+      status: 'confirmed',
+      kind: 'block',
+    });
+  }
 
   // Keep only stays that haven't fully finished (from yesterday onward), sorted.
   const cutoff = new Date(Date.now() - 86400000).toISOString().slice(0, 10);

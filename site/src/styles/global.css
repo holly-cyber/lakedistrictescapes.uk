@@ -2067,6 +2067,11 @@
       transition: color 0.15s ease, background 0.15s ease;
     }
     .dash-del:hover { color: #b23b3b; background: rgba(178,59,59,0.08); }
+    /* inline row actions (free dates / delete / retry) */
+    .dash-table td.bk-actions { white-space: nowrap; text-align: right; }
+    .dash-table td.bk-actions > * + * { margin-left: 0.35rem; }
+    .bk-free { border-color: rgba(178,59,59,0.35); color: #8a3030; }
+    .bk-free:hover { background: rgba(178,59,59,0.08); border-color: rgba(178,59,59,0.5); }
     .dash-empty-sm { padding: 1.2rem 0.2rem; font-size: 0.85rem; }
 
     /* add booking + receipt forms */

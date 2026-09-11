@@ -13,6 +13,14 @@ import {
 } from '../direct-bookings.mjs';
 import { allEffectivePricing, updatePropertyPricing, feedMeta, saveFeed, clearFeed } from '../pricing.mjs';
 import { parseIcalReservations } from './schedule.mjs';
+import { loadOwnerBookings, saveOwnerBookings } from '../owner-bookings.mjs';
+import {
+  loadStatusOverrides,
+  saveStatusOverrides,
+  applyOverrides,
+  bookingKey,
+  VALID_STATUSES,
+} from '../booking-status.mjs';
 
 // Netlify Function (v2) — gated data feed + write API for the private owner
 // dashboard (management.lakedistrictescapes.uk).
@@ -148,7 +156,6 @@ function round2(n) {
 // --- owner data stores (Netlify Blobs) ---------------------------------------
 const EXP_STORE = 'mgmt-expenses';
 const RCPT_STORE = 'mgmt-receipts';
-const BKG_STORE = 'mgmt-bookings';
 const RCPT_MAX_BYTES = Math.round(4.5 * 1024 * 1024); // ~4.5MB decoded
 
 function expStore() {
@@ -156,9 +163,6 @@ function expStore() {
 }
 function rcptStore() {
   return getStore({ name: RCPT_STORE, consistency: 'strong' });
-}
-function bkgStore() {
-  return getStore({ name: BKG_STORE, consistency: 'strong' });
 }
 async function loadOwnerExpenses() {
   try {
@@ -170,17 +174,6 @@ async function loadOwnerExpenses() {
 }
 async function saveOwnerExpenses(list) {
   await expStore().setJSON('list', list);
-}
-async function loadOwnerBookings() {
-  try {
-    const list = await bkgStore().get('list', { type: 'json' });
-    return Array.isArray(list) ? list : [];
-  } catch {
-    return [];
-  }
-}
-async function saveOwnerBookings(list) {
-  await bkgStore().setJSON('list', list);
 }
 function bookingPublic(b) {
   return {
@@ -200,6 +193,9 @@ function bookingPublic(b) {
     payout: b.payout || '',
     currency: b.currency || 'GBP',
     source: 'owner',
+    // Cancelled/moved rows stay visible on the dashboard but free their nights.
+    status: b.status || undefined,
+    movedTo: b.movedTo || undefined,
   };
 }
 // Validate + normalise a booking from user/CSV input. Returns { booking } or
@@ -694,6 +690,38 @@ export default async (req) => {
     return json({ ok: true, added: added.map(bookingPublic), addedCount: added.length, skipped, invalid });
   }
 
+  // ---- WRITE: cancel / move / restore a booking (frees or re-blocks dates) ----
+  // Works for seed, Airtable and owner-entered rows alike. The booking stays on
+  // record; only its status changes, and a cancelled/moved stay stops going out
+  // in the iCal feed, so the nights re-open on the channels within one refresh.
+  if (action === 'setBookingStatus') {
+    const key = String(body.key || '').trim();
+    const status = String(body.status || '').trim().toLowerCase();
+    if (!key) return json({ error: 'Missing booking key.' }, 400);
+    if (!VALID_STATUSES.has(status)) {
+      return json({ error: 'Status must be cancelled, moved or confirmed.' }, 400);
+    }
+    const movedTo = isoDate(body.movedTo);
+    if (status === 'moved' && !movedTo) {
+      return json({ error: 'Please give the new check-in date for a moved booking.' }, 400);
+    }
+    let entry;
+    try {
+      const map = await loadStatusOverrides();
+      entry = {
+        status,
+        movedTo: status === 'moved' ? movedTo : '',
+        note: String(body.note || '').trim().slice(0, 200),
+        at: new Date().toISOString().slice(0, 10),
+      };
+      map[key] = entry;
+      await saveStatusOverrides(map);
+    } catch (err) {
+      return json({ error: 'Could not update the booking. ' + err.message }, 500);
+    }
+    return json({ ok: true, key, ...entry });
+  }
+
   // ---- WRITE: delete an owner booking ----
   if (action === 'deleteBooking') {
     const id = String(body.id || '');
@@ -894,16 +922,26 @@ export default async (req) => {
   // are owner-editable, then merge in owner-entered bookings from Blobs.
   const baseBookings = bookings.map((b) => ({ ...b, source: b.source || source }));
   const ownerBookings = (await loadOwnerBookings()).map(bookingPublic);
+  // Cancellations/moves marked on the dashboard live in a small overrides map
+  // so they apply to the seed/Airtable rows too — no redeploy to free a date.
+  const statusOverrides = await loadStatusOverrides();
   // Direct (Stripe) bookings — include every non-cancelled one so their deposit
   // shows immediately and the owner can track the balance status.
   const directBookings = (await loadDirectBookings())
     .filter((b) => b.status && b.status !== 'cancelled' && b.status !== 'pending')
     .map(directToBooking);
-  const recorded = [...baseBookings, ...ownerBookings, ...directBookings];
+  const recorded = [
+    ...applyOverrides(baseBookings, statusOverrides),
+    ...applyOverrides(ownerBookings, statusOverrides),
+    ...directBookings,
+  ];
   // Live Airbnb reservations not yet recorded here — surfaced as "awaiting
   // import" rows so a new Airbnb booking shows up straight away.
   const live = await liveAirbnbBookings(recorded);
-  const allBookings = [...recorded, ...live.rows];
+  // `statusKey` is what the dashboard posts back to cancel / restore a stay.
+  const allBookings = [...recorded, ...live.rows].map((b) =>
+    b.source === 'direct' ? b : { ...b, statusKey: b.id ? 'id:' + b.id : bookingKey(b) },
+  );
 
   const owner = (await loadOwnerExpenses()).map(ownerPublic);
   const expenses = [...baseExpenses, ...owner];

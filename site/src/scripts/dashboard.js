@@ -125,6 +125,23 @@ function computeView(data, view) {
     });
 
   const grossIncome = bk.reduce((a, b) => a + b.gross, 0);
+  // Actual vs projected income: split each booking's gross across its nights and
+  // bucket by whether the night has already passed. A night dated before today
+  // is completed (earned = actual); tonight and future nights are projected.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  let actualIncome = 0;
+  let projectedIncome = 0;
+  let actualNights = 0;
+  let projectedNights = 0;
+  bk.forEach((b) => {
+    const bn = b.nights > 0 ? Math.round(b.nights) : 0;
+    if (!bn) return;
+    const per = (b.gross || 0) / bn;
+    eachNight(b.start, b.end, (iso) => {
+      if (iso < todayIso) { actualIncome += per; actualNights += 1; }
+      else { projectedIncome += per; projectedNights += 1; }
+    });
+  });
   const fees = bk.reduce((a, b) => a + b.fee, 0);
   const cleaning = bk.reduce((a, b) => a + (b.cleaning || 0), 0);
   const netPayout = bk.reduce((a, b) => a + b.net, 0);
@@ -225,6 +242,7 @@ function computeView(data, view) {
     ongoingProfit, nights, avgNightly, avgProfitNight, ongoingProfitNight, occupancy, monthly,
     blocks: blocks.slice().sort((a, b) => String(a.start).localeCompare(String(b.start))),
     blockedNights,
+    actualIncome, projectedIncome, actualNights, projectedNights,
     bookings: bk.slice().sort((a, b) => a.start.localeCompare(b.start)),
     inactiveBookings: inactive.slice().sort((a, b) => a.start.localeCompare(b.start)),
     awaitingImport: awaiting.slice().sort((a, b) => a.start.localeCompare(b.start)),
@@ -542,6 +560,30 @@ function bookingsTable(bookings, properties, handlers, headExtra) {
   });
   return card('Bookings', bookings.length + ' reservation' + (bookings.length === 1 ? '' : 's'),
     scroller(e('table', { class: 'dash-table' }, [e('thead', {}, head), e('tbody', {}, rows)])), headExtra);
+}
+
+// Actual (earned from completed nights) vs projected (upcoming booked nights)
+// income, with a progress bar showing how much of the booked total is banked.
+function incomeSplitCard(v) {
+  const total = v.actualIncome + v.projectedIncome;
+  const pctActual = total > 0 ? (v.actualIncome / total) * 100 : 0;
+  const stat = (label, amount, nightsN, cls) => e('div', { class: 'inc-stat ' + cls }, [
+    e('div', { class: 'inc-stat-label', text: label }),
+    e('div', { class: 'inc-stat-amt', text: money(amount) }),
+    e('div', { class: 'inc-stat-sub muted', text: nightsN + ' night' + (nightsN === 1 ? '' : 's') }),
+  ]);
+  const bar = e('div', { class: 'inc-bar', role: 'img', 'aria-label': pct(pctActual) + ' of booked income earned so far' }, [
+    e('div', { class: 'inc-bar-fill', style: 'width:' + Math.max(0, Math.min(100, pctActual)).toFixed(1) + '%' }),
+  ]);
+  const body = e('div', { class: 'inc-split' }, [
+    e('div', { class: 'inc-stats' }, [
+      stat('Actual — earned to date', v.actualIncome, v.actualNights, 'inc-stat--actual'),
+      stat('Projected — still to come', v.projectedIncome, v.projectedNights, 'inc-stat--proj'),
+    ]),
+    bar,
+    e('p', { class: 'inc-note muted', text: 'Actual is income from stays that have already finished; projected is what’s still on the books from upcoming bookings. Together they total ' + money(total) + ' of gross booked income. Cancelled, moved and not-yet-imported bookings are excluded.' }),
+  ]);
+  return card('Income — actual vs projected', 'gross booked, split by past & upcoming nights', body);
 }
 
 // "2027-02-27" → "27 Feb 2027".
@@ -1755,6 +1797,9 @@ export function initDashboard(root, data, opts = {}) {
       v.startupTotal > 0 ? kpi('Profit / night excl. start-up', money(v.ongoingProfitNight), 'ongoing, one-off costs removed', 'pos') : null,
       kpi('Net payout', money(v.netPayout), 'cash received'),
     ]));
+
+    // Actual vs projected income — earned to date vs still on the books.
+    if (v.actualIncome + v.projectedIncome > 0) body.appendChild(incomeSplitCard(v));
 
     // Charts
     if (v.monthly.length) {

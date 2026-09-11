@@ -1943,6 +1943,19 @@
     .dash-section-tgl:hover { color: var(--gable-deep); }
     .dash-section-tgl.active { color: var(--gable-deep); border-bottom-color: var(--gable-deep); }
 
+    /* Income — actual vs projected card. */
+    .inc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9rem; }
+    .inc-stat { border: 1px solid rgba(111,115,87,0.22); border-radius: 10px; padding: 0.85rem 1rem; }
+    .inc-stat--actual { background: rgba(74,157,106,0.08); border-color: rgba(74,157,106,0.32); }
+    .inc-stat--proj { background: rgba(142,184,216,0.1); border-color: rgba(142,184,216,0.4); }
+    .inc-stat-label { font-size: 0.78rem; font-weight: 700; color: var(--mid); }
+    .inc-stat-amt { font-size: 1.5rem; font-weight: 800; color: var(--off-black); margin-top: 0.15rem; line-height: 1.1; }
+    .inc-stat-sub { font-size: 0.76rem; margin-top: 0.1rem; }
+    .inc-bar { position: relative; height: 10px; border-radius: 999px; background: rgba(142,184,216,0.25); margin: 1rem 0 0.5rem; overflow: hidden; }
+    .inc-bar-fill { position: absolute; inset: 0 auto 0 0; background: #4a9d6a; border-radius: 999px; }
+    .inc-note { font-size: 0.8rem; margin: 0.4rem 0 0; }
+    @media (max-width: 520px) { .inc-stats { grid-template-columns: 1fr; } }
+
     /* Cancelled & moved bookings table. */
     .cm-table .cm-row td:first-child { color: var(--mid); }
     .cm-to { margin-left: 0.4rem; font-size: 0.82rem; color: var(--mid); font-weight: 600; }

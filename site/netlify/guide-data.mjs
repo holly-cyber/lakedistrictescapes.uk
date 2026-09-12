@@ -32,6 +32,7 @@ export const GUIDE = {
           { name: 'Keswick & Derwentwater', note: '~40 min — launches, Catbells and the northern fells.' },
           { name: 'Windermere & Ambleside', note: '~45–50 min — the classic central Lakes day out.' },
           { name: 'Penrith & Kendal', note: 'Market towns 15–20 min away for shops, cafes and a rainy day.' },
+          { name: 'Bike hire', note: 'Nothing hires in Shap itself, so the one to go for is Arragons at Lowther Castle (~15 min) — e-bikes and gravel bikes, and a lovely ride down to Pooley Bridge. Closed Mondays. E-Bike Safaris in Kendal will also deliver to the door. Full details in the Walks, Runs & Rides guide.', link: 'https://arragonscyclehire.com', linkLabel: 'Book ↗', phone: '07745 190227' },
         ],
       },
       {

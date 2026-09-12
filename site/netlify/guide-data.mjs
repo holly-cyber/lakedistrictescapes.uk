@@ -32,7 +32,6 @@ export const GUIDE = {
           { name: 'Keswick & Derwentwater', note: '~40 min — launches, Catbells and the northern fells.' },
           { name: 'Windermere & Ambleside', note: '~45–50 min — the classic central Lakes day out.' },
           { name: 'Penrith & Kendal', note: 'Market towns 15–20 min away for shops, cafes and a rainy day.' },
-          { name: 'Bike hire', note: 'Nothing hires in Shap itself, so the one to go for is Arragons at Lowther Castle (~15 min) — e-bikes and gravel bikes, and a lovely ride down to Pooley Bridge. Closed Mondays. E-Bike Safaris in Kendal will also deliver to the door. Full details in the Walks, Runs & Rides guide.', link: 'https://arragonscyclehire.com', linkLabel: 'Book ↗', phone: '07745 190227' },
         ],
       },
       {
@@ -50,6 +49,15 @@ export const GUIDE = {
             name: 'Fuel, cash & pharmacy',
             note: 'Free-to-use cashpoint at the Co-op in the village. Nearest fuel is Tebay Services (handy but pricey); for cheaper filling up, the Esso garage on the A6 into Penrith (Bridge Lane, CA11 8JB — over the roundabout) or on into Kendal. The nearest pharmacy is in Penrith (about 15–20 min).',
           },
+        ],
+      },
+      {
+        name: 'Bike Hire',
+        items: [
+          { name: 'Arragons Cycle Hire, Lowther Castle', meta: '~15 min from Shap · e-bikes, hybrids & gravel bikes, helmets included · Tue–Sun 10am–4pm, closed Mondays', note: 'There’s nowhere to hire bikes in Shap itself, so this is the one to go for — the nearest option, and the staff are lovely. The easy, mostly flat ride from the castle down to Pooley Bridge on Ullswater is a proper treat. Book ahead, especially in season.', link: 'https://arragonscyclehire.com', linkLabel: 'Book ↗', phone: '07745 190227' },
+          { name: 'Arragons Cycle Centre, Penrith', meta: 'town-centre shop · closed Sun & Mon', note: 'For hires of several days, their main shop is the better bet — 2 Brunswick Rd, Penrith.', link: 'https://arragons.com', linkLabel: 'Visit ↗', phone: '01768 890344' },
+          { name: 'E-Bike Safaris, Kendal', meta: 'delivered to your door · open daily 8am–7pm', note: 'If you’d rather not drive at all, they’ll drop e-bikes at the cottage and collect them afterwards, with routes already loaded on a phone mount. They also do multi-day guided and self-guided packages.', link: 'https://ebikesafaris.com', linkLabel: 'Visit ↗', phone: '07930 869351' },
+          { name: 'Ullswater eBikes, Glenridding', meta: '~35 min from Shap · 9am–5pm, closed Tuesdays', note: 'For a bigger day out on the Ullswater fells — electric mountain bikes, and they know the trails inside out. Based at the Glenridding tourist information centre.', link: 'https://ullswaterebikes.co.uk', linkLabel: 'Visit ↗', phone: '07919 892139' },
         ],
       },
       {

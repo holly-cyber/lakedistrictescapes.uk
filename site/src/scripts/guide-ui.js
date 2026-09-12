@@ -136,6 +136,13 @@ export function renderArea(area) {
         a.textContent = item.linkLabel || 'Visit website ↗';
         it.appendChild(a);
       }
+      if (item.phone) {
+        const tel = document.createElement('a');
+        tel.className = 'area-item-link';
+        tel.href = 'tel:' + String(item.phone).replace(/[^0-9+]/g, '');
+        tel.textContent = '📞 ' + item.phone;
+        it.appendChild(tel);
+      }
       body.appendChild(it);
     });
     cards.appendChild(makeCard(group.name, body, i === 0));

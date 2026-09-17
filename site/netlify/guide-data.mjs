@@ -469,12 +469,6 @@ export const GUIDE = {
         ],
       },
       {
-        name: 'Further Afield',
-        items: [
-          { name: 'River Eden, Lazonby to Kirkoswald', meta: '~30 min', note: 'A wide, slow stretch of river by the old sandstone bridge, with a small car park nearby — a local classic on a warm day and a nice change from the lakes.' },
-        ],
-      },
-      {
         name: 'If You Want Adrenaline',
         items: [
           { name: 'White-water rafting', note: 'Being a few minutes from the M6 makes this easier from Shap than from most of the Lakes. Whitewater North run three-hour trips (age 10+) on whichever Cumbrian river is running best, usually within 20 min of Junction 36 — about 45 minutes from here. They’re honest about levels: if the river isn’t worth rafting they’ll say so and offer tubing or an Eden river journey instead. Rafting needs rain, so autumn to spring is the reliable season.', link: 'https://whitewaternorth.com/whitewater-rafting/', linkLabel: 'Whitewater North ↗' },

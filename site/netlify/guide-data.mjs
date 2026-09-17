@@ -486,7 +486,7 @@ export const GUIDE = {
       {
         name: 'Before You Get In — A Few Words on Cold Water',
         items: [
-          { name: 'Lakeland water is cold all year', note: 'I swim outdoors a lot and love it, but the water is cold year-round. Ullswater can be 11°C in summer and 3–4°C in winter, and it’s very deep.' },
+          { name: 'Lakeland water is cold all year', note: 'The water is cold year-round. Ullswater can be 11°C in summer and 3–4°C in winter, and it’s very deep.' },
           { name: 'Get in slowly', note: 'Cold-water shock is what catches people out. Wade in, let your breathing settle, then swim — no jumping in from a standing start.' },
           { name: 'Don’t swim alone', note: 'Tell someone where you’re going.' },
           { name: 'Wear a bright hat and a tow float', note: 'Ullswater has steamers and motorboats, and a swimmer’s head is very hard to see. Stay close to shore and well clear of the piers.' },
@@ -496,7 +496,6 @@ export const GUIDE = {
           { name: 'Becks and rivers rise fast after rain', note: 'If Swindale or the Eden are running brown and quick, save them for another day.' },
           { name: 'Check, clean, dry', note: 'Moving kit between lakes? Rinse and dry it first so you don’t carry invasive species with you.' },
           { name: 'In an emergency', note: 'On or near the water, call 999 and ask for Mountain Rescue or the Fire Service.' },
-          { name: 'Enjoy it', note: 'There’s nothing quite like a swim with the fells above you. — Holly' },
         ],
       },
     ],

@@ -136,6 +136,18 @@ export function renderArea(area) {
         a.textContent = item.linkLabel || 'Visit website ↗';
         it.appendChild(a);
       }
+      if (Array.isArray(item.links)) {
+        item.links.forEach((lnk) => {
+          if (!lnk || !/^https?:\/\//.test(lnk.url)) return;
+          const a = document.createElement('a');
+          a.className = 'area-item-link';
+          a.href = lnk.url;
+          a.target = '_blank';
+          a.rel = 'noopener noreferrer';
+          a.textContent = lnk.label || 'Visit website ↗';
+          it.appendChild(a);
+        });
+      }
       if (item.phone) {
         const tel = document.createElement('a');
         tel.className = 'area-item-link';

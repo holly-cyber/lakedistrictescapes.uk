@@ -432,6 +432,76 @@ export const GUIDE = {
     ],
   },
 
+  water: {
+    title: 'On (and in) the Water',
+    intro:
+      'Shap sits on the quiet eastern edge of the Lakes, which means the nearest big water is Ullswater — about 25 minutes away, and for my money the best-looking lake of the lot. Here’s where I’d point you, starting closest to the door. — Holly',
+    groups: [
+      {
+        name: 'Right Here in Shap',
+        items: [
+          { name: 'Shap Open Air Pool', meta: 'Gayle Avenue, CA10 3NS · late May–early September', note: 'England’s highest heated outdoor pool, run entirely by village volunteers — small, friendly and a genuine one-off, with family fun sessions and adult-only swims. Sessions fill on sunny days, so book ahead.', link: 'https://shapswimmingpool.co.uk/', linkLabel: 'Pool info ↗', links: [{ label: 'Book a swim ↗', url: 'https://bookwhen.com/shapswimmingpool' }] },
+        ],
+      },
+      {
+        name: 'A Short Drive',
+        items: [
+          { name: 'Swindale Beck', meta: '~15 min · via Bampton Grange', note: 'Park along the valley road and walk up towards Swindale Head, where the beck drops through a run of waterfalls — shallow pools for paddling, deeper ones for a proper cold dip, and you may not see another soul all day. Parking is limited, so tuck in considerately and don’t block gates.' },
+          { name: 'Haweswater — look, don’t swim', note: 'Beautiful and well worth the drive to the head of the valley, but it’s a drinking-water reservoir — no swimming or boating. Walk it instead.' },
+        ],
+      },
+      {
+        name: 'Ullswater — Boats & Hire',
+        items: [
+          { name: 'Getting there', note: 'Pooley Bridge (the near end) is about 25 minutes from the house; Glenridding (the far end) around 40.' },
+          { name: 'Ullswater Steamers', meta: 'daily except 24–25 Dec · dogs welcome', note: 'Heritage boats running the length of the lake between Pooley Bridge, Howtown and Glenridding — the full lake is an hour each way. My favourite: sail Pooley Bridge to Howtown, then walk back along the Ullswater Way. Timetables change with the season, so check before you set off, and allow 10–15 min to park in Pooley Bridge and reach the pier.', link: 'https://www.ullswater-steamers.co.uk/plan-your-visit/timetable-and-fares/', linkLabel: 'Timetable & fares ↗' },
+          { name: 'Paddleboards, kayaks & faster things', note: 'Ullswater Wake & Surf, just outside Pooley Bridge on the Howtown road, hires paddleboards, kayaks, canoes and rowing boats — and runs wakesurfing and kneeboarding if you fancy something livelier. Wetsuits too.', link: 'https://wakeandsurf.co.uk/', linkLabel: 'Book online ↗' },
+          { name: 'Sailing & canoes at Glenridding', note: 'Glenridding Sailing Centre hires kayaks, canoes and sailing dinghies from mid-March to mid-November, with taster sessions if you’ve never sailed. Outside July and August they’re closed Tue & Wed. The southern end is the dramatic end, with Helvellyn rising straight above you.', link: 'https://www.glenriddingsailingcentre.co.uk/lake-district-boat-hire/', linkLabel: 'Boat hire ↗' },
+          { name: 'Guided paddle, pub at the end', note: 'Several local outfits run guided sea-kayak trips down the full seven miles of the lake, Glenridding to Pooley Bridge, in stable tandem boats — around three hours, no experience needed, and you finish at a pub.', link: 'https://www.countryfi.com/product/ullswater-paddle-to-the-pub/', linkLabel: 'Paddle to the Pub ↗', links: [{ label: 'Full-day paddle & walk ↗', url: 'https://www.ullswateroutdooradventures.co.uk/paddle-walk-ullswater-way' }] },
+        ],
+      },
+      {
+        name: 'Swimming in Ullswater',
+        items: [
+          { name: 'Kailpot Crag', note: 'The swim spot everyone rates, and rightly. Park at Sandwick and follow the lakeshore path towards Howtown through the woods — you’ll pass small beaches to get in, and the crag sits above deep, clear water. Parking at Sandwick is tiny, so go early or late.' },
+          { name: 'Aira Force upper pools', meta: 'park at High Force car park, CA11 0JY', note: 'Cross the road, through the gate and head right, downstream — the pool at the base of the falls is about five minutes from the car. Sheep in the field, so dogs on leads.' },
+          { name: 'Guided swims', note: 'New to open water, or just want someone who knows the lake? Colin Hill at Another Place (Watermillock) runs guided swims all year, including waterfall swims and full-moon night swims. Wetsuits, tow floats and the rest can be borrowed.', link: 'https://another.place/the-lake/active/wild-swimming/guided-wild-and-open-water-swimming', linkLabel: 'Guided swims ↗', links: [{ label: 'Ullswater swim routes ↗', url: 'https://another.place/the-lake/active/wild-swimming/ullswater/' }] },
+        ],
+      },
+      {
+        name: 'Further Afield',
+        items: [
+          { name: 'River Eden, Lazonby to Kirkoswald', meta: '~30 min', note: 'A wide, slow stretch of river by the old sandstone bridge, with a small car park nearby — a local classic on a warm day and a nice change from the lakes.' },
+        ],
+      },
+      {
+        name: 'If You Want Adrenaline',
+        items: [
+          { name: 'White-water rafting', note: 'Being a few minutes from the M6 makes this easier from Shap than from most of the Lakes. Whitewater North run three-hour trips (age 10+) on whichever Cumbrian river is running best, usually within 20 min of Junction 36 — about 45 minutes from here. They’re honest about levels: if the river isn’t worth rafting they’ll say so and offer tubing or an Eden river journey instead. Rafting needs rain, so autumn to spring is the reliable season.', link: 'https://whitewaternorth.com/whitewater-rafting/', linkLabel: 'Whitewater North ↗' },
+          { name: 'A gentler raft down the Eden', meta: '~30 min · age 8+', note: 'Vertical Skills run a four-hour rafting journey from Lazonby to Armathwaite, through one of the prettiest stretches of river in Cumbria. You can book a whole raft (up to seven), which works well for a family or group. They also raft the livelier River Leven in the south Lakes (age 13+).', link: 'https://verticalskills.co.uk/activity/white-water-rafting/', linkLabel: 'Vertical Skills ↗' },
+          { name: 'Ghyll scrambling & canyoning', note: 'A ghyll is a mountain stream, and ghyll scrambling means climbing, sliding and jumping along one in a wetsuit and helmet — scrambling goes up, canyoning comes down, and most trips do a bit of both. All jumps are optional. Everything’s provided; you just need old trainers and a towel. Never try a ghyll without a guide — they change completely after rain.', link: 'https://www.visitlakedistrict.com/things-to-do/ghyll-scrambling-in-ullswater-valley-with-adventure-vertical-p1259591', linkLabel: 'Ullswater valley (~40 min) ↗', links: [{ label: 'Stoneycroft, near Keswick (~45 min) ↗', url: 'https://www.ullswateroutdooradventures.co.uk/ghyllscrambling' }, { label: 'Canyoning — Coniston & Eskdale ↗', url: 'https://www.pathtoadventure.co.uk/ghyll-scrambling-lake-district' }] },
+          { name: 'Book ahead', note: 'Book all of these ahead, especially in school holidays.' },
+        ],
+      },
+      {
+        name: 'Before You Get In — A Few Words on Cold Water',
+        items: [
+          { name: 'Lakeland water is cold all year', note: 'I swim outdoors a lot and love it, but the water is cold year-round. Ullswater can be 11°C in summer and 3–4°C in winter, and it’s very deep.' },
+          { name: 'Get in slowly', note: 'Cold-water shock is what catches people out. Wade in, let your breathing settle, then swim — no jumping in from a standing start.' },
+          { name: 'Don’t swim alone', note: 'Tell someone where you’re going.' },
+          { name: 'Wear a bright hat and a tow float', note: 'Ullswater has steamers and motorboats, and a swimmer’s head is very hard to see. Stay close to shore and well clear of the piers.' },
+          { name: 'Stay in for less time than you think', note: 'You keep cooling after you get out. Dry off and dress quickly — warm layers and a hot drink first, chat second.' },
+          { name: 'Keep alcohol for afterwards' },
+          { name: 'Check for blue-green algae', note: 'In warm, still spells, if the water looks green or scummy at the edge, stay out — and keep dogs out too.' },
+          { name: 'Becks and rivers rise fast after rain', note: 'If Swindale or the Eden are running brown and quick, save them for another day.' },
+          { name: 'Check, clean, dry', note: 'Moving kit between lakes? Rinse and dry it first so you don’t carry invasive species with you.' },
+          { name: 'In an emergency', note: 'On or near the water, call 999 and ask for Mountain Rescue or the Fire Service.' },
+          { name: 'Enjoy it', note: 'There’s nothing quite like a swim with the fells above you. — Holly' },
+        ],
+      },
+    ],
+  },
+
   properties: {
     'the-rockery': {
       name: 'The Rockery',

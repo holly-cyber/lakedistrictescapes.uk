@@ -1519,10 +1519,14 @@
     .guide-tabs {
       display: flex;
       gap: 0.4rem;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
       border-bottom: 1px solid rgba(176,168,153,0.35);
       margin-bottom: 2rem;
     }
+    .guide-tabs::-webkit-scrollbar { display: none; }
     .guide-tab {
       background: none;
       border: none;
@@ -1536,7 +1540,13 @@
       color: var(--mid);
       cursor: pointer;
       margin-bottom: -1px;
+      white-space: nowrap;
+      flex: 0 0 auto;
       transition: color 0.2s, border-color 0.2s;
+    }
+    @media (max-width: 560px) {
+      .guide-tabs { gap: 0.1rem; }
+      .guide-tab { padding: 0.6rem 0.5rem; font-size: 0.68rem; letter-spacing: 0.03em; }
     }
     .guide-tab:hover { color: var(--coniston-blue); }
     .guide-tab.active { color: var(--coniston-blue); border-bottom-color: var(--coniston-blue); }

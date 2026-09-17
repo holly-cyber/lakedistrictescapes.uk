@@ -64,13 +64,13 @@ const publicJson = JSON.stringify(publicGuide).replace(/</g, '\\u003c');
 
   const panels = [];
   if (GUIDE.area) {
-    panels.push({ id: 'area', label: GUIDE.area.title || 'The Area', render: () => renderArea(GUIDE.area) });
+    panels.push({ id: 'area', label: 'The Area', render: () => renderArea(GUIDE.area) });
   }
   if (GUIDE.outdoors) {
-    panels.push({ id: 'outdoors', label: GUIDE.outdoors.title || 'Walks & Rides', render: () => renderArea(GUIDE.outdoors) });
+    panels.push({ id: 'outdoors', label: 'Walks & Rides', render: () => renderArea(GUIDE.outdoors) });
   }
   if (GUIDE.water) {
-    panels.push({ id: 'water', label: GUIDE.water.title || 'On the Water', render: () => renderArea(GUIDE.water) });
+    panels.push({ id: 'water', label: 'On the Water', render: () => renderArea(GUIDE.water) });
   }
 
   const panelEls = {};

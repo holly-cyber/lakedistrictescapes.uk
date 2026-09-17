@@ -11,6 +11,7 @@ const fullGuide = {
   properties: Object.fromEntries(Object.entries(GUIDE.properties).filter(([, p]) => !p.hidden)),
   area: GUIDE.area,
   outdoors: GUIDE.outdoors,
+  water: GUIDE.water,
 };
 const guideJson = JSON.stringify(fullGuide).replace(/</g, '\\u003c');
 ---
@@ -73,6 +74,9 @@ const guideJson = JSON.stringify(fullGuide).replace(/</g, '\\u003c');
   }
   if (GUIDE.outdoors) {
     panels.push({ id: 'outdoors', label: GUIDE.outdoors.title || 'Walks & Rides', render: () => renderArea(GUIDE.outdoors) });
+  }
+  if (GUIDE.water) {
+    panels.push({ id: 'water', label: GUIDE.water.title || 'On the Water', render: () => renderArea(GUIDE.water) });
   }
 
   const panelEls = {};

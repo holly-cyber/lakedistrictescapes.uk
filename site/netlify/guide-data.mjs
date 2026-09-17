@@ -465,7 +465,7 @@ export const GUIDE = {
         items: [
           { name: 'Kailpot Crag', note: 'The swim spot everyone rates, and rightly. Park at Sandwick and follow the lakeshore path towards Howtown through the woods — you’ll pass small beaches to get in, and the crag sits above deep, clear water. Parking at Sandwick is tiny, so go early or late.' },
           { name: 'Aira Force upper pools', meta: 'park at High Force car park, CA11 0JY', note: 'Cross the road, through the gate and head right, downstream — the pool at the base of the falls is about five minutes from the car. Sheep in the field, so dogs on leads.' },
-          { name: 'Guided swims', note: 'New to open water, or just want someone who knows the lake? Colin Hill at Another Place (Watermillock) runs guided swims all year, including waterfall swims and full-moon night swims. Wetsuits, tow floats and the rest can be borrowed.', link: 'https://another.place/the-lake/active/wild-swimming/guided-wild-and-open-water-swimming', linkLabel: 'Guided swims ↗', links: [{ label: 'Ullswater swim routes ↗', url: 'https://another.place/the-lake/active/wild-swimming/ullswater/' }] },
+          { name: 'Guided swims', note: 'New to open water, or just want someone who knows the lake? Colin Hill at Another Place (Watermillock) runs guided swims all year, including waterfall swims and full-moon night swims. Wetsuits, tow floats and the rest can be borrowed.', link: 'https://another.place/the-lake/active/wild-swimming/guided-wild-and-open-water-swimming', linkLabel: 'Guided swims ↗' },
         ],
       },
       {

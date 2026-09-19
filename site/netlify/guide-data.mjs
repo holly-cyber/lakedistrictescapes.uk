@@ -608,8 +608,8 @@ export const GUIDE = {
         {
           title: 'Wi-Fi',
           fields: [
-            { label: 'Network', value: 'SKYTGUHH' },
-            { label: 'Password', value: 'EhliPTFRSpeg1i' },
+            { label: 'Network', value: 'Lake District Escapes' },
+            { label: 'Password', value: 'BeMyGuest2026' },
           ],
         },
         {

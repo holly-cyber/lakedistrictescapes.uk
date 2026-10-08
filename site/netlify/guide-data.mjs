@@ -521,6 +521,7 @@ export const GUIDE = {
             'Wake up the screen by pressing any button or tapping the dial.',
             'Turn the dial (or press the up/down arrows) to raise the target temperature higher than your current room temperature — the heating will come on.',
             'The fan heater can be found under the stairs if you’d like a quick extra boost.',
+            'Showing “no signal”? Lift the Hive unit off its wall bracket, take out one battery, leave it for 5–10 seconds, then pop it back in — it should reconnect with the signal shortly.',
           ],
         },
         {
@@ -619,6 +620,7 @@ export const GUIDE = {
             'Wake up the screen by pressing any button or tapping the dial.',
             'Turn the dial (or press the up/down arrows) to raise the target temperature higher than your current room temperature — the heating will come on.',
             'The fan heater can be found behind the TV.',
+            'Showing “no signal”? Lift the Hive unit off its wall bracket, take out one battery, leave it for 5–10 seconds, then pop it back in — it should reconnect with the signal shortly.',
           ],
         },
         {
